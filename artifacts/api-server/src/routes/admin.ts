@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type RequestHandler } from "express";
 import { db } from "@workspace/db";
 import { categoriesTable, createCategoryBodySchema } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -7,16 +7,16 @@ const router: IRouter = Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 
-router.use((req, res, next) => {
+const requireAdmin: RequestHandler = (req, res, next) => {
   const auth = req.headers["x-admin-password"] || req.query.adminPassword;
   if (auth !== ADMIN_PASSWORD) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
   next();
-});
+}
 
-router.post("/admin/categories", async (req, res) => {
+router.post("/admin/categories", requireAdmin, async (req, res) => {
   try {
     const parsed = createCategoryBodySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -52,7 +52,7 @@ router.post("/admin/categories", async (req, res) => {
   }
 });
 
-router.put("/admin/categories/:id", async (req, res) => {
+router.put("/admin/categories/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {

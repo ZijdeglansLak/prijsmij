@@ -1,11 +1,14 @@
 import { Link, useLocation } from "wouter";
-import { Store, TrendingUp, PlusCircle, Search, Menu, X } from "lucide-react";
+import { Store, TrendingUp, PlusCircle, Search, Menu, X, LogIn, Coins } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useSupplierAuth } from "@/contexts/supplier-auth";
+import { Badge } from "@/components/ui/badge";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { supplier, isLoggedIn } = useSupplierAuth();
 
   const navLinks = [
     { href: "/requests", label: "Bekijk Uitvragen", icon: Search },
@@ -31,7 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-6">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = location.startsWith(link.href);
@@ -49,7 +52,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
-              
+
+              {/* Supplier auth area */}
+              {isLoggedIn && supplier ? (
+                <Link
+                  href="/supplier/dashboard"
+                  className={cn(
+                    "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                    location.startsWith("/supplier") ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>{supplier.storeName}</span>
+                  <Badge variant="secondary" className="ml-1">{supplier.credits}</Badge>
+                </Link>
+              ) : (
+                <Link
+                  href="/supplier/login"
+                  className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Winkel inloggen
+                </Link>
+              )}
+
               <Link
                 href="/request/new"
                 className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
@@ -89,6 +115,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
+              {isLoggedIn && supplier ? (
+                <Link
+                  href="/supplier/dashboard"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Coins className="w-5 h-5 text-primary" />
+                  {supplier.storeName} ({supplier.credits} credits)
+                </Link>
+              ) : (
+                <Link
+                  href="/supplier/login"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LogIn className="w-5 h-5 text-primary" />
+                  Winkel inloggen
+                </Link>
+              )}
               <Link
                 href="/request/new"
                 className="flex items-center justify-center gap-2 w-full mt-4 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground shadow-md"
@@ -127,7 +172,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <ul className="space-y-4">
                 <li><Link href="/requests" className="text-secondary-foreground/70 hover:text-white transition-colors">Alle uitvragen</Link></li>
                 <li><Link href="/request/new" className="text-secondary-foreground/70 hover:text-white transition-colors">Plaats uitvraag</Link></li>
-                <li><Link href="/admin" className="text-secondary-foreground/70 hover:text-white transition-colors">Voor winkeliers</Link></li>
+                <li><Link href="/supplier/register" className="text-secondary-foreground/70 hover:text-white transition-colors">Voor winkeliers</Link></li>
               </ul>
             </div>
             <div>

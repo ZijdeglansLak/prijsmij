@@ -46,6 +46,13 @@ artifacts-monorepo/
 - Kan soortgelijke modellen toestaan
 - Uitvragen verlopen na 7 dagen
 
+### Supplier Accounts
+- Register/login met e-mail + wachtwoord (bcryptjs hashing, JWT auth, 30d expiry)
+- Dashboard toont credits en connectiesgeschiedenis
+- Credits kopen in bundels (10/50/100/250)
+- Connectie systeem: 1 credit = koopcontactgegevens van koper ontvangen (na bod)
+- `supplier_accounts`, `credit_purchases`, `connections` tabellen in DB
+
 ### Supplier Flow
 - Bekijkt openstaande uitvragen van consumenten
 - Plaatst een bod met prijs, conditie, garantie en levertijd

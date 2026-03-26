@@ -121,7 +121,15 @@ export default function PlaceBid() {
                 
                 <div>
                   <label className="block text-sm font-bold mb-1">Jouw Prijs (€) *</label>
-                  <Input required type="number" min="0" step="0.01" className="text-xl font-bold text-primary" placeholder="999.00" value={price} onChange={e => setPrice(e.target.value)} />
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    className="text-xl font-bold text-primary [&:invalid]:border-input [&:invalid]:shadow-none"
+                    placeholder="999.00"
+                    value={price}
+                    onChange={e => setPrice(e.target.value)}
+                  />
                 </div>
 
                 <div>
