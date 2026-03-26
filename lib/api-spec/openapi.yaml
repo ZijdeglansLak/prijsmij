@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: BestBod Marketplace API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: categories
+    description: Product categories and templates
+  - name: requests
+    description: Product requests (uitvragen)
+  - name: bids
+    description: Supplier bids on requests
+  - name: admin
+    description: Admin operations for backend management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +30,283 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all product categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    get:
+      operationId: getCategoryById
+      tags: [categories]
+      summary: Get category with template fields
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Category with template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryWithTemplate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /requests:
+    get:
+      operationId: listRequests
+      tags: [requests]
+      summary: List active product requests
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: offerType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [new, refurbished, occasion, any]
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of active requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RequestSummary"
+    post:
+      operationId: createRequest
+      tags: [requests]
+      summary: Create a new product request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequestBody"
+      responses:
+        "201":
+          description: Request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestDetail"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /requests/{id}:
+    get:
+      operationId: getRequestById
+      tags: [requests]
+      summary: Get request with all bids
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Request with bids
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /requests/{id}/bids:
+    get:
+      operationId: listBidsForRequest
+      tags: [bids]
+      summary: List all bids for a request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: offerType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [new, refurbished, occasion, similar]
+      responses:
+        "200":
+          description: List of bids sorted by price
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bid"
+    post:
+      operationId: createBid
+      tags: [bids]
+      summary: Supplier places a bid on a request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBidBody"
+      responses:
+        "201":
+          description: Bid placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bid"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /requests/{id}/interest:
+    post:
+      operationId: expressInterest
+      tags: [requests]
+      summary: Consumer expresses interest in a bid (triggers payment flow)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpressInterestBody"
+      responses:
+        "200":
+          description: Interest registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterestResult"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [requests]
+      summary: Get marketplace statistics
+      responses:
+        "200":
+          description: Marketplace statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceStats"
+
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [admin]
+      summary: Create a new product category with template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryWithTemplate"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/categories/{id}:
+    put:
+      operationId: updateCategory
+      tags: [admin]
+      summary: Update a product category and its template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryWithTemplate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +317,399 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        activeRequestCount:
+          type: integer
+      required:
+        - id
+        - name
+        - slug
+        - icon
+        - description
+        - activeRequestCount
+
+    TemplateField:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum: [text, number, select, textarea, boolean]
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: string
+        placeholder:
+          type: string
+        unit:
+          type: string
+      required:
+        - key
+        - label
+        - type
+        - required
+
+    CategoryWithTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateField"
+        activeRequestCount:
+          type: integer
+      required:
+        - id
+        - name
+        - slug
+        - icon
+        - description
+        - fields
+        - activeRequestCount
+
+    RequestSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        brand:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        categoryIcon:
+          type: string
+        lowestBidPrice:
+          type: number
+          nullable: true
+        bidCount:
+          type: integer
+        allowedOfferTypes:
+          type: array
+          items:
+            type: string
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        consumerName:
+          type: string
+        consumerEmail:
+          type: string
+      required:
+        - id
+        - title
+        - brand
+        - categoryId
+        - categoryName
+        - categoryIcon
+        - lowestBidPrice
+        - bidCount
+        - allowedOfferTypes
+        - expiresAt
+        - createdAt
+        - consumerName
+        - consumerEmail
+
+    RequestDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        brand:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        categoryIcon:
+          type: string
+        specifications:
+          type: object
+          additionalProperties: true
+        allowedOfferTypes:
+          type: array
+          items:
+            type: string
+        allowSimilarModels:
+          type: boolean
+        lowestBidPrice:
+          type: number
+          nullable: true
+        bidCount:
+          type: integer
+        bids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Bid"
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        consumerName:
+          type: string
+        consumerEmail:
+          type: string
+      required:
+        - id
+        - title
+        - brand
+        - description
+        - categoryId
+        - categoryName
+        - categoryIcon
+        - specifications
+        - allowedOfferTypes
+        - allowSimilarModels
+        - lowestBidPrice
+        - bidCount
+        - bids
+        - expiresAt
+        - createdAt
+        - consumerName
+        - consumerEmail
+
+    CreateRequestBody:
+      type: object
+      properties:
+        title:
+          type: string
+        brand:
+          type: string
+        description:
+          type: string
+        categoryId:
+          type: integer
+        specifications:
+          type: object
+          additionalProperties: true
+        allowedOfferTypes:
+          type: array
+          items:
+            type: string
+            enum: [new, refurbished, occasion]
+        allowSimilarModels:
+          type: boolean
+        consumerName:
+          type: string
+        consumerEmail:
+          type: string
+      required:
+        - title
+        - brand
+        - description
+        - categoryId
+        - specifications
+        - allowedOfferTypes
+        - allowSimilarModels
+        - consumerName
+        - consumerEmail
+
+    Bid:
+      type: object
+      properties:
+        id:
+          type: integer
+        requestId:
+          type: integer
+        supplierName:
+          type: string
+        supplierStore:
+          type: string
+        price:
+          type: number
+        offerType:
+          type: string
+          enum: [new, refurbished, occasion, similar]
+        modelName:
+          type: string
+        description:
+          type: string
+        warrantyMonths:
+          type: integer
+        deliveryDays:
+          type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        isSimilarModel:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - requestId
+        - supplierName
+        - supplierStore
+        - price
+        - offerType
+        - modelName
+        - description
+        - warrantyMonths
+        - deliveryDays
+        - imageUrl
+        - isSimilarModel
+        - createdAt
+
+    CreateBidBody:
+      type: object
+      properties:
+        supplierName:
+          type: string
+        supplierStore:
+          type: string
+        supplierEmail:
+          type: string
+        price:
+          type: number
+        offerType:
+          type: string
+          enum: [new, refurbished, occasion, similar]
+        modelName:
+          type: string
+        description:
+          type: string
+        warrantyMonths:
+          type: integer
+        deliveryDays:
+          type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        isSimilarModel:
+          type: boolean
+      required:
+        - supplierName
+        - supplierStore
+        - supplierEmail
+        - price
+        - offerType
+        - modelName
+        - description
+        - warrantyMonths
+        - deliveryDays
+        - isSimilarModel
+
+    ExpressInterestBody:
+      type: object
+      properties:
+        bidId:
+          type: integer
+        consumerEmail:
+          type: string
+      required:
+        - bidId
+        - consumerEmail
+
+    InterestResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        contactEmail:
+          type: string
+      required:
+        - success
+        - message
+        - contactEmail
+
+    MarketplaceStats:
+      type: object
+      properties:
+        totalActiveRequests:
+          type: integer
+        totalBidsToday:
+          type: integer
+        totalSuppliersActive:
+          type: integer
+        averageBidsPerRequest:
+          type: number
+        categoryCounts:
+          type: array
+          items:
+            type: object
+            properties:
+              categoryName:
+                type: string
+              count:
+                type: integer
+            required:
+              - categoryName
+              - count
+      required:
+        - totalActiveRequests
+        - totalBidsToday
+        - totalSuppliersActive
+        - averageBidsPerRequest
+        - categoryCounts
+
+    CreateCategoryBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateField"
+      required:
+        - name
+        - slug
+        - icon
+        - description
+        - fields

@@ -1,0 +1,21 @@
+packages:
+  "framer-motion": "For page transitions, list animations, and interactive elements"
+  "date-fns": "For formatting dates and countdown timers"
+  "clsx": "For merging tailwind classes"
+  "tailwind-merge": "For merging tailwind classes safely"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For form validation schemas"
+  "zod": "For form validation schemas"
+  "lucide-react": "For beautiful consistent icons"
+
+images:
+  - path: "artifacts/marketplace/public/images/hero-bg.png"
+    description: "Abstract 3D vibrant illustration of floating shopping elements, price tags, and glowing orbs in energetic orange, purple, and blue colors, clean and modern"
+    aspect_ratio: "16:9"
+  - path: "artifacts/marketplace/public/images/empty-state.png"
+    description: "Minimalist 3D illustration of an empty magnifying glass and a box, soft pastel colors, very clean"
+    aspect_ratio: "1:1"
+
+notes:
+  - Assuming standard REST API with generated React Query hooks in @workspace/api-client-react
+  - Utilizing Tailwind CSS v4 variables for a vibrant, energetic marketplace theme
