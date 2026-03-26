@@ -9,7 +9,7 @@ import { useListRequests, useListCategories } from "@workspace/api-client-react"
 import type { ListRequestsOfferType } from "@workspace/api-client-react";
 
 export default function RequestsPage() {
-  const [searchParams] = new URLSearchParams(window.location.search);
+  const searchParams = new URLSearchParams(window.location.search);
   
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<number | undefined>(
