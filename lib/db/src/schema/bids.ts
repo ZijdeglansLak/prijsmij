@@ -35,7 +35,7 @@ export const createBidBodySchema = z.object({
   price: z.number().positive(),
   offerType: z.enum(["new", "refurbished", "occasion", "similar"]),
   modelName: z.string().min(1),
-  description: z.string().min(1),
+  description: z.string().default(""),
   warrantyMonths: z.number().int().min(0).default(12),
   deliveryDays: z.number().int().min(0).default(3),
   imageUrl: z.string().nullable().optional(),

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
-import { useGetRequestById, useCreateBid } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetRequestById, useCreateBid, getGetRequestByIdQueryKey, getListBidsForRequestQueryKey, getListRequestsQueryKey } from "@workspace/api-client-react";
 import type { CreateBidBodyOfferType } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ export default function PlaceBid() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  const queryClient = useQueryClient();
   const { data: request, isLoading } = useGetRequestById(requestId);
   const createBidMutation = useCreateBid();
 
@@ -48,6 +50,9 @@ export default function PlaceBid() {
           isSimilarModel
         }
       });
+      await queryClient.invalidateQueries({ queryKey: getGetRequestByIdQueryKey(requestId) });
+      await queryClient.invalidateQueries({ queryKey: getListBidsForRequestQueryKey(requestId) });
+      await queryClient.invalidateQueries({ queryKey: getListRequestsQueryKey() });
       toast({ title: "Bod geplaatst!", description: "Je bod is succesvol toegevoegd aan de uitvraag." });
       setLocation(`/requests/${requestId}`);
     } catch (e) {
