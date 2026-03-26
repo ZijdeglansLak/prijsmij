@@ -8,22 +8,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft, Gavel, AlertCircle } from "lucide-react";
+import { ArrowLeft, Gavel, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useSupplierAuth } from "@/contexts/supplier-auth";
 
 export default function PlaceBid() {
   const { id } = useParams<{ id: string }>();
   const requestId = parseInt(id!);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { supplier, isLoggedIn } = useSupplierAuth();
 
   const queryClient = useQueryClient();
   const { data: request, isLoading } = useGetRequestById(requestId);
   const createBidMutation = useCreateBid();
 
-  // Form State
-  const [supplierStore, setSupplierStore] = useState("");
-  const [supplierName, setSupplierName] = useState("");
-  const [supplierEmail, setSupplierEmail] = useState("");
+  // Pre-fill from supplier account if logged in
+  const [supplierStore, setSupplierStore] = useState(supplier?.storeName ?? "");
+  const [supplierName, setSupplierName] = useState(supplier?.contactName ?? "");
+  const [supplierEmail, setSupplierEmail] = useState(supplier?.email ?? "");
   const [price, setPrice] = useState("");
   const [offerType, setOfferType] = useState<CreateBidBodyOfferType>("new");
   const [modelName, setModelName] = useState("");
@@ -31,9 +33,18 @@ export default function PlaceBid() {
   const [warrantyMonths, setWarrantyMonths] = useState("24");
   const [deliveryDays, setDeliveryDays] = useState("1");
   const [isSimilarModel, setIsSimilarModel] = useState(false);
+  const [priceError, setPriceError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const parsedPrice = parseFloat(price);
+    if (!price || isNaN(parsedPrice) || parsedPrice <= 0) {
+      setPriceError("Voer een geldige prijs in");
+      return;
+    }
+    setPriceError("");
+
     try {
       await createBidMutation.mutateAsync({
         id: requestId,
@@ -41,7 +52,7 @@ export default function PlaceBid() {
           supplierStore,
           supplierName,
           supplierEmail,
-          price: parseFloat(price),
+          price: parsedPrice,
           offerType,
           modelName,
           description,
@@ -83,26 +94,36 @@ export default function PlaceBid() {
 
       <div className="max-w-4xl mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
-          <form onSubmit={handleSubmit} className="space-y-8 bg-card p-8 rounded-2xl border border-border shadow-sm">
+          <form onSubmit={handleSubmit} noValidate className="space-y-8 bg-card p-8 rounded-2xl border border-border shadow-sm">
             
-            {/* Store details */}
-            <div>
-              <h3 className="text-xl font-bold mb-4 border-b border-border pb-2">Jouw Gegevens</h3>
-              <div className="grid grid-cols-2 gap-4">
+            {/* Store details — hidden when logged in as supplier */}
+            {isLoggedIn && supplier ? (
+              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-5 py-4">
+                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                 <div>
-                  <label className="block text-sm font-bold mb-1">Winkelnaam *</label>
-                  <Input required value={supplierStore} onChange={e => setSupplierStore(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-1">Jouw Naam *</label>
-                  <Input required value={supplierName} onChange={e => setSupplierName(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-bold mb-1">E-mailadres *</label>
-                  <Input required type="email" value={supplierEmail} onChange={e => setSupplierEmail(e.target.value)} />
+                  <p className="font-bold text-green-800">{supplier.storeName}</p>
+                  <p className="text-sm text-green-700">{supplier.contactName} · {supplier.email}</p>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <h3 className="text-xl font-bold mb-4 border-b border-border pb-2">Jouw Gegevens</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Winkelnaam *</label>
+                    <Input required value={supplierStore} onChange={e => setSupplierStore(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Jouw Naam *</label>
+                    <Input required value={supplierName} onChange={e => setSupplierName(e.target.value)} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-bold mb-1">E-mailadres *</label>
+                    <Input required type="email" value={supplierEmail} onChange={e => setSupplierEmail(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Offer details */}
             <div>
@@ -122,20 +143,23 @@ export default function PlaceBid() {
                 <div>
                   <label className="block text-sm font-bold mb-1">Jouw Prijs (€) *</label>
                   <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    className="text-xl font-bold text-primary [&:invalid]:border-input [&:invalid]:shadow-none"
+                    type="text"
+                    inputMode="decimal"
+                    className={`text-xl font-bold text-primary ${priceError ? "border-destructive" : ""}`}
                     placeholder="999.00"
                     value={price}
-                    onChange={e => setPrice(e.target.value)}
+                    onChange={e => {
+                      setPrice(e.target.value);
+                      if (priceError) setPriceError("");
+                    }}
                   />
+                  {priceError && <p className="text-destructive text-xs mt-1">{priceError}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold mb-1">Staat van product *</label>
                   <select 
-                    className="w-full h-10 px-3 rounded-md border border-input bg-transparent"
+                    className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
                     value={offerType}
                     onChange={e => setOfferType(e.target.value as CreateBidBodyOfferType)}
                   >
