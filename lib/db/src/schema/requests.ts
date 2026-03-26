@@ -29,7 +29,7 @@ export type Request = typeof requestsTable.$inferSelect;
 export const createRequestBodySchema = z.object({
   title: z.string().min(1),
   brand: z.string().min(1),
-  description: z.string().min(1),
+  description: z.string().default(""),
   categoryId: z.number().int().positive(),
   specifications: z.record(z.string(), z.unknown()),
   allowedOfferTypes: z.array(z.enum(["new", "refurbished", "occasion"])).min(1),
