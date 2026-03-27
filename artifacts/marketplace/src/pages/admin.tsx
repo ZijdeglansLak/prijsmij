@@ -392,6 +392,8 @@ function SettingsTab() {
 
 function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; isEditing: boolean; onToggleEdit: () => void; onSave: (u: object) => void }) {
   const [contactName, setContactName] = useState(user.contactName);
+  const [email, setEmail] = useState(user.email);
+  const [storeName, setStoreName] = useState(user.storeName ?? "");
   const [role, setRole] = useState(user.role);
   const [isAdmin, setIsAdmin] = useState(user.isAdmin);
   const [newPassword, setNewPassword] = useState("");
@@ -424,11 +426,21 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
 
       {isEditing && (
         <div className="border-t border-border p-4 bg-muted/30">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="text-xs font-bold mb-1 block">Naam</label>
               <Input value={contactName} onChange={e => setContactName(e.target.value)} className="h-8 text-sm" />
             </div>
+            <div>
+              <label className="text-xs font-bold mb-1 block">E-mailadres</label>
+              <Input value={email} onChange={e => setEmail(e.target.value)} className="h-8 text-sm" type="email" />
+            </div>
+            {user.role === "seller" && (
+              <div>
+                <label className="text-xs font-bold mb-1 block">Bedrijfsnaam</label>
+                <Input value={storeName} onChange={e => setStoreName(e.target.value)} className="h-8 text-sm" placeholder="Winkelnaam" />
+              </div>
+            )}
             {!user.isAdmin && (
               <div>
                 <label className="text-xs font-bold mb-1 block">Rol</label>
@@ -452,12 +464,9 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
             )}
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => onSave({ contactName, role, isAdmin, newPassword: newPassword || undefined })}>Opslaan</Button>
+            <Button size="sm" onClick={() => onSave({ contactName, email, storeName: storeName || undefined, role, isAdmin, newPassword: newPassword || undefined })}>Opslaan</Button>
             <Button size="sm" variant="outline" onClick={onToggleEdit}>Annuleren</Button>
           </div>
-          {user.storeName && (
-            <p className="text-xs text-muted-foreground mt-2">Winkelnaam (niet wijzigbaar): {user.storeName}</p>
-          )}
         </div>
       )}
     </div>

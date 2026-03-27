@@ -30,16 +30,25 @@ router.get("/admin/users", requireAdmin, async (req, res) => {
   } catch (err) { req.log.error({ err }, "Get users failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// PUT /admin/users/:id — update user (name, role, isAdmin) — email and storeName cannot change
+// PUT /admin/users/:id — update user (name, email, storeName, role, isAdmin, password)
 router.put("/admin/users/:id", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) { res.status(400).json({ error: "Ongeldig gebruikers-id" }); return; }
 
-    const { contactName, role, isAdmin, newPassword } = req.body;
+    const { contactName, email, storeName, role, isAdmin, newPassword } = req.body;
     const updates: Partial<typeof userAccountsTable.$inferInsert> = {};
 
     if (contactName && typeof contactName === "string") updates.contactName = contactName.trim();
+    if (email && typeof email === "string" && email.includes("@")) {
+      const conflict = await db.select({ id: userAccountsTable.id }).from(userAccountsTable)
+        .where(eq(userAccountsTable.email, email.toLowerCase().trim()));
+      if (conflict.length > 0 && conflict[0].id !== id) {
+        res.status(400).json({ error: "Dit e-mailadres is al in gebruik" }); return;
+      }
+      updates.email = email.toLowerCase().trim();
+    }
+    if (typeof storeName === "string") updates.storeName = storeName.trim() || null;
     if (role && (role === "buyer" || role === "seller")) updates.role = role;
     if (typeof isAdmin === "boolean") updates.isAdmin = isAdmin;
     if (newPassword && typeof newPassword === "string" && newPassword.length >= 6) {
