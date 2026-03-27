@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { userAccountsTable } from "@workspace/db";
-import { eq, ne } from "drizzle-orm";
+import { eq, ilike, or, sql, desc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "./auth";
 
@@ -22,15 +22,87 @@ function safeUser(u: typeof userAccountsTable.$inferSelect) {
   };
 }
 
-// GET /admin/users — list all users
+// GET /admin/users — paginated + searchable
 router.get("/admin/users", requireAdmin, async (req, res) => {
   try {
-    const users = await db.select().from(userAccountsTable).orderBy(userAccountsTable.createdAt);
-    res.json(users.map(safeUser));
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const rawLimit = parseInt(req.query.limit as string) || 25;
+    const limit = [25, 50, 100, 250].includes(rawLimit) ? rawLimit : 25;
+    const offset = (page - 1) * limit;
+
+    const where = q
+      ? or(
+          ilike(userAccountsTable.contactName, `%${q}%`),
+          ilike(userAccountsTable.email, `%${q}%`),
+          ilike(userAccountsTable.storeName, `%${q}%`),
+          ilike(userAccountsTable.username, `%${q}%`)
+        )
+      : undefined;
+
+    const [countRow] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(userAccountsTable)
+      .where(where);
+
+    const users = await db.select().from(userAccountsTable)
+      .where(where)
+      .orderBy(desc(userAccountsTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    res.json({
+      users: users.map(safeUser),
+      total: countRow?.total ?? 0,
+      page,
+      limit,
+      pages: Math.ceil((countRow?.total ?? 0) / limit),
+    });
   } catch (err) { req.log.error({ err }, "Get users failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// PUT /admin/users/:id — update user (name, email, storeName, role, isAdmin, password)
+// GET /admin/users/export — CSV export, max 200 rows
+router.get("/admin/users/export", requireAdmin, async (req, res) => {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+
+    const where = q
+      ? or(
+          ilike(userAccountsTable.contactName, `%${q}%`),
+          ilike(userAccountsTable.email, `%${q}%`),
+          ilike(userAccountsTable.storeName, `%${q}%`),
+          ilike(userAccountsTable.username, `%${q}%`)
+        )
+      : undefined;
+
+    const users = await db.select().from(userAccountsTable)
+      .where(where)
+      .orderBy(desc(userAccountsTable.createdAt))
+      .limit(200);
+
+    const header = "id,naam,email,gebruikersnaam,bedrijfsnaam,rol,credits,beheerder,geverifieerd,aangemeld\n";
+    const rows = users.map(u =>
+      [
+        u.id,
+        `"${(u.contactName ?? "").replace(/"/g, '""')}"`,
+        `"${u.email.replace(/"/g, '""')}"`,
+        `"${(u.username ?? "").replace(/"/g, '""')}"`,
+        `"${(u.storeName ?? "").replace(/"/g, '""')}"`,
+        u.role,
+        u.credits,
+        u.isAdmin ? "ja" : "nee",
+        u.emailVerified ? "ja" : "nee",
+        u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "",
+      ].join(",")
+    ).join("\n");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="gebruikers-${new Date().toISOString().split("T")[0]}.csv"`);
+    res.send("\uFEFF" + header + rows); // BOM for Excel UTF-8
+  } catch (err) { req.log.error({ err }, "Export users failed"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// PUT /admin/users/:id — update user
 router.put("/admin/users/:id", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -63,7 +135,7 @@ router.put("/admin/users/:id", requireAdmin, async (req, res) => {
   } catch (err) { req.log.error({ err }, "Update user failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// POST /admin/users — create a new admin account
+// POST /admin/users — create admin account
 router.post("/admin/users", requireAdmin, async (req, res) => {
   try {
     const { contactName, email, password } = req.body;

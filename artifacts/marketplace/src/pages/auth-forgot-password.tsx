@@ -45,7 +45,7 @@ export default function ForgotPassword() {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg">
                 <TrendingUp className="w-7 h-7" />
               </div>
-              <span className="font-display font-bold text-3xl text-secondary">Best<span className="text-primary">Bod</span></span>
+              <span className="font-display font-bold text-3xl text-secondary">Prijs<span className="text-primary">Mij</span></span>
             </div>
             <h1 className="text-2xl font-bold text-secondary">{t.auth.forgotPasswordTitle}</h1>
           </div>

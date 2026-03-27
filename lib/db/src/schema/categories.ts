@@ -1,4 +1,4 @@
-import { pgTable, serial, text, jsonb, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,6 +9,7 @@ export const categoriesTable = pgTable("categories", {
   icon: text("icon").notNull(),
   description: text("description").notNull(),
   fields: jsonb("fields").notNull().default([]),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

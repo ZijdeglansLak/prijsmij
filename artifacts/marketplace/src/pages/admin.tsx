@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
-import { useListCategories, useCreateCategory } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 
@@ -82,100 +81,186 @@ function AdminDashboard() {
   );
 }
 
-function CategoriesTab() {
-  const { data: categories, refetch } = useListCategories();
-  const createMutation = useCreateCategory();
-  const { toast } = useToast();
+interface CategoryRecord {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  description: string;
+  isActive: boolean;
+  activeRequestCount: number;
+}
 
+function CategoriesTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<CategoryRecord[] | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [saving, setSaving] = useState<number | null>(null);
+
+  // New category form
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [icon, setIcon] = useState("");
   const [description, setDescription] = useState("");
-  const [fields, setFields] = useState<any[]>([]);
+  const [adding, setAdding] = useState(false);
 
-  const handleAddField = () => {
-    setFields([...fields, { key: `field_${Date.now()}`, label: "Nieuw Veld", type: "text", required: false }]);
-  };
+  useEffect(() => {
+    fetch("/api/admin/categories", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setCategories(d))
+      .catch(() => toast({ title: "Fout bij laden categorieën", variant: "destructive" }));
+  }, [token]);
 
-  const updateField = (index: number, key: string, value: any) => {
-    const newFields = [...fields];
-    newFields[index] = { ...newFields[index], [key]: value };
-    setFields(newFields);
-  };
-
-  const removeField = (index: number) => {
-    setFields(fields.filter((_, i) => i !== index));
-  };
-
-  const handleSave = async () => {
+  async function handleUpdate(id: number, updates: Partial<CategoryRecord>) {
+    setSaving(id);
     try {
-      await createMutation.mutateAsync({ data: { name, slug, icon, description, fields } });
-      toast({ title: "Categorie toegevoegd!" });
-      setIsAdding(false);
-      setName(""); setSlug(""); setIcon(""); setDescription(""); setFields([]);
-      refetch();
-    } catch (e) {
-      toast({ title: "Fout bij opslaan", variant: "destructive" });
+      const res = await fetch(`/api/admin/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) { toast({ title: "Fout bij opslaan", variant: "destructive" }); return; }
+      const updated = await res.json();
+      setCategories(prev => prev?.map(c => c.id === id ? { ...c, ...updated } : c) ?? null);
+      toast({ title: "Categorie bijgewerkt" });
+      setEditingId(null);
+    } catch {
+      toast({ title: "Fout", variant: "destructive" });
+    } finally { setSaving(null); }
+  }
+
+  async function handleCreate() {
+    if (!name || !slug || !icon || !description) {
+      toast({ title: "Vul alle velden in", variant: "destructive" }); return;
     }
-  };
+    setAdding(true);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, slug, icon, description, fields: [] }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error ?? "Fout bij aanmaken", variant: "destructive" }); return; }
+      setCategories(prev => [...(prev ?? []), { ...data, activeRequestCount: 0 }]);
+      toast({ title: "Categorie aangemaakt" });
+      setIsAdding(false); setName(""); setSlug(""); setIcon(""); setDescription("");
+    } catch {
+      toast({ title: "Fout", variant: "destructive" });
+    } finally { setAdding(false); }
+  }
+
+  if (!categories) return <p className="text-muted-foreground py-8 text-center">Laden...</p>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Categorieën</h2>
-        <Button onClick={() => setIsAdding(!isAdding)} className="bg-secondary text-white">
-          <Plus className="w-4 h-4 mr-2" /> Nieuwe Categorie
+        <h2 className="text-xl font-bold">Categorieën ({categories.length})</h2>
+        <Button onClick={() => setIsAdding(!isAdding)}>
+          <Plus className="w-4 h-4 mr-2" /> Nieuwe categorie
         </Button>
       </div>
 
       {isAdding && (
         <div className="bg-card p-6 rounded-2xl border border-primary/30 shadow-lg mb-8">
-          <h3 className="text-xl font-bold mb-4">Nieuwe categorie toevoegen</h3>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div><label className="text-sm font-bold">Naam</label><Input value={name} onChange={e => setName(e.target.value)} /></div>
-            <div><label className="text-sm font-bold">Slug</label><Input value={slug} onChange={e => setSlug(e.target.value)} /></div>
-            <div><label className="text-sm font-bold">Icoon (emoji)</label><Input value={icon} onChange={e => setIcon(e.target.value)} /></div>
-            <div><label className="text-sm font-bold">Beschrijving</label><Input value={description} onChange={e => setDescription(e.target.value)} /></div>
+          <h3 className="text-lg font-bold mb-4">Nieuwe categorie toevoegen</h3>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div><label className="text-xs font-bold mb-1 block">Naam</label><Input value={name} onChange={e => setName(e.target.value)} /></div>
+            <div><label className="text-xs font-bold mb-1 block">Slug</label><Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="bijv. elektronica" /></div>
+            <div><label className="text-xs font-bold mb-1 block">Icoon (emoji)</label><Input value={icon} onChange={e => setIcon(e.target.value)} placeholder="🛒" /></div>
+            <div><label className="text-xs font-bold mb-1 block">Beschrijving</label><Input value={description} onChange={e => setDescription(e.target.value)} /></div>
           </div>
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-bold">Template Velden</h4>
-              <Button variant="outline" size="sm" onClick={handleAddField}><Plus className="w-3 h-3 mr-1"/> Veld toevoegen</Button>
-            </div>
-            <div className="space-y-3">
-              {fields.map((f, i) => (
-                <div key={i} className="flex items-center gap-3 bg-muted p-3 rounded-lg">
-                  <Input placeholder="Veld Label" value={f.label} onChange={e => updateField(i, 'label', e.target.value)} className="w-1/3 bg-white" />
-                  <Input placeholder="Tech Key" value={f.key} onChange={e => updateField(i, 'key', e.target.value)} className="w-1/4 bg-white" />
-                  <select className="border border-input rounded-md px-2 h-10 bg-white" value={f.type} onChange={e => updateField(i, 'type', e.target.value)}>
-                    <option value="text">Text</option>
-                    <option value="number">Nummer</option>
-                  </select>
-                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.required} onChange={e => updateField(i, 'required', e.target.checked)} /> Verplicht</label>
-                  <button onClick={() => removeField(i)} className="p-2 text-destructive hover:bg-destructive/10 rounded-md ml-auto"><Trash2 className="w-4 h-4"/></button>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 border-t border-border pt-4">
+          <div className="flex gap-3">
+            <Button onClick={handleCreate} disabled={adding}>{adding ? "Aanmaken..." : "Aanmaken"}</Button>
             <Button variant="outline" onClick={() => setIsAdding(false)}>Annuleren</Button>
-            <Button onClick={handleSave} disabled={createMutation.isPending} className="bg-primary text-white">Opslaan</Button>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {categories?.map(cat => (
-          <div key={cat.id} className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-            <div className="text-4xl mb-4">{cat.icon}</div>
-            <h3 className="text-xl font-bold text-secondary mb-2">{cat.name}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{cat.description}</p>
-            <div className="text-xs font-semibold bg-primary/10 text-primary inline-block px-3 py-1 rounded-full">
-              {cat.activeRequestCount} actieve uitvragen
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {categories.map(cat => (
+          <CategoryCard
+            key={cat.id}
+            cat={cat}
+            isEditing={editingId === cat.id}
+            isSaving={saving === cat.id}
+            onEdit={() => setEditingId(editingId === cat.id ? null : cat.id)}
+            onSave={(updates) => handleUpdate(cat.id, updates)}
+            onCancel={() => setEditingId(null)}
+            onToggleActive={() => handleUpdate(cat.id, { isActive: !cat.isActive })}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onToggleActive }: {
+  cat: CategoryRecord;
+  isEditing: boolean;
+  isSaving: boolean;
+  onEdit: () => void;
+  onSave: (u: Partial<CategoryRecord>) => void;
+  onCancel: () => void;
+  onToggleActive: () => void;
+}) {
+  const [name, setName] = useState(cat.name);
+  const [icon, setIcon] = useState(cat.icon);
+  const [description, setDescription] = useState(cat.description);
+
+  useEffect(() => {
+    setName(cat.name); setIcon(cat.icon); setDescription(cat.description);
+  }, [cat]);
+
+  return (
+    <div className={`rounded-2xl border-2 overflow-hidden transition-colors ${cat.isActive ? "border-border bg-card" : "border-dashed border-muted-foreground/30 bg-muted/30"}`}>
+      <div className="p-5">
+        {isEditing ? (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input value={icon} onChange={e => setIcon(e.target.value)} className="w-20 text-2xl text-center" placeholder="🛒" />
+              <Input value={name} onChange={e => setName(e.target.value)} className="flex-1 font-bold" />
+            </div>
+            <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving..." />
+            <div className="flex gap-2 pt-1">
+              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description })}>
+                <Check className="w-3 h-3 mr-1" /> {isSaving ? "Opslaan..." : "Opslaan"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={onCancel}><X className="w-3 h-3 mr-1" /> Annuleren</Button>
             </div>
           </div>
-        ))}
+        ) : (
+          <>
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-4xl">{cat.icon}</div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={onToggleActive}
+                  disabled={isSaving}
+                  title={cat.isActive ? "Zet inactief" : "Zet actief"}
+                  className={`p-1.5 rounded-lg transition-colors ${cat.isActive ? "text-green-600 hover:bg-green-50" : "text-muted-foreground hover:bg-muted"}`}
+                >
+                  {cat.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+                <button onClick={onEdit} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <h3 className="font-bold text-base mb-1">{cat.name}</h3>
+            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{cat.description}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                {cat.activeRequestCount} uitvragen
+              </span>
+              {!cat.isActive && (
+                <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">Inactief</span>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -184,11 +269,19 @@ function CategoriesTab() {
 function UsersTab() {
   const { token } = useUserAuth();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserRecord[] | null>(null);
+
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [loaded, setLoaded] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showCreateAdmin, setShowCreateAdmin] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  // Filter + pagination state
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
 
   // New admin form
   const [newName, setNewName] = useState("");
@@ -196,16 +289,38 @@ function UsersTab() {
   const [newPassword, setNewPassword] = useState("");
   const [creating, setCreating] = useState(false);
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async (search: string, pg: number, lim: number) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } });
+      const params = new URLSearchParams({ q: search, page: String(pg), limit: String(lim) });
+      const res = await fetch(`/api/admin/users?${params}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) { toast({ title: "Fout bij laden", variant: "destructive" }); return; }
-      setUsers(await res.json());
-      setLoaded(true);
+      const data = await res.json();
+      setUsers(data.users);
+      setTotal(data.total);
+      setPages(data.pages);
     } catch {
       toast({ title: "Fout bij laden", variant: "destructive" });
     } finally { setLoading(false); }
+  }, [token]);
+
+  useEffect(() => {
+    loadUsers(q, page, limit);
+  }, []);
+
+  function handleSearch(newQ: string) {
+    setQ(newQ); setPage(1);
+    loadUsers(newQ, 1, limit);
+  }
+
+  function handleLimitChange(newLimit: number) {
+    setLimit(newLimit); setPage(1);
+    loadUsers(q, 1, newLimit);
+  }
+
+  function handlePage(pg: number) {
+    setPage(pg);
+    loadUsers(q, pg, limit);
   }
 
   async function handleUpdate(id: number, updates: object) {
@@ -215,9 +330,9 @@ function UsersTab() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(updates),
       });
-      if (!res.ok) { toast({ title: "Fout bij opslaan", variant: "destructive" }); return; }
-      const updated = await res.json();
-      setUsers(prev => prev?.map(u => u.id === id ? updated : u) ?? null);
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error ?? "Fout bij opslaan", variant: "destructive" }); return; }
+      setUsers(prev => prev.map(u => u.id === id ? data : u));
       toast({ title: "Opgeslagen" });
       setEditingId(null);
     } catch {
@@ -237,36 +352,75 @@ function UsersTab() {
         body: JSON.stringify({ contactName: newName, email: newEmail, password: newPassword }),
       });
       const data = await res.json();
-      if (!res.ok) { toast({ title: "Fout", description: data.error, variant: "destructive" }); return; }
-      setUsers(prev => prev ? [...prev, data] : [data]);
+      if (!res.ok) { toast({ title: data.error ?? "Fout", variant: "destructive" }); return; }
       toast({ title: "Beheerder aangemaakt" });
       setShowCreateAdmin(false); setNewName(""); setNewEmail(""); setNewPassword("");
+      loadUsers(q, page, limit);
     } catch {
       toast({ title: "Fout", variant: "destructive" });
     } finally { setCreating(false); }
   }
 
-  if (!loaded) {
-    return (
-      <div className="text-center py-12">
-        <Button onClick={loadUsers} disabled={loading}>
-          {loading ? "Laden..." : "Gebruikers laden"}
-        </Button>
-      </div>
-    );
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ q });
+      const res = await fetch(`/api/admin/users/export?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { toast({ title: "Exportfout", variant: "destructive" }); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `gebruikers-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Export gedownload (max. 200 rijen)" });
+    } catch {
+      toast({ title: "Exportfout", variant: "destructive" });
+    } finally { setExporting(false); }
   }
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Gebruikers ({users?.length ?? 0})</h2>
-        <Button onClick={() => setShowCreateAdmin(!showCreateAdmin)}>
-          <Plus className="w-4 h-4 mr-2" /> Nieuwe beheerder
-        </Button>
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
+        <h2 className="text-xl font-bold">Gebruikers <span className="text-muted-foreground font-normal text-base">({total.toLocaleString("nl-NL")})</span></h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} disabled={exporting} size="sm">
+            <Download className="w-4 h-4 mr-1.5" /> {exporting ? "Exporteren..." : "CSV export"}
+          </Button>
+          <Button size="sm" onClick={() => setShowCreateAdmin(!showCreateAdmin)}>
+            <Plus className="w-4 h-4 mr-1.5" /> Nieuwe beheerder
+          </Button>
+        </div>
       </div>
 
+      {/* Search + per-page */}
+      <div className="flex gap-3 mb-5">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={e => handleSearch(e.target.value)}
+            placeholder="Zoek op naam, e-mail of bedrijfsnaam..."
+            className="pl-9"
+          />
+        </div>
+        <select
+          value={limit}
+          onChange={e => handleLimitChange(Number(e.target.value))}
+          className="border border-input rounded-md px-3 h-10 bg-white text-sm"
+        >
+          <option value={25}>25 per pagina</option>
+          <option value={50}>50 per pagina</option>
+          <option value={100}>100 per pagina</option>
+          <option value={250}>250 per pagina</option>
+        </select>
+      </div>
+
+      {/* Create admin form */}
       {showCreateAdmin && (
-        <div className="bg-card p-6 rounded-2xl border border-primary/30 mb-6">
+        <div className="bg-card p-6 rounded-2xl border border-primary/30 mb-5">
           <h3 className="font-bold mb-4 flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-primary" /> Nieuwe beheerder aanmaken</h3>
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div><label className="text-sm font-bold mb-1 block">Naam</label><Input value={newName} onChange={e => setNewName(e.target.value)} /></div>
@@ -280,11 +434,37 @@ function UsersTab() {
         </div>
       )}
 
-      <div className="space-y-3">
-        {users?.map(u => (
-          <UserRow key={u.id} user={u} isEditing={editingId === u.id} onToggleEdit={() => setEditingId(editingId === u.id ? null : u.id)} onSave={updates => handleUpdate(u.id, updates)} />
-        ))}
-      </div>
+      {/* User list */}
+      {loading ? (
+        <div className="py-12 text-center text-muted-foreground">Laden...</div>
+      ) : users.length === 0 ? (
+        <div className="py-12 text-center text-muted-foreground">Geen gebruikers gevonden</div>
+      ) : (
+        <div className="space-y-2">
+          {users.map(u => (
+            <UserRow key={u.id} user={u} isEditing={editingId === u.id} onToggleEdit={() => setEditingId(editingId === u.id ? null : u.id)} onSave={updates => handleUpdate(u.id, updates)} />
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pages > 1 && (
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            Pagina {page} van {pages} &mdash; {total.toLocaleString("nl-NL")} gebruikers
+          </p>
+          <div className="flex gap-1">
+            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => handlePage(page - 1)}>‹</Button>
+            {Array.from({ length: Math.min(7, pages) }, (_, i) => {
+              const p = pages <= 7 ? i + 1 : page <= 4 ? i + 1 : page >= pages - 3 ? pages - 6 + i : page - 3 + i;
+              return (
+                <Button key={p} size="sm" variant={p === page ? "default" : "outline"} onClick={() => handlePage(p)}>{p}</Button>
+              );
+            })}
+            <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => handlePage(page + 1)}>›</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
