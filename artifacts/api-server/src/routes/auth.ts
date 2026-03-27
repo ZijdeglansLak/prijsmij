@@ -8,7 +8,7 @@ import crypto from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
 
 const router: IRouter = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "bestbod-secret-change-in-prod";
+const JWT_SECRET = process.env.JWT_SECRET || "prijsmij-secret-change-in-prod";
 
 type Lang = "nl" | "en" | "de" | "fr";
 

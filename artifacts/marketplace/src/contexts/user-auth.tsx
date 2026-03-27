@@ -28,8 +28,8 @@ interface UserAuthContextType {
 
 const UserAuthContext = createContext<UserAuthContextType | null>(null);
 
-const TOKEN_KEY = "bestbod_token";
-const USER_KEY = "bestbod_user";
+const TOKEN_KEY = "prijsmij_token";
+const USER_KEY = "prijsmij_user";
 
 export function UserAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));

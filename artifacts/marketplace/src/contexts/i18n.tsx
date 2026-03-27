@@ -9,7 +9,7 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | null>(null);
 
-const LANG_KEY = "bestbod_lang";
+const LANG_KEY = "prijsmij_lang";
 
 const FLAG: Record<Language, string> = { nl: "🇳🇱", en: "🇬🇧", de: "🇩🇪", fr: "🇫🇷" };
 const LABEL: Record<Language, string> = { nl: "NL", en: "EN", de: "DE", fr: "FR" };

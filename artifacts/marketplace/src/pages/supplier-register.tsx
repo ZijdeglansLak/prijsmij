@@ -41,7 +41,7 @@ export default function SupplierRegister() {
         return;
       }
       login(data.token, data.supplier);
-      toast({ title: "Welkom bij BestBod!", description: `Account aangemaakt voor ${data.supplier.storeName}` });
+      toast({ title: "Welkom bij PrijsMij!", description: `Account aangemaakt voor ${data.supplier.storeName}` });
       setLocation("/supplier/dashboard");
     } catch {
       toast({ title: "Verbindingsfout", description: "Probeer het opnieuw.", variant: "destructive" });

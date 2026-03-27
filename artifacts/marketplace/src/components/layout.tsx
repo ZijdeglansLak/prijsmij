@@ -40,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <TrendingUp className="w-6 h-6" />
                 </div>
                 <span className="font-display font-bold text-2xl tracking-tight text-secondary">
-                  Best<span className="text-primary">Bod</span>
+                  Prijs<span className="text-primary">Mij</span>
                 </span>
               </Link>
             </div>
@@ -349,7 +349,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
                   <TrendingUp className="w-5 h-5" />
                 </div>
-                <span className="font-display font-bold text-xl">BestBod</span>
+                <span className="font-display font-bold text-xl">PrijsMij</span>
               </Link>
               <p className="text-secondary-foreground/70 mb-6">{t.footer.tagline}</p>
             </div>
@@ -364,14 +364,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <h4 className="font-bold text-lg mb-6">{t.footer.contact}</h4>
               <ul className="space-y-4 text-secondary-foreground/70">
-                <li>support@bestbod.nl</li>
+                <li>support@prijsmij.nl</li>
                 <li>+31 (0)20 123 4567</li>
                 <li>Amsterdam, Nederland</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-white/10 mt-12 pt-8 text-center text-sm text-secondary-foreground/50">
-            &copy; {new Date().getFullYear()} BestBod Marketplace. Alle rechten voorbehouden.
+            &copy; {new Date().getFullYear()} PrijsMij. Alle rechten voorbehouden.
           </div>
         </div>
       </footer>

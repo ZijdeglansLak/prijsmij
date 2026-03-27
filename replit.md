@@ -2,7 +2,7 @@
 
 ## Overview
 
-BestBod — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gratis een uitvraag voor een product (televisie, auto, wasmachine etc.), leveranciers/winkels bieden hierop aan met hun beste prijs. De laagste bieding staat bovenaan. Als een consument interesse heeft in een bod, betaalt de leverancier 1 credit om de contactgegevens te ontvangen ("Connectie").
+PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gratis een uitvraag voor een product (televisie, auto, wasmachine etc.), leveranciers/winkels bieden hierop aan met hun beste prijs. De laagste bieding staat bovenaan. Als een consument interesse heeft in een bod, betaalt de leverancier 1 credit om de contactgegevens te ontvangen ("Connectie").
 
 ## Stack
 
@@ -23,7 +23,7 @@ BestBod — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen grat
 artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/         # Express API server
-│   └── marketplace/        # BestBod React frontend (main app, at /)
+│   └── marketplace/        # PrijsMij React frontend (main app, at /)
 ├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -64,7 +64,7 @@ artifacts-monorepo/
 - Admin check in `requireAdmin` middleware (JWT `isAdmin` claim)
 
 ### Admin Backend
-- Admin account: e-mail `admin@bestbod.nl`, gebruikersnaam `admin`, wachtwoord `welkom12345`
+- Admin account: e-mail `admin@prijsmij.nl`, gebruikersnaam `admin`, wachtwoord `welkom12345`
 - `isAdmin=true` in DB voor admin account (id=37)
 - Routes: `GET /api/admin/users`, `PUT /api/admin/users/:id`, `POST /api/admin/users`
 - Admin kan: naam, rol, isAdmin, wachtwoord wijzigen per gebruiker
