@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
 export const userAccountsTable = pgTable("user_accounts", {
@@ -9,6 +9,12 @@ export const userAccountsTable = pgTable("user_accounts", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   credits: integer("credits").notNull().default(0),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerificationToken: text("email_verification_token"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  username: text("username").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -47,9 +53,10 @@ export const registerSchema = z.object({
   contactName: z.string().min(1),
   email: z.email(),
   password: z.string().min(6),
+  lang: z.enum(["nl", "en", "de", "fr"]).optional(),
 });
 
 export const loginSchema = z.object({
-  email: z.email(),
+  email: z.string().min(1),
   password: z.string().min(1),
 });

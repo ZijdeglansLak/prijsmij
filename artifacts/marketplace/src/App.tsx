@@ -15,6 +15,10 @@ import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 import AuthRegister from "@/pages/auth-register";
 import AuthLogin from "@/pages/auth-login";
+import AuthForgotPassword from "@/pages/auth-forgot-password";
+import AuthResetPassword from "@/pages/auth-reset-password";
+import AuthVerifyEmail from "@/pages/auth-verify-email";
+import Profile from "@/pages/profile";
 import SupplierDashboard from "@/pages/supplier-dashboard";
 import SupplierCredits from "@/pages/supplier-credits";
 
@@ -36,10 +40,15 @@ function Router() {
       <Route path="/requests/:id" component={RequestDetail} />
       <Route path="/requests/:id/bid" component={PlaceBid} />
       <Route path="/admin" component={Admin} />
-      {/* New unified auth routes */}
+      {/* Auth routes */}
       <Route path="/auth/register" component={AuthRegister} />
       <Route path="/auth/login" component={AuthLogin} />
-      {/* Legacy redirects — map old supplier routes to new auth */}
+      <Route path="/auth/forgot-password" component={AuthForgotPassword} />
+      <Route path="/auth/reset-password" component={AuthResetPassword} />
+      <Route path="/auth/verify-email" component={AuthVerifyEmail} />
+      {/* Profile */}
+      <Route path="/profile" component={Profile} />
+      {/* Legacy redirects */}
       <Route path="/supplier/register" component={AuthRegister} />
       <Route path="/supplier/login" component={AuthLogin} />
       {/* Supplier dashboard (sellers only) */}

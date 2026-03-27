@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { Store, TrendingUp, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe } from "lucide-react";
-import { useState } from "react";
+import { Store, TrendingUp, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe, ShieldCheck, User } from "lucide-react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n, FLAG, LABEL, type Language } from "@/contexts/i18n";
@@ -9,11 +9,23 @@ import { Badge } from "@/components/ui/badge";
 const LANGUAGES: Language[] = ["nl", "en", "de", "fr"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
-  const { user, isLoggedIn, isSeller, isBuyer, logout } = useUserAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchVal, setSearchVal] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const { user, isLoggedIn, isSeller, isBuyer, isAdmin, logout } = useUserAuth();
   const { t, lang, setLang } = useI18n();
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (searchVal.trim()) {
+      setLocation(`/requests?search=${encodeURIComponent(searchVal.trim())}`);
+      setSearchOpen(false);
+      setSearchVal("");
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -35,8 +47,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-5">
-              {/* Sellers see: Uitvragen link */}
-              {(!isLoggedIn || isSeller) && (
+              {/* Admin search (only for admins) */}
+              {isAdmin && (
+                <form onSubmit={handleSearch} className="relative flex items-center">
+                  {searchOpen ? (
+                    <input
+                      ref={searchRef}
+                      autoFocus
+                      type="text"
+                      value={searchVal}
+                      onChange={e => setSearchVal(e.target.value)}
+                      onBlur={() => { if (!searchVal) setSearchOpen(false); }}
+                      placeholder="Zoek uitvragen..."
+                      className="w-48 pl-8 pr-3 py-1.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 50); }}
+                      className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  )}
+                  {searchOpen && <Search className="absolute left-2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />}
+                </form>
+              )}
+
+              {/* Uitvragen link — visible to sellers and non-logged-in users */}
+              {(!isLoggedIn || isSeller || isAdmin) && (
                 <Link
                   href="/requests"
                   className={cn(
@@ -49,16 +88,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               )}
 
-              <Link
-                href="/admin"
-                className={cn(
-                  "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
-                  location === "/admin" ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                <Store className="w-4 h-4" />
-                {t.nav.manage}
-              </Link>
+              {/* Beheer — only for admins */}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                    location === "/admin" ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  {t.nav.manage}
+                </Link>
+              )}
 
               {/* Language switcher */}
               <div className="relative">
@@ -90,7 +132,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {/* Auth area */}
               {isLoggedIn && user ? (
                 <>
-                  {isSeller && (
+                  {isSeller && !isAdmin && (
                     <Link
                       href="/supplier/dashboard"
                       className={cn(
@@ -101,6 +143,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       <Coins className="w-4 h-4" />
                       <span>{user.storeName ?? user.contactName}</span>
                       <Badge variant="secondary" className="ml-1">{user.credits}</Badge>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      href="/profile"
+                      className={cn(
+                        "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                        location === "/profile" ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      <User className="w-4 h-4" />
+                      <span>{user.contactName}</span>
+                      <Badge variant="outline" className="ml-1 text-xs">Admin</Badge>
+                    </Link>
+                  )}
+                  {isBuyer && !isAdmin && (
+                    <Link
+                      href="/profile"
+                      className={cn(
+                        "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                        location === "/profile" ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      <User className="w-4 h-4" />
+                      <span>{user.contactName}</span>
                     </Link>
                   )}
                   <button
@@ -121,8 +188,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               )}
 
-              {/* CTA: buyers or not logged in see "Uitvraag plaatsen", sellers see nothing (they use requests) */}
-              {(!isLoggedIn || isBuyer) && (
+              {/* CTA: buyers or not logged in see "Uitvraag plaatsen" */}
+              {(!isLoggedIn || isBuyer) && !isAdmin && (
                 <Link
                   href="/request/new"
                   className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
@@ -135,7 +202,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-3">
-              {/* Mobile language quick-switch */}
               <button
                 onClick={() => {
                   const idx = LANGUAGES.indexOf(lang);
@@ -159,7 +225,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-white">
             <div className="px-4 pt-2 pb-6 space-y-2">
-              {(!isLoggedIn || isSeller) && (
+              {isAdmin && (
+                <form onSubmit={e => { handleSearch(e); setIsMobileMenuOpen(false); }} className="px-4 py-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchVal}
+                      onChange={e => setSearchVal(e.target.value)}
+                      placeholder="Zoek uitvragen..."
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </form>
+              )}
+
+              {(!isLoggedIn || isSeller || isAdmin) && (
                 <Link
                   href="/requests"
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
@@ -169,14 +250,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {t.nav.requests}
                 </Link>
               )}
-              <Link
-                href="/admin"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Store className="w-5 h-5 text-primary" />
-                {t.nav.manage}
-              </Link>
+
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  {t.nav.manage}
+                </Link>
+              )}
 
               {/* Language switcher mobile */}
               <div className="px-4 py-3">
@@ -199,7 +283,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {isLoggedIn && user ? (
                 <>
-                  {isSeller && (
+                  {isSeller && !isAdmin && (
                     <Link
                       href="/supplier/dashboard"
                       className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
@@ -209,6 +293,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       {user.storeName ?? user.contactName} ({user.credits} credits)
                     </Link>
                   )}
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="w-5 h-5 text-primary" />
+                    {t.nav.profile}
+                  </Link>
                   <button
                     onClick={() => { logout(); setIsMobileMenuOpen(false); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted w-full"
@@ -228,7 +320,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               )}
 
-              {(!isLoggedIn || isBuyer) && (
+              {(!isLoggedIn || isBuyer) && !isAdmin && (
                 <Link
                   href="/request/new"
                   className="flex items-center justify-center gap-2 w-full mt-4 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground shadow-md"

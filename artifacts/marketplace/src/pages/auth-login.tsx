@@ -10,7 +10,7 @@ import { TrendingUp } from "lucide-react";
 
 export default function AuthLogin() {
   const [, setLocation] = useLocation();
-  const { login, user } = useUserAuth();
+  const { login } = useUserAuth();
   const { toast } = useToast();
   const { t } = useI18n();
 
@@ -34,7 +34,9 @@ export default function AuthLogin() {
       }
       login(data.token, data.user);
       toast({ title: t.auth.welcomeBack });
-      if (data.user.role === "seller") {
+      if (data.user.isAdmin) {
+        setLocation("/admin");
+      } else if (data.user.role === "seller") {
         setLocation("/supplier/dashboard");
       } else {
         setLocation("/");
@@ -50,7 +52,6 @@ export default function AuthLogin() {
     <Layout>
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-16 px-4">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg">
@@ -63,22 +64,29 @@ export default function AuthLogin() {
 
           <form onSubmit={handleSubmit} noValidate className="bg-card rounded-2xl border border-border shadow-sm p-8 space-y-5">
             <div>
-              <label className="block text-sm font-bold mb-1">{t.auth.email}</label>
+              <label className="block text-sm font-bold mb-1">{t.auth.emailOrUsername}</label>
               <Input
-                type="email"
-                placeholder={t.auth.emailPlaceholder}
+                type="text"
+                placeholder={t.auth.emailOrUsernamePlaceholder}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                autoComplete="username"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold mb-1">{t.auth.password}</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-bold">{t.auth.password}</label>
+                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium">
+                  {t.auth.forgotPassword}
+                </Link>
+              </div>
               <Input
                 type="password"
                 placeholder={t.auth.passwordPlaceholder}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                autoComplete="current-password"
               />
             </div>
 

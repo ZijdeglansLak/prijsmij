@@ -6,15 +6,22 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
-import { Store, ShoppingBag, TrendingUp } from "lucide-react";
+import { Store, ShoppingBag, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 
 type Role = "buyer" | "seller";
+
+const FREE_DOMAINS = [
+  "gmail.com", "googlemail.com", "hotmail.com", "hotmail.nl", "outlook.com",
+  "outlook.nl", "yahoo.com", "yahoo.nl", "live.com", "live.nl", "icloud.com",
+  "me.com", "mac.com", "msn.com", "protonmail.com", "proton.me",
+  "gmx.com", "gmx.net", "gmx.nl", "web.de", "kpnmail.nl",
+];
 
 export default function AuthRegister() {
   const [, setLocation] = useLocation();
   const { login } = useUserAuth();
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   const [role, setRole] = useState<Role>("buyer");
   const [storeName, setStoreName] = useState("");
@@ -22,6 +29,11 @@ export default function AuthRegister() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [devVerificationLink, setDevVerificationLink] = useState<string | null>(null);
+
+  const emailDomain = email.split("@")[1]?.toLowerCase();
+  const isFreeDomain = role === "seller" && !!emailDomain && FREE_DOMAINS.includes(emailDomain);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,7 +42,7 @@ export default function AuthRegister() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, storeName: role === "seller" ? storeName : undefined, contactName, email, password }),
+        body: JSON.stringify({ role, storeName: role === "seller" ? storeName : undefined, contactName, email, password, lang }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -38,8 +50,13 @@ export default function AuthRegister() {
         return;
       }
       login(data.token, data.user);
+      if (data.verificationLink) setDevVerificationLink(data.verificationLink);
+      setVerificationSent(true);
+
       toast({ title: t.auth.welcome });
-      setLocation(role === "seller" ? "/supplier/dashboard" : "/");
+      if (!data.verificationLink) {
+        setLocation(role === "seller" ? "/supplier/dashboard" : "/");
+      }
     } catch {
       toast({ title: t.general.error, description: "Er is iets misgegaan", variant: "destructive" });
     } finally {
@@ -47,11 +64,52 @@ export default function AuthRegister() {
     }
   }
 
+  if (verificationSent && devVerificationLink) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-16 px-4">
+          <div className="w-full max-w-md text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">{t.auth.verificationSent}</h2>
+            <p className="text-muted-foreground mb-6">{t.auth.verificationSentDesc}</p>
+            <div className="bg-muted rounded-xl p-4 mb-6 text-left">
+              <p className="text-xs font-bold text-muted-foreground mb-2">DEV: verificatielink (geen SMTP geconfigureerd)</p>
+              <a href={devVerificationLink} className="text-primary text-sm break-all hover:underline">{devVerificationLink}</a>
+            </div>
+            <Button onClick={() => setLocation(role === "seller" ? "/supplier/dashboard" : "/")} className="w-full">
+              Doorgaan naar de app
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (verificationSent) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-16 px-4">
+          <div className="w-full max-w-md text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">{t.auth.verificationSent}</h2>
+            <p className="text-muted-foreground mb-6">{t.auth.verificationSentDesc}</p>
+            <Button onClick={() => setLocation(role === "seller" ? "/supplier/dashboard" : "/")} className="w-full">
+              Doorgaan naar de app
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-16 px-4">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg">
@@ -124,6 +182,19 @@ export default function AuthRegister() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
+              {/* Seller domain warning */}
+              {isFreeDomain && (
+                <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">{t.auth.sellerEmailDomainWarning}</p>
+                </div>
+              )}
+              {role === "seller" && !isFreeDomain && !!emailDomain && (
+                <p className="text-xs text-muted-foreground mt-1">{t.auth.sellerEmailDomainHint}</p>
+              )}
+              {role === "seller" && !emailDomain && (
+                <p className="text-xs text-muted-foreground mt-1">{t.auth.sellerEmailDomainHint}</p>
+              )}
             </div>
 
             <div>

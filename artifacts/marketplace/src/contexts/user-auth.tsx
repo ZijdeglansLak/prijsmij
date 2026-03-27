@@ -9,6 +9,8 @@ export interface AuthUser {
   contactName: string;
   email: string;
   credits: number;
+  isAdmin: boolean;
+  emailVerified: boolean;
 }
 
 interface UserAuthContextType {
@@ -17,9 +19,11 @@ interface UserAuthContextType {
   login: (token: string, user: AuthUser) => void;
   logout: () => void;
   updateCredits: (credits: number) => void;
+  updateUser: (partial: Partial<AuthUser>) => void;
   isLoggedIn: boolean;
   isSeller: boolean;
   isBuyer: boolean;
+  isAdmin: boolean;
 }
 
 const UserAuthContext = createContext<UserAuthContextType | null>(null);
@@ -57,12 +61,20 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }
 
+  function updateUser(partial: Partial<AuthUser>) {
+    if (!user) return;
+    const updated = { ...user, ...partial };
+    localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    setUser(updated);
+  }
+
   return (
     <UserAuthContext.Provider value={{
-      user, token, login, logout, updateCredits,
+      user, token, login, logout, updateCredits, updateUser,
       isLoggedIn: !!token && !!user,
       isSeller: user?.role === "seller",
       isBuyer: user?.role === "buyer",
+      isAdmin: user?.isAdmin ?? false,
     }}>
       {children}
     </UserAuthContext.Provider>

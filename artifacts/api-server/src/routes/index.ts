@@ -5,6 +5,7 @@ import requestsRouter from "./requests";
 import adminRouter from "./admin";
 import supplierRouter from "./supplier";
 import authRouter from "./auth";
+import adminUsersRouter from "./admin-users";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(requestsRouter);
 router.use(adminRouter);
 router.use(authRouter);
 router.use(supplierRouter);
+router.use(adminUsersRouter);
 
 export default router;

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { RequestCard } from "@/components/request-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, Store, Lock } from "lucide-react";
+import { Search, SlidersHorizontal, Store, LogIn } from "lucide-react";
 import { useListRequests, useListCategories } from "@workspace/api-client-react";
 import type { ListRequestsOfferType } from "@workspace/api-client-react";
 import { useUserAuth } from "@/contexts/user-auth";
@@ -12,53 +12,81 @@ import { useI18n } from "@/contexts/i18n";
 
 export default function RequestsPage() {
   const searchParams = new URLSearchParams(window.location.search);
-  const { isSeller, isLoggedIn } = useUserAuth();
+  const { isSeller, isLoggedIn, isAdmin } = useUserAuth();
   const { t } = useI18n();
+  const [, setLocation] = useLocation();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [categoryId, setCategoryId] = useState<number | undefined>(
     searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined
   );
   const [offerType, setOfferType] = useState<ListRequestsOfferType | undefined>(undefined);
 
-  const { data: requests, isLoading } = useListRequests({ 
-    search: search || undefined, 
-    categoryId, 
+  const canSeeRequests = isSeller || isAdmin;
+
+  const { data: requests, isLoading } = useListRequests({
+    search: search || undefined,
+    categoryId,
     offerType,
-    enabled: isSeller,
+    enabled: canSeeRequests,
   } as any);
-  
+
   const { data: categories } = useListCategories();
 
-  // Gate: only logged-in sellers can see requests
-  if (!isLoggedIn || !isSeller) {
+  // Non-logged-in and non-seller users see category overview
+  if (!canSeeRequests) {
     return (
       <Layout>
         <div className="bg-secondary text-secondary-foreground py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-4xl font-extrabold mb-4 text-white">{t.requests.title}</h1>
+            <p className="text-secondary-foreground/70 text-lg max-w-2xl">{t.requests.subtitle}</p>
           </div>
         </div>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="max-w-md mx-auto text-center px-4 py-16">
-            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <Lock className="w-10 h-10 text-primary" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary font-semibold px-4 py-2 rounded-full text-sm mb-4">
+              <Store className="w-4 h-4" />
+              {t.requests.sellerOnly}
             </div>
-            <h2 className="text-2xl font-bold mb-3">{t.requests.sellerOnly}</h2>
-            <p className="text-muted-foreground mb-8">{t.requests.sellerOnlyDesc}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/auth/login">
-                <Button className="w-full sm:w-auto">
-                  <Store className="w-4 h-4 mr-2" />
-                  {t.requests.loginAsSeller}
-                </Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button variant="outline" className="w-full sm:w-auto">
-                  {t.auth.registerLink}
-                </Button>
-              </Link>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t.requests.sellerOnlyDesc}</p>
+          </div>
+
+          {/* Category grid as public teaser */}
+          {categories && categories.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setLocation(isLoggedIn ? "/auth/register" : "/auth/login")}
+                  className="group flex flex-col items-center gap-3 p-5 bg-card border border-border rounded-2xl shadow-sm hover:border-primary/40 hover:shadow-md transition-all text-left"
+                >
+                  <span className="text-3xl">{cat.icon}</span>
+                  <div className="text-center">
+                    <p className="font-bold text-secondary text-sm">{cat.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      <span className="font-semibold text-primary">{cat.activeRequestCount}</span> {t.requests.activeRequests}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/auth/login">
+              <Button className="w-full sm:w-auto">
+                <LogIn className="w-4 h-4 mr-2" />
+                {t.requests.loginAsSeller}
+              </Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Store className="w-4 h-4 mr-2" />
+                {t.auth.registerLink}
+              </Button>
+            </Link>
           </div>
         </div>
       </Layout>
@@ -90,8 +118,8 @@ export default function RequestsPage() {
                 <label className="block text-sm font-semibold mb-2">{t.requests.search}</label>
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-                  <Input 
-                    placeholder="Merk of titel..." 
+                  <Input
+                    placeholder="Merk of titel..."
                     className="pl-9 bg-muted/50 border-transparent focus:bg-white"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -103,14 +131,14 @@ export default function RequestsPage() {
               <div className="mb-8">
                 <label className="block text-sm font-semibold mb-3">Categorie</label>
                 <div className="space-y-2">
-                  <button 
+                  <button
                     onClick={() => setCategoryId(undefined)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${categoryId === undefined ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}
                   >
                     {t.requests.allCategories}
                   </button>
                   {categories?.map(cat => (
-                    <button 
+                    <button
                       key={cat.id}
                       onClick={() => setCategoryId(cat.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}
@@ -129,12 +157,12 @@ export default function RequestsPage() {
                   {(['any', 'new', 'refurbished', 'occasion'] as const).map((type) => {
                     const label = type === 'any' ? 'Alles' : type === 'new' ? t.requests.new : type === 'refurbished' ? t.requests.refurbished : t.requests.occasion;
                     return (
-                      <button 
+                      <button
                         key={type}
                         onClick={() => setOfferType(type === 'any' ? undefined : type)}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                          (type === 'any' && offerType === undefined) || offerType === type 
-                            ? 'bg-primary/10 text-primary' 
+                          (type === 'any' && offerType === undefined) || offerType === type
+                            ? 'bg-primary/10 text-primary'
                             : 'hover:bg-muted text-secondary'
                         }`}
                       >
@@ -163,7 +191,6 @@ export default function RequestsPage() {
               </div>
             ) : (
               <div className="text-center py-32 bg-card border border-border rounded-2xl border-dashed">
-                <img src={`${import.meta.env.BASE_URL}images/empty-state.png`} alt="No results" className="w-48 h-48 mx-auto mb-6 opacity-80" />
                 <h3 className="text-2xl font-bold text-secondary mb-2">{t.requests.empty}</h3>
                 <p className="text-muted-foreground mb-6">{t.requests.emptyDesc}</p>
                 <Button onClick={() => { setSearch(""); setCategoryId(undefined); setOfferType(undefined); }} variant="outline">
