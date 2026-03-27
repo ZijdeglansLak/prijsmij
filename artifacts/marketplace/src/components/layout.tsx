@@ -1,19 +1,19 @@
 import { Link, useLocation } from "wouter";
-import { Store, TrendingUp, PlusCircle, Search, Menu, X, LogIn, Coins } from "lucide-react";
+import { Store, TrendingUp, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useSupplierAuth } from "@/contexts/supplier-auth";
+import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n, FLAG, LABEL, type Language } from "@/contexts/i18n";
 import { Badge } from "@/components/ui/badge";
+
+const LANGUAGES: Language[] = ["nl", "en", "de", "fr"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { supplier, isLoggedIn } = useSupplierAuth();
-
-  const navLinks = [
-    { href: "/requests", label: "Bekijk Uitvragen", icon: Search },
-    { href: "/admin", label: "Beheer", icon: Store },
-  ];
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const { user, isLoggedIn, isSeller, isBuyer, logout } = useUserAuth();
+  const { t, lang, setLang } = useI18n();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -34,59 +34,117 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = location.startsWith(link.href);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-
-              {/* Supplier auth area */}
-              {isLoggedIn && supplier ? (
+            <nav className="hidden md:flex items-center gap-5">
+              {/* Sellers see: Uitvragen link */}
+              {(!isLoggedIn || isSeller) && (
                 <Link
-                  href="/supplier/dashboard"
+                  href="/requests"
                   className={cn(
                     "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
-                    location.startsWith("/supplier") ? "text-primary" : "text-muted-foreground"
+                    location.startsWith("/requests") ? "text-primary" : "text-muted-foreground"
                   )}
                 >
-                  <Coins className="w-4 h-4" />
-                  <span>{supplier.storeName}</span>
-                  <Badge variant="secondary" className="ml-1">{supplier.credits}</Badge>
-                </Link>
-              ) : (
-                <Link
-                  href="/supplier/login"
-                  className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Winkel inloggen
+                  <Search className="w-4 h-4" />
+                  {t.nav.requests}
                 </Link>
               )}
 
               <Link
-                href="/request/new"
-                className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                href="/admin"
+                className={cn(
+                  "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                  location === "/admin" ? "text-primary" : "text-muted-foreground"
+                )}
               >
-                <PlusCircle className="w-4 h-4" />
-                Uitvraag plaatsen
+                <Store className="w-4 h-4" />
+                {t.nav.manage}
               </Link>
+
+              {/* Language switcher */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>{FLAG[lang]} {LABEL[lang]}</span>
+                </button>
+                {showLangMenu && (
+                  <div className="absolute right-0 top-8 bg-white border border-border rounded-xl shadow-lg p-1 min-w-[120px] z-50">
+                    {LANGUAGES.map(l => (
+                      <button
+                        key={l}
+                        onClick={() => { setLang(l); setShowLangMenu(false); }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors",
+                          l === lang ? "bg-primary/10 text-primary" : "hover:bg-muted text-secondary"
+                        )}
+                      >
+                        {FLAG[l]} {LABEL[l]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Auth area */}
+              {isLoggedIn && user ? (
+                <>
+                  {isSeller && (
+                    <Link
+                      href="/supplier/dashboard"
+                      className={cn(
+                        "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                        location.startsWith("/supplier") ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      <Coins className="w-4 h-4" />
+                      <span>{user.storeName ?? user.contactName}</span>
+                      <Badge variant="secondary" className="ml-1">{user.credits}</Badge>
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => logout()}
+                    className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {t.nav.logout}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  {t.nav.login}
+                </Link>
+              )}
+
+              {/* CTA: buyers or not logged in see "Uitvraag plaatsen", sellers see nothing (they use requests) */}
+              {(!isLoggedIn || isBuyer) && (
+                <Link
+                  href="/request/new"
+                  className="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm bg-secondary text-secondary-foreground shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  {t.nav.postRequest}
+                </Link>
+              )}
             </nav>
 
             {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
+            <div className="md:hidden flex items-center gap-3">
+              {/* Mobile language quick-switch */}
+              <button
+                onClick={() => {
+                  const idx = LANGUAGES.indexOf(lang);
+                  setLang(LANGUAGES[(idx + 1) % LANGUAGES.length]);
+                }}
+                className="text-lg"
+              >
+                {FLAG[lang]}
+              </button>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 rounded-lg text-secondary hover:bg-muted"
@@ -101,54 +159,92 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-white">
             <div className="px-4 pt-2 pb-6 space-y-2">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Icon className="w-5 h-5 text-primary" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-              {isLoggedIn && supplier ? (
+              {(!isLoggedIn || isSeller) && (
                 <Link
-                  href="/supplier/dashboard"
+                  href="/requests"
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <Coins className="w-5 h-5 text-primary" />
-                  {supplier.storeName} ({supplier.credits} credits)
+                  <Search className="w-5 h-5 text-primary" />
+                  {t.nav.requests}
                 </Link>
+              )}
+              <Link
+                href="/admin"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Store className="w-5 h-5 text-primary" />
+                {t.nav.manage}
+              </Link>
+
+              {/* Language switcher mobile */}
+              <div className="px-4 py-3">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Taal / Language</p>
+                <div className="flex gap-2">
+                  {LANGUAGES.map(l => (
+                    <button
+                      key={l}
+                      onClick={() => { setLang(l); }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-sm font-bold transition-colors",
+                        l === lang ? "bg-primary text-white" : "bg-muted text-secondary"
+                      )}
+                    >
+                      {FLAG[l]} {LABEL[l]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {isLoggedIn && user ? (
+                <>
+                  {isSeller && (
+                    <Link
+                      href="/supplier/dashboard"
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Coins className="w-5 h-5 text-primary" />
+                      {user.storeName ?? user.contactName} ({user.credits} credits)
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted w-full"
+                  >
+                    <LogOut className="w-5 h-5 text-primary" />
+                    {t.nav.logout}
+                  </button>
+                </>
               ) : (
                 <Link
-                  href="/supplier/login"
+                  href="/auth/login"
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <LogIn className="w-5 h-5 text-primary" />
-                  Winkel inloggen
+                  {t.nav.login}
                 </Link>
               )}
-              <Link
-                href="/request/new"
-                className="flex items-center justify-center gap-2 w-full mt-4 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground shadow-md"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <PlusCircle className="w-5 h-5" />
-                Nu Gratis Uitvraag Plaatsen
-              </Link>
+
+              {(!isLoggedIn || isBuyer) && (
+                <Link
+                  href="/request/new"
+                  className="flex items-center justify-center gap-2 w-full mt-4 px-6 py-3 rounded-xl font-bold bg-primary text-primary-foreground shadow-md"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  {t.nav.postRequest}
+                </Link>
+              )}
             </div>
           </div>
         )}
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1" onClick={() => showLangMenu && setShowLangMenu(false)}>
         {children}
       </main>
 
@@ -163,20 +259,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
                 <span className="font-display font-bold text-xl">BestBod</span>
               </Link>
-              <p className="text-secondary-foreground/70 mb-6">
-                Het slimste platform waar winkels strijden om jou de beste deal te geven voor je nieuwe aankoop.
-              </p>
+              <p className="text-secondary-foreground/70 mb-6">{t.footer.tagline}</p>
             </div>
             <div>
-              <h4 className="font-bold text-lg mb-6">Snel naar</h4>
+              <h4 className="font-bold text-lg mb-6">{t.footer.quickLinks}</h4>
               <ul className="space-y-4">
-                <li><Link href="/requests" className="text-secondary-foreground/70 hover:text-white transition-colors">Alle uitvragen</Link></li>
-                <li><Link href="/request/new" className="text-secondary-foreground/70 hover:text-white transition-colors">Plaats uitvraag</Link></li>
-                <li><Link href="/supplier/register" className="text-secondary-foreground/70 hover:text-white transition-colors">Voor winkeliers</Link></li>
+                <li><Link href="/requests" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.allRequests}</Link></li>
+                <li><Link href="/request/new" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.postRequest}</Link></li>
+                <li><Link href="/auth/register" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.forSellers}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold text-lg mb-6">Contact</h4>
+              <h4 className="font-bold text-lg mb-6">{t.footer.contact}</h4>
               <ul className="space-y-4 text-secondary-foreground/70">
                 <li>support@bestbod.nl</li>
                 <li>+31 (0)20 123 4567</li>

@@ -4,6 +4,7 @@ import {
   requestsTable,
   bidsTable,
   categoriesTable,
+  userAccountsTable,
   createRequestBodySchema,
   createBidBodySchema,
 } from "@workspace/db";
@@ -394,9 +395,9 @@ router.get("/stats", async (req, res) => {
       .where(sql`${bidsTable.createdAt} >= ${today}`);
 
     const [activeSuppliersRow] = await db
-      .select({ count: sql<number>`count(distinct ${bidsTable.supplierEmail})::int` })
-      .from(bidsTable)
-      .where(sql`${bidsTable.createdAt} >= ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)}`);
+      .select({ count: sql<number>`count(*)::int` })
+      .from(userAccountsTable)
+      .where(eq(userAccountsTable.role, "seller"));
 
     const avgResult = await db.execute(
       sql`SELECT coalesce(avg(cnt), 0)::float as avg FROM (SELECT count(*) as cnt FROM bids GROUP BY request_id) sub`

@@ -46,7 +46,24 @@ artifacts-monorepo/
 - Kan soortgelijke modellen toestaan
 - Uitvragen verlopen na 7 dagen
 
-### Supplier Accounts
+### Unified Auth System
+- Één login/register pagina (`/auth/login`, `/auth/register`) met rolkeuze (Koper / Verkoper)
+- DB tabel `user_accounts` (role: buyer|seller), vervangt `supplier_accounts`
+- JWT auth (bcryptjs hashing, 30d expiry) via `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
+- `UserAuthContext` in `contexts/user-auth.tsx`; backward-compat wrapper in `contexts/supplier-auth.tsx`
+- Legacy routes `/supplier/login` en `/supplier/register` verwijzen door naar nieuwe auth-pagina's
+
+### Rol-gebaseerde UI
+- Alleen verkopers (role=seller) kunnen actieve uitvragen zien (gated met lock-screen)
+- Alleen kopers (role=buyer) zien de "Uitvraag plaatsen" knop
+- Aantal actieve winkels = aantal seller accounts in user_accounts
+
+### Multilingual (i18n)
+- Volledige vertalingen in NL / EN / DE / FR: `artifacts/marketplace/src/i18n/translations.ts`
+- `I18nContext` in `contexts/i18n.tsx` met localStorage persistentie
+- Taalkiezer in de navigatie (vlag + code); mobiel: tap om te wisselen
+
+### Supplier Accounts (verkopers)
 - Register/login met e-mail + wachtwoord (bcryptjs hashing, JWT auth, 30d expiry)
 - Dashboard toont credits en connectiesgeschiedenis
 - Credits kopen in bundels (10/50/100/250)

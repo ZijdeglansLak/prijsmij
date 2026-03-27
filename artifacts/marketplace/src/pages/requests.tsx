@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { RequestCard } from "@/components/request-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Store, Lock } from "lucide-react";
 import { useListRequests, useListCategories } from "@workspace/api-client-react";
 import type { ListRequestsOfferType } from "@workspace/api-client-react";
+import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n } from "@/contexts/i18n";
 
 export default function RequestsPage() {
   const searchParams = new URLSearchParams(window.location.search);
-  
+  const { isSeller, isLoggedIn } = useUserAuth();
+  const { t } = useI18n();
+
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<number | undefined>(
     searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : undefined
@@ -20,18 +24,54 @@ export default function RequestsPage() {
   const { data: requests, isLoading } = useListRequests({ 
     search: search || undefined, 
     categoryId, 
-    offerType 
-  });
+    offerType,
+    enabled: isSeller,
+  } as any);
   
   const { data: categories } = useListCategories();
+
+  // Gate: only logged-in sellers can see requests
+  if (!isLoggedIn || !isSeller) {
+    return (
+      <Layout>
+        <div className="bg-secondary text-secondary-foreground py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="text-4xl font-extrabold mb-4 text-white">{t.requests.title}</h1>
+          </div>
+        </div>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="max-w-md mx-auto text-center px-4 py-16">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">{t.requests.sellerOnly}</h2>
+            <p className="text-muted-foreground mb-8">{t.requests.sellerOnlyDesc}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/auth/login">
+                <Button className="w-full sm:w-auto">
+                  <Store className="w-4 h-4 mr-2" />
+                  {t.requests.loginAsSeller}
+                </Button>
+              </Link>
+              <Link href="/auth/register">
+                <Button variant="outline" className="w-full sm:w-auto">
+                  {t.auth.registerLink}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="bg-secondary text-secondary-foreground py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold mb-4 text-white">Actieve Uitvragen</h1>
+          <h1 className="text-4xl font-extrabold mb-4 text-white">{t.requests.title}</h1>
           <p className="text-secondary-foreground/70 text-lg max-w-2xl">
-            Ontdek wat consumenten zoeken en plaats direct een scherp bod als leverancier.
+            {t.requests.subtitle}
           </p>
         </div>
       </div>
@@ -47,7 +87,7 @@ export default function RequestsPage() {
 
               {/* Search */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold mb-2">Zoeken</label>
+                <label className="block text-sm font-semibold mb-2">{t.requests.search}</label>
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
                   <Input 
@@ -67,7 +107,7 @@ export default function RequestsPage() {
                     onClick={() => setCategoryId(undefined)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${categoryId === undefined ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}
                   >
-                    Alle categorieën
+                    {t.requests.allCategories}
                   </button>
                   {categories?.map(cat => (
                     <button 
@@ -86,19 +126,22 @@ export default function RequestsPage() {
               <div>
                 <label className="block text-sm font-semibold mb-3">Staat</label>
                 <div className="space-y-2">
-                  {(['any', 'new', 'refurbished', 'occasion'] as const).map((type) => (
-                    <button 
-                      key={type}
-                      onClick={() => setOfferType(type === 'any' ? undefined : type)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                        (type === 'any' && offerType === undefined) || offerType === type 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'hover:bg-muted text-secondary'
-                      }`}
-                    >
-                      {type === 'any' ? 'Alles' : type}
-                    </button>
-                  ))}
+                  {(['any', 'new', 'refurbished', 'occasion'] as const).map((type) => {
+                    const label = type === 'any' ? 'Alles' : type === 'new' ? t.requests.new : type === 'refurbished' ? t.requests.refurbished : t.requests.occasion;
+                    return (
+                      <button 
+                        key={type}
+                        onClick={() => setOfferType(type === 'any' ? undefined : type)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
+                          (type === 'any' && offerType === undefined) || offerType === type 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'hover:bg-muted text-secondary'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -121,8 +164,8 @@ export default function RequestsPage() {
             ) : (
               <div className="text-center py-32 bg-card border border-border rounded-2xl border-dashed">
                 <img src={`${import.meta.env.BASE_URL}images/empty-state.png`} alt="No results" className="w-48 h-48 mx-auto mb-6 opacity-80" />
-                <h3 className="text-2xl font-bold text-secondary mb-2">Geen uitvragen gevonden</h3>
-                <p className="text-muted-foreground mb-6">Probeer je filters aan te passen of zoek op een ander woord.</p>
+                <h3 className="text-2xl font-bold text-secondary mb-2">{t.requests.empty}</h3>
+                <p className="text-muted-foreground mb-6">{t.requests.emptyDesc}</p>
                 <Button onClick={() => { setSearch(""); setCategoryId(undefined); setOfferType(undefined); }} variant="outline">
                   Wis alle filters
                 </Button>

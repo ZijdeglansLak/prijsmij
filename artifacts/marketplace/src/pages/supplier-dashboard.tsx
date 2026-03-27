@@ -3,7 +3,8 @@ import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSupplierAuth } from "@/contexts/supplier-auth";
+import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n } from "@/contexts/i18n";
 import { Coins, Link2, ShoppingCart, LogOut, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -18,13 +19,14 @@ interface Connection {
 
 export default function SupplierDashboard() {
   const [, setLocation] = useLocation();
-  const { supplier, token, logout, updateCredits } = useSupplierAuth();
+  const { user, token, logout, updateCredits, isSeller } = useUserAuth();
+  const { t } = useI18n();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      setLocation("/supplier/login");
+    if (!token || !isSeller) {
+      setLocation("/auth/login");
       return;
     }
     fetchData();
@@ -34,7 +36,7 @@ export default function SupplierDashboard() {
     setLoading(true);
     try {
       const [meRes, connRes] = await Promise.all([
-        fetch("/api/supplier/me", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/supplier/me/connections", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (meRes.ok) {
@@ -49,7 +51,7 @@ export default function SupplierDashboard() {
     }
   }
 
-  if (!supplier) return null;
+  if (!user || !isSeller) return null;
 
   return (
     <Layout>
@@ -58,12 +60,12 @@ export default function SupplierDashboard() {
           {/* Header */}
           <div className="flex items-start justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-bold">{supplier.storeName}</h1>
-              <p className="text-muted-foreground">{supplier.contactName} · {supplier.email}</p>
+              <h1 className="text-2xl font-bold">{user.storeName ?? user.contactName}</h1>
+              <p className="text-muted-foreground">{user.contactName} · {user.email}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => { logout(); setLocation("/"); }}>
               <LogOut className="w-4 h-4 mr-2" />
-              Uitloggen
+              {t.nav.logout}
             </Button>
           </div>
 
@@ -75,8 +77,8 @@ export default function SupplierDashboard() {
                   <Coins className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Credits</p>
-                  <p className="text-3xl font-bold text-primary">{supplier.credits}</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.credits}</p>
+                  <p className="text-3xl font-bold text-primary">{user.credits}</p>
                 </div>
               </CardContent>
             </Card>
@@ -86,7 +88,7 @@ export default function SupplierDashboard() {
                   <Link2 className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Connecties</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.connections}</p>
                   <p className="text-3xl font-bold">{connections.length}</p>
                 </div>
               </CardContent>
@@ -96,7 +98,7 @@ export default function SupplierDashboard() {
                 <Link href="/supplier/credits">
                   <Button className="w-full" variant="default">
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Credits kopen
+                    {t.dashboard.buyCredits}
                   </Button>
                 </Link>
               </CardContent>
@@ -106,21 +108,21 @@ export default function SupplierDashboard() {
           {/* Connections list */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Mijn connecties</CardTitle>
+              <CardTitle>{t.dashboard.myConnections}</CardTitle>
               <Button variant="ghost" size="sm" onClick={fetchData}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="text-muted-foreground text-sm">Laden...</p>
+                <p className="text-muted-foreground text-sm">{t.general.loading}</p>
               ) : connections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Link2 className="w-8 h-8 mx-auto mb-3 opacity-40" />
-                  <p>Nog geen connecties</p>
-                  <p className="text-sm mt-1">Ga naar een uitvraag en maak een connectie met een koper</p>
+                  <p>{t.dashboard.noConnections}</p>
+                  <p className="text-sm mt-1">{t.dashboard.noConnectionsDesc}</p>
                   <Link href="/requests">
-                    <Button className="mt-4" variant="outline" size="sm">Bekijk uitvragen</Button>
+                    <Button className="mt-4" variant="outline" size="sm">{t.dashboard.viewRequests}</Button>
                   </Link>
                 </div>
               ) : (
@@ -136,7 +138,7 @@ export default function SupplierDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <Link href={`/requests/${c.requestId}`}>
-                          <Button variant="outline" size="sm">Uitvraag bekijken</Button>
+                          <Button variant="outline" size="sm">{t.dashboard.viewRequest}</Button>
                         </Link>
                       </div>
                     </div>
