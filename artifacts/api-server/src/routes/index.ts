@@ -6,6 +6,9 @@ import adminRouter from "./admin";
 import supplierRouter from "./supplier";
 import authRouter from "./auth";
 import adminUsersRouter from "./admin-users";
+import adminSettingsRouter from "./admin-settings";
+import { db } from "@workspace/db";
+import { siteSettingsTable } from "@workspace/db/schema";
 
 const router: IRouter = Router();
 
@@ -16,5 +19,16 @@ router.use(adminRouter);
 router.use(authRouter);
 router.use(supplierRouter);
 router.use(adminUsersRouter);
+router.use("/admin", adminSettingsRouter);
+
+router.get("/site-status", async (_req, res) => {
+  try {
+    const rows = await db.select().from(siteSettingsTable).limit(1);
+    const offlineMode = rows.length > 0 ? rows[0].offlineMode : false;
+    res.json({ offlineMode });
+  } catch {
+    res.json({ offlineMode: false });
+  }
+});
 
 export default router;

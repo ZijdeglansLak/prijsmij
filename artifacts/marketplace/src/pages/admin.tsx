@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListCategories, useCreateCategory } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2 } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 
-type Tab = "categories" | "users";
+type Tab = "categories" | "users" | "settings";
 
 interface UserRecord {
   id: number;
@@ -66,10 +66,17 @@ function AdminDashboard() {
           >
             <Users className="w-4 h-4" /> Gebruikers
           </button>
+          <button
+            onClick={() => setTab("settings")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "settings" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <WifiOff className="w-4 h-4" /> Instellingen
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
         {tab === "users" && <UsersTab />}
+        {tab === "settings" && <SettingsTab />}
       </div>
     </Layout>
   );
@@ -277,6 +284,107 @@ function UsersTab() {
         {users?.map(u => (
           <UserRow key={u.id} user={u} isEditing={editingId === u.id} onToggleEdit={() => setEditingId(editingId === u.id ? null : u.id)} onSave={updates => handleUpdate(u.id, updates)} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+  const [offlineMode, setOfflineMode] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => setOfflineMode(d.offlineMode ?? false))
+      .catch(() => setOfflineMode(false));
+  }, [token]);
+
+  async function toggleOffline() {
+    setSaving(true);
+    const next = !offlineMode;
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ offlineMode: next }),
+      });
+      if (!res.ok) throw new Error();
+      setOfflineMode(next);
+      toast({ title: next ? "Site is nu offline" : "Site is weer online" });
+    } catch {
+      toast({ title: "Fout bij opslaan", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (offlineMode === null) return <p className="text-muted-foreground">Laden...</p>;
+
+  return (
+    <div className="max-w-2xl">
+      <h2 className="text-xl font-bold mb-6">Site-instellingen</h2>
+
+      <div className={`rounded-2xl border-2 p-6 transition-colors ${offlineMode ? "border-destructive/50 bg-destructive/5" : "border-border bg-card"}`}>
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${offlineMode ? "bg-destructive/15" : "bg-green-50"}`}>
+              {offlineMode
+                ? <WifiOff className="w-6 h-6 text-destructive" />
+                : <Wifi className="w-6 h-6 text-green-600" />
+              }
+            </div>
+            <div>
+              <h3 className="font-bold text-lg mb-1">
+                {offlineMode ? "Site is offline" : "Site is online"}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {offlineMode
+                  ? "Bezoekers zien alleen een vergrendelscherm. Alleen beheerders kunnen inloggen."
+                  : "De site is normaal toegankelijk voor alle bezoekers."
+                }
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <button
+              onClick={toggleOffline}
+              disabled={saving}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${offlineMode ? "bg-destructive focus:ring-destructive" : "bg-green-500 focus:ring-green-500"}`}
+            >
+              <span
+                className={`block w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 absolute top-1 ${offlineMode ? "translate-x-1" : "translate-x-8"}`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {offlineMode && (
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <p className="text-sm text-amber-800 font-medium">
+              ⚠️ Let op: Als je jezelf uitlogt terwijl de site offline is, kun je alleen opnieuw inloggen via het vergrendelscherm. Zorg dat je beheerdersgegevens bij de hand hebt.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6 pt-6 border-t border-border">
+          <Button
+            onClick={toggleOffline}
+            disabled={saving}
+            variant={offlineMode ? "default" : "destructive"}
+            className={offlineMode ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+          >
+            {saving ? "Opslaan..." : offlineMode ? "Site online zetten" : "Site offline zetten"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-6 p-4 bg-muted rounded-xl">
+        <p className="text-xs text-muted-foreground">
+          <strong>Hoe werkt het?</strong> Wanneer de site offline is, zien bezoekers een vergrendeld scherm met een inlogformulier. Alleen accounts met beheerdersrechten kunnen dan nog inloggen en de site beheren.
+        </p>
       </div>
     </div>
   );

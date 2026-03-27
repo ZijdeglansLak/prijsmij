@@ -2,8 +2,9 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { UserAuthProvider } from "@/contexts/user-auth";
+import { UserAuthProvider, useUserAuth } from "@/contexts/user-auth";
 import { I18nProvider } from "@/contexts/i18n";
+import { useEffect, useState } from "react";
 
 // Pages
 import Home from "@/pages/home";
@@ -21,6 +22,7 @@ import AuthVerifyEmail from "@/pages/auth-verify-email";
 import Profile from "@/pages/profile";
 import SupplierDashboard from "@/pages/supplier-dashboard";
 import SupplierCredits from "@/pages/supplier-credits";
+import OfflinePage from "@/pages/offline";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +61,32 @@ function Router() {
   );
 }
 
+function SiteGate({ children }: { children: React.ReactNode }) {
+  const [offlineMode, setOfflineMode] = useState<boolean | null>(null);
+  const { isAdmin, isLoggedIn } = useUserAuth();
+
+  useEffect(() => {
+    fetch("/api/site-status")
+      .then(r => r.json())
+      .then(d => setOfflineMode(d.offlineMode ?? false))
+      .catch(() => setOfflineMode(false));
+  }, []);
+
+  if (offlineMode === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="w-8 h-8 rounded-full border-4 border-orange-400 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (offlineMode && !(isLoggedIn && isAdmin)) {
+    return <OfflinePage />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -66,7 +94,9 @@ function App() {
         <I18nProvider>
           <UserAuthProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
+              <SiteGate>
+                <Router />
+              </SiteGate>
             </WouterRouter>
             <Toaster />
           </UserAuthProvider>
