@@ -110,25 +110,69 @@ router.get("/payments/return", async (req, res) => {
   }
 });
 
+// Shared exchange processor: handles both POST and GET Pay.nl webhooks
+async function handleExchange(params: Record<string, string>, log: any): Promise<"TRUE" | "FALSE"> {
+  const action = (params.action ?? "").toLowerCase();
+  const extra1 = params.extra1 ?? "";
+  const paynlOrderId = params.orderId ?? params.paymentSessionId ?? "";
+
+  log.info({ action, extra1, paynlOrderId, allParams: params }, "Pay.nl exchange received");
+
+  // Determine which order we're dealing with
+  let order: typeof paymentOrdersTable.$inferSelect | undefined;
+
+  const internalOrderId = parseInt(extra1);
+  if (!isNaN(internalOrderId) && internalOrderId > 0) {
+    const rows = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, internalOrderId));
+    order = rows[0];
+  }
+
+  // Fallback: look up by Pay.nl order ID if extra1 was missing or order not found
+  if (!order && paynlOrderId) {
+    const rows = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.paynlOrderId, paynlOrderId));
+    order = rows[0];
+  }
+
+  if (!order) {
+    log.warn({ action, extra1, paynlOrderId }, "Pay.nl exchange: order not found — returning TRUE to stop retries");
+    return "TRUE";
+  }
+
+  // new_ppt = Pay.nl's action for a (possibly) successful payment attempt — verify via API
+  if (action === "new_ppt" || action === "paid" || action === "authorize" || action === "capture") {
+    let shouldCredit = action === "paid" || action === "authorize" || action === "capture";
+
+    if (action === "new_ppt" && order.paynlOrderId) {
+      try {
+        const { isPaid } = await getPaynlTransactionStatus(order.paynlOrderId);
+        shouldCredit = isPaid;
+        log.info({ orderId: order.id, paynlOrderId: order.paynlOrderId, isPaid }, "Pay.nl status verified for new_ppt");
+      } catch (err) {
+        log.error({ err }, "Failed to verify Pay.nl status for new_ppt — crediting based on exchange alone");
+        shouldCredit = true;
+      }
+    }
+
+    if (shouldCredit) {
+      await processPayment(order.id, paynlOrderId || order.paynlOrderId);
+      log.info({ orderId: order.id, action }, "Credits processed via exchange webhook");
+    }
+  } else if (action === "cancel") {
+    if (order.status === "pending") {
+      await db.update(paymentOrdersTable).set({ status: "cancelled" }).where(eq(paymentOrdersTable.id, order.id));
+    }
+  } else if (action === "refund") {
+    await db.update(paymentOrdersTable).set({ status: "failed" }).where(eq(paymentOrdersTable.id, order.id));
+  }
+
+  return "TRUE";
+}
+
 // POST /payments/exchange — Pay.nl webhook (server-to-server)
 router.post("/payments/exchange", async (req, res) => {
   try {
-    const { action, extra1, orderId: paynlOrderId } = req.body;
-    req.log.info({ action, extra1, paynlOrderId }, "Pay.nl exchange received");
-
-    const internalOrderId = parseInt(extra1);
-    if (isNaN(internalOrderId)) { res.send("FALSE"); return; }
-
-    if (action === "PAID" || action === "AUTHORIZE" || action === "CAPTURE") {
-      await processPayment(internalOrderId, paynlOrderId);
-      req.log.info({ internalOrderId, paynlOrderId, action }, "Credits processed via exchange webhook");
-    } else if (action === "CANCEL") {
-      await db.update(paymentOrdersTable).set({ status: "cancelled" }).where(eq(paymentOrdersTable.id, internalOrderId));
-    } else if (action === "REFUND") {
-      await db.update(paymentOrdersTable).set({ status: "failed" }).where(eq(paymentOrdersTable.id, internalOrderId));
-    }
-
-    res.send("TRUE");
+    const result = await handleExchange(req.body ?? {}, req.log);
+    res.send(result);
   } catch (err) {
     req.log.error({ err }, "Pay.nl exchange error");
     res.send("FALSE");
@@ -138,21 +182,10 @@ router.post("/payments/exchange", async (req, res) => {
 // GET /payments/exchange — Pay.nl GET webhook (some configurations)
 router.get("/payments/exchange", async (req, res) => {
   try {
-    const action = req.query.action as string;
-    const extra1 = req.query.extra1 as string;
-    const paynlOrderId = req.query.orderId as string;
-    req.log.info({ action, extra1, paynlOrderId }, "Pay.nl GET exchange received");
-
-    const internalOrderId = parseInt(extra1);
-    if (isNaN(internalOrderId)) { res.send("FALSE"); return; }
-
-    if (action === "PAID" || action === "AUTHORIZE" || action === "CAPTURE") {
-      await processPayment(internalOrderId, paynlOrderId);
-    } else if (action === "CANCEL") {
-      await db.update(paymentOrdersTable).set({ status: "cancelled" }).where(eq(paymentOrdersTable.id, internalOrderId));
-    }
-
-    res.send("TRUE");
+    const params: Record<string, string> = {};
+    for (const [k, v] of Object.entries(req.query)) { params[k] = String(v); }
+    const result = await handleExchange(params, req.log);
+    res.send(result);
   } catch (err) {
     req.log.error({ err }, "Pay.nl GET exchange error");
     res.send("FALSE");
