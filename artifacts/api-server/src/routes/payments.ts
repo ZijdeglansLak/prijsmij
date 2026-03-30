@@ -126,6 +126,9 @@ router.post("/payments/checkout", requireSellerOrAdmin, async (req, res) => {
   }
 });
 
+// Paid action strings Pay.nl sends in the return URL
+const PAID_ACTIONS = new Set(["new_ppt", "paid", "authorize", "capture", "authorized", "complete", "completed"]);
+
 // GET /payments/return — user returns from Pay.nl after payment
 router.get("/payments/return", async (req, res) => {
   const appUrl = process.env.APP_URL ?? "https://prijsmij.nl";
@@ -136,15 +139,29 @@ router.get("/payments/return", async (req, res) => {
     const [order] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
     if (!order) { res.redirect(`${appUrl}/supplier/credits?payment=error`); return; }
 
+    // Log all query params Pay.nl sent so we can inspect them in the logboek
+    const allParams = Object.fromEntries(Object.entries(req.query).map(([k, v]) => [k, String(v)]));
+    const paynlActionRaw = (req.query.action as string ?? req.query.paymentStatus as string ?? "").toLowerCase();
+    const paynlOrderIdFromQuery = req.query.paymentSessionId as string ?? req.query.transactionId as string ?? order.paynlOrderId ?? undefined;
+
+    req.log.info({ orderId, allParams, paynlActionRaw }, "Payment return URL called");
+
     if (order.status === "paid") {
-      await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "already_paid" });
+      await logPayment({ source: "return_url", action: paynlActionRaw || undefined, internalOrderId: order.id, paynlOrderId: paynlOrderIdFromQuery, rawBody: JSON.stringify(allParams), result: "already_paid" });
       res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
       return;
     }
 
-    // Log return event and redirect to pending — exchange webhook will update status asynchronously.
-    // We don't call Pay.nl status API because service tokens don't have read permissions (403).
-    await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "redirected_to_pending" });
+    // If Pay.nl sends a paid action in the return URL, process immediately — no API call needed
+    if (paynlActionRaw && PAID_ACTIONS.has(paynlActionRaw)) {
+      const { credits } = await processPayment(order.id, paynlOrderIdFromQuery || order.paynlOrderId);
+      await logPayment({ source: "return_url", action: paynlActionRaw, internalOrderId: order.id, paynlOrderId: paynlOrderIdFromQuery, rawBody: JSON.stringify(allParams), result: "paid_via_return_action", creditsAdded: credits });
+      res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
+      return;
+    }
+
+    // No paid action in return URL — log all params and wait for exchange webhook
+    await logPayment({ source: "return_url", action: paynlActionRaw || undefined, internalOrderId: order.id, paynlOrderId: paynlOrderIdFromQuery, rawBody: JSON.stringify(allParams), result: paynlActionRaw ? `action:${paynlActionRaw}` : "no_action_in_return" });
     res.redirect(`${appUrl}/supplier/credits?payment=pending&orderId=${orderId}`);
   } catch (err) {
     req.log.error({ err }, "Payment return error");
