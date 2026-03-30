@@ -71,7 +71,20 @@ function userResponse(u: typeof userAccountsTable.$inferSelect) {
 router.post("/auth/register", async (req, res) => {
   try {
     const parsed = registerSchema.safeParse(req.body);
-    if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const fieldMessages: Record<string, string> = {
+        contactName: "Vul je naam in",
+        email: "Vul een geldig e-mailadres in",
+        password: "Wachtwoord moet minimaal 6 tekens bevatten",
+        role: "Kies een rol (koper of verkoper)",
+        storeName: "Winkelnaam is verplicht",
+      };
+      const field = issue?.path[0] as string | undefined;
+      const friendlyMsg = (field && fieldMessages[field]) ?? "Vul alle verplichte velden in";
+      res.status(400).json({ error: friendlyMsg });
+      return;
+    }
     const { role, storeName, contactName, email, password, lang = "nl" } = parsed.data;
 
     if (role === "seller" && !storeName) { res.status(400).json({ error: "Winkelnaam is verplicht voor verkopers" }); return; }

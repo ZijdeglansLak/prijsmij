@@ -37,6 +37,24 @@ export default function AuthRegister() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!contactName.trim()) {
+      toast({ title: "Naam is verplicht", description: "Vul je naam in", variant: "destructive" });
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      toast({ title: "E-mailadres is verplicht", description: "Vul een geldig e-mailadres in", variant: "destructive" });
+      return;
+    }
+    if (password.length < 6) {
+      toast({ title: "Wachtwoord te kort", description: "Wachtwoord moet minimaal 6 tekens bevatten", variant: "destructive" });
+      return;
+    }
+    if (role === "seller" && !storeName.trim()) {
+      toast({ title: "Winkelnaam is verplicht", description: "Vul de naam van je winkel of bedrijf in", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
