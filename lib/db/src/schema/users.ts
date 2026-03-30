@@ -56,10 +56,10 @@ export type UserRole = "buyer" | "seller";
 export type PaymentOrder = typeof paymentOrdersTable.$inferSelect;
 
 export const CREDIT_BUNDLES = [
-  { id: "starter", name: "Starter", credits: 10, priceCents: 3500, originalPriceCents: 3500, label: "€3,50 per connectie", badge: null },
-  { id: "popular", name: "Popular", credits: 50, priceCents: 12000, originalPriceCents: 15000, label: "€2,40 per connectie", badge: "Populair" },
-  { id: "pro", name: "Pro", credits: 100, priceCents: 25000, originalPriceCents: 30000, label: "€2,50 per connectie", badge: "Beste waarde" },
-  { id: "enterprise", name: "Enterprise", credits: 250, priceCents: 55000, originalPriceCents: 75000, label: "€2,20 per connectie", badge: null },
+  { id: "starter", name: "Starter", credits: 10, priceCents: 35, originalPriceCents: 35, label: "€0,035 per connectie", badge: null },
+  { id: "popular", name: "Popular", credits: 50, priceCents: 120, originalPriceCents: 150, label: "€0,024 per connectie", badge: "Populair" },
+  { id: "pro", name: "Pro", credits: 100, priceCents: 250, originalPriceCents: 300, label: "€0,025 per connectie", badge: "Beste waarde" },
+  { id: "enterprise", name: "Enterprise", credits: 250, priceCents: 550, originalPriceCents: 750, label: "€0,022 per connectie", badge: null },
 ] as const;
 
 export const registerSchema = z.object({

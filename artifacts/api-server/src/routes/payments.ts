@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, CREDIT_BUNDLES } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
-import { requireSeller } from "./auth";
+import { requireSellerOrAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus } from "../services/paynl";
 
 const router: IRouter = Router();
@@ -31,7 +31,7 @@ async function processPayment(orderId: number, paynlOrderId?: string | null): Pr
 }
 
 // POST /payments/checkout — start Pay.nl transaction, returns paymentUrl
-router.post("/payments/checkout", requireSeller, async (req, res) => {
+router.post("/payments/checkout", requireSellerOrAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId as number;
     const { bundleId } = req.body;
@@ -192,9 +192,9 @@ router.get("/payments/exchange", async (req, res) => {
   }
 });
 
-// GET /payments/status/:orderId — poll payment status (sellers only)
+// GET /payments/status/:orderId — poll payment status (sellers and admins)
 // Also actively checks Pay.nl if order is still pending
-router.get("/payments/status/:orderId", requireSeller, async (req, res) => {
+router.get("/payments/status/:orderId", requireSellerOrAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId as number;
     const orderId = parseInt(req.params.orderId);

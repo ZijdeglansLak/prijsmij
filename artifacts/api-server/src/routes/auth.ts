@@ -43,6 +43,15 @@ export function requireSeller(req: any, res: any, next: any) {
   });
 }
 
+export function requireSellerOrAdmin(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.userRole !== "seller" && !req.userIsAdmin) {
+      res.status(403).json({ error: "Alleen verkopers of beheerders hebben toegang" }); return;
+    }
+    next();
+  });
+}
+
 export function requireAdmin(req: any, res: any, next: any) {
   requireAuth(req, res, () => {
     if (!req.userIsAdmin) { res.status(403).json({ error: "Alleen beheerders hebben toegang" }); return; }

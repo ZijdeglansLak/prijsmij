@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 
@@ -44,11 +44,19 @@ function AdminDashboard() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6 text-primary" />
+        <div className="flex items-center justify-between gap-3 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-primary" />
+            </div>
+            <h1 className="text-3xl font-extrabold">Beheer</h1>
           </div>
-          <h1 className="text-3xl font-extrabold">Beheer</h1>
+          <Link href="/supplier/credits">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Coins className="w-4 h-4" />
+              Credits kopen
+            </Button>
+          </Link>
         </div>
 
         {/* Tabs */}

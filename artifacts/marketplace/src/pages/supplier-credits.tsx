@@ -15,9 +15,9 @@ const BUNDLES = [
     id: "starter",
     name: "Starter",
     credits: 10,
-    price: 35,
+    price: "0,35",
     originalPrice: null,
-    pricePerUnit: "€3,50",
+    pricePerUnit: "€0,035",
     description: "Probeer het platform",
     badge: null,
     color: "border-gray-200",
@@ -26,9 +26,9 @@ const BUNDLES = [
     id: "popular",
     name: "Populair",
     credits: 50,
-    price: 120,
-    originalPrice: 150,
-    pricePerUnit: "€2,40",
+    price: "1,20",
+    originalPrice: "1,50",
+    pricePerUnit: "€0,024",
     description: "Voor actieve verkopers",
     badge: "Populair",
     color: "border-primary",
@@ -37,9 +37,9 @@ const BUNDLES = [
     id: "pro",
     name: "Pro",
     credits: 100,
-    price: 250,
-    originalPrice: 300,
-    pricePerUnit: "€2,50",
+    price: "2,50",
+    originalPrice: "3,00",
+    pricePerUnit: "€0,025",
     description: "Meeste waarde voor je geld",
     badge: "Beste waarde",
     color: "border-green-500",
@@ -48,9 +48,9 @@ const BUNDLES = [
     id: "enterprise",
     name: "Enterprise",
     credits: 250,
-    price: 550,
-    originalPrice: 750,
-    pricePerUnit: "€2,20",
+    price: "5,50",
+    originalPrice: "7,50",
+    pricePerUnit: "€0,022",
     description: "Voor grote verkooporganisaties",
     badge: null,
     color: "border-purple-400",
@@ -60,12 +60,14 @@ const BUNDLES = [
 export default function SupplierCredits() {
   const [, setLocation] = useLocation();
   const search = useSearch();
-  const { user, token, updateCredits, isSeller } = useUserAuth();
+  const { user, token, updateCredits, isSeller, isAdmin } = useUserAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<"success" | "pending" | "error" | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
+
+  const canAccess = isSeller || isAdmin;
 
   // Parse query params from Pay.nl return URL
   useEffect(() => {
@@ -77,7 +79,6 @@ export default function SupplierCredits() {
     if (payment === "success") {
       setPaymentStatus("success");
       if (credits) updateCredits((user?.credits ?? 0) + parseInt(credits));
-      // Clean URL
       window.history.replaceState({}, "", window.location.pathname);
     } else if (payment === "pending" && orderId) {
       setPaymentStatus("pending");
@@ -123,11 +124,11 @@ export default function SupplierCredits() {
     }, 3000);
   }
 
-  if (!token || !isSeller) {
+  if (!token || !canAccess) {
     return (
       <Layout>
         <div className="max-w-md mx-auto py-16 text-center">
-          <p className="text-muted-foreground">Log in als winkel om credits te kopen.</p>
+          <p className="text-muted-foreground">Log in als winkel of beheerder om credits te kopen.</p>
           <Link href="/auth/login">
             <Button className="mt-4">Inloggen</Button>
           </Link>
@@ -152,7 +153,6 @@ export default function SupplierCredits() {
         toast({ title: "Betaling starten mislukt", description: data.error, variant: "destructive" });
         return;
       }
-      // Redirect to Pay.nl payment page
       window.location.href = data.paymentUrl;
     } catch {
       toast({ title: "Fout", description: "Probeer het opnieuw.", variant: "destructive" });
@@ -161,18 +161,28 @@ export default function SupplierCredits() {
     }
   }
 
+  const backHref = isAdmin ? "/admin" : "/supplier/dashboard";
+  const backLabel = isAdmin ? "Terug naar beheer" : "Terug naar dashboard";
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto py-8 px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <Link href="/supplier/dashboard">
+          <Link href={backHref}>
             <Button variant="ghost" className="mb-6">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Terug naar dashboard
+              {backLabel}
             </Button>
           </Link>
 
-          {/* Payment status banners */}
+          {isAdmin && (
+            <Alert className="mb-6 border-orange-400 bg-orange-50 text-orange-800">
+              <AlertDescription className="font-medium">
+                Testmodus: prijzen zijn gedeeld door 100 (Starter = €0,35 i.p.v. €35).
+              </AlertDescription>
+            </Alert>
+          )}
+
           {paymentStatus === "success" && (
             <Alert className="mb-6 border-green-500 bg-green-50 text-green-800">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
