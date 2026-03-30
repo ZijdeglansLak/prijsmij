@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "t-u1AvG6V8N2Cpss9d-fC"
+uri = "file://prijsmij-v0.1.tar.gz"
+type = "unspecified"
+title = "PrijsMij v0.1 — broncode"
