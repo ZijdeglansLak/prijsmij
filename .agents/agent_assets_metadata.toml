@@ -24,3 +24,9 @@ id = "KcCXJPtB6imug7MYBaMzd"
 uri = "file://INSTRUCTIES.zip"
 type = "unspecified"
 title = "INSTRUCTIES.zip — Installatiehandleiding PrijsMij"
+
+[[outputs]]
+id = "qIBsxlAtdExDR8OZg8U_w"
+uri = "file://prijsmij-database.zip"
+type = "unspecified"
+title = "prijsmij-database.zip — Database dump (SQL)"
