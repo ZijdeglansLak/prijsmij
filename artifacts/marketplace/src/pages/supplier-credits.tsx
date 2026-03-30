@@ -66,6 +66,8 @@ export default function SupplierCredits() {
   const [paymentStatus, setPaymentStatus] = useState<"success" | "pending" | "error" | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
+  const [pollingStopped, setPollingStopped] = useState(false);
+  const [manualChecking, setManualChecking] = useState(false);
 
   const canAccess = isSeller || isAdmin;
 
@@ -91,37 +93,55 @@ export default function SupplierCredits() {
     }
   }, [search]);
 
+  async function checkStatus(orderId: string): Promise<"paid" | "pending" | "failed"> {
+    if (!token) return "pending";
+    try {
+      const res = await fetch(`/api/payments/status/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return "pending";
+      const data = await res.json();
+      if (data.status === "paid") {
+        setPaymentStatus("success");
+        updateCredits((user?.credits ?? 0) + data.credits);
+        setPendingOrderId(null);
+        return "paid";
+      }
+      if (data.status === "failed" || data.status === "cancelled") {
+        setPaymentStatus("error");
+        setPendingOrderId(null);
+        return "failed";
+      }
+    } catch {}
+    return "pending";
+  }
+
   async function startPolling(orderId: string) {
     if (!token) return;
     setPolling(true);
+    setPollingStopped(false);
     let attempts = 0;
     const interval = setInterval(async () => {
       attempts++;
-      try {
-        const res = await fetch(`/api/payments/status/${orderId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status === "paid") {
-            clearInterval(interval);
-            setPolling(false);
-            setPaymentStatus("success");
-            updateCredits((user?.credits ?? 0) + data.credits);
-            setPendingOrderId(null);
-          } else if (data.status === "failed" || data.status === "cancelled") {
-            clearInterval(interval);
-            setPolling(false);
-            setPaymentStatus("error");
-            setPendingOrderId(null);
-          }
-        }
-      } catch {}
-      if (attempts >= 20) {
+      const status = await checkStatus(orderId);
+      if (status === "paid" || status === "failed") {
         clearInterval(interval);
         setPolling(false);
+        return;
       }
-    }, 3000);
+      if (attempts >= 30) {
+        clearInterval(interval);
+        setPolling(false);
+        setPollingStopped(true);
+      }
+    }, 5000);
+  }
+
+  async function handleManualCheck() {
+    if (!pendingOrderId || !token) return;
+    setManualChecking(true);
+    await checkStatus(pendingOrderId);
+    setManualChecking(false);
   }
 
   if (!token || !canAccess) {
@@ -193,11 +213,32 @@ export default function SupplierCredits() {
           )}
           {paymentStatus === "pending" && (
             <Alert className="mb-6 border-yellow-500 bg-yellow-50 text-yellow-800">
-              <div className="flex items-center gap-2">
-                {polling ? <Loader2 className="w-4 h-4 animate-spin text-yellow-600" /> : <Clock className="w-4 h-4 text-yellow-600" />}
-                <AlertDescription className="font-medium">
-                  {polling ? "Betaling wordt verwerkt, even geduld..." : "Betaling in behandeling. Ververs de pagina om de status te controleren."}
-                </AlertDescription>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  {polling ? <Loader2 className="w-4 h-4 animate-spin text-yellow-600" /> : <Clock className="w-4 h-4 text-yellow-600" />}
+                  <AlertDescription className="font-medium">
+                    {polling
+                      ? "Betaling wordt verwerkt, even geduld…"
+                      : pollingStopped
+                        ? "Automatische controle gestopt. Klik hieronder om opnieuw te controleren of neem contact op met de beheerder."
+                        : "Betaling in behandeling."}
+                  </AlertDescription>
+                </div>
+                {pendingOrderId && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-yellow-600 text-yellow-800 hover:bg-yellow-100"
+                      disabled={manualChecking || polling}
+                      onClick={handleManualCheck}
+                    >
+                      {manualChecking ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                      Controleer opnieuw
+                    </Button>
+                    <span className="text-xs text-yellow-700">Order #{pendingOrderId}</span>
+                  </div>
+                )}
               </div>
             </Alert>
           )}

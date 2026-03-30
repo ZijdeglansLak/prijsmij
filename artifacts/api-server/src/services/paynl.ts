@@ -6,7 +6,7 @@ export interface PaynlTransactionResult {
   paymentUrl: string;
 }
 
-async function getPaynlCredentials(): Promise<{ serviceId: string; token: string }> {
+export async function getPaynlCredentials(): Promise<{ serviceId: string; token: string }> {
   try {
     const rows = await db.select({
       paynlServiceId: siteSettingsTable.paynlServiceId,

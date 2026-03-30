@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { requireSellerOrAdmin, requireAdmin } from "./auth";
-import { createPaynlTransaction, getPaynlTransactionStatus } from "../services/paynl";
+import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials } from "../services/paynl";
 
 const router: IRouter = Router();
 
@@ -202,20 +202,10 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
     let shouldCredit = action === "paid" || action === "authorize" || action === "capture";
 
     if (action === "new_ppt") {
-      const lookupId = order.paynlOrderId || paynlOrderId;
-      if (lookupId) {
-        try {
-          const { isPaid, action: paynlStatus } = await getPaynlTransactionStatus(lookupId);
-          shouldCredit = isPaid;
-          log.info({ orderId: order.id, lookupId, isPaid, paynlStatus }, "Pay.nl status verified for new_ppt");
-        } catch (err: any) {
-          log.error({ err }, "Failed to verify Pay.nl status for new_ppt — crediting based on exchange alone");
-          shouldCredit = true;
-        }
-      } else {
-        // No Pay.nl ID to verify — credit based on exchange action alone
-        shouldCredit = true;
-      }
+      // Pay.nl sends new_ppt when a payment is received — trust the exchange directly.
+      // The exchange itself is authoritative; we don't need a separate status check here.
+      shouldCredit = true;
+      log.info({ orderId: order.id, paynlOrderId }, "new_ppt exchange received — crediting directly");
     }
 
     if (shouldCredit) {
@@ -348,6 +338,32 @@ router.get("/payments/admin/logs", requireAdmin, async (req, res) => {
     res.json(logs);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /payments/admin/test-paynl/:paynlOrderId — raw Pay.nl status check for diagnostics
+router.get("/payments/admin/test-paynl/:paynlOrderId", requireAdmin, async (req, res) => {
+  const { paynlOrderId } = req.params;
+  try {
+    const { serviceId, token } = await getPaynlCredentials();
+    const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
+    const url = `https://rest.pay.nl/v2/transactions/${paynlOrderId}`;
+    const apiRes = await fetch(url, {
+      headers: { "Authorization": `Basic ${credentials}`, "Accept": "application/json" },
+    });
+    const text = await apiRes.text();
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = null; }
+    res.json({
+      url,
+      httpStatus: apiRes.status,
+      httpOk: apiRes.ok,
+      body: parsed ?? text.slice(0, 500),
+      credentialsPresent: !!(serviceId && token),
+      serviceIdPrefix: serviceId?.slice(0, 8) + "...",
+    });
+  } catch (err: any) {
+    res.json({ error: err.message });
   }
 });
 

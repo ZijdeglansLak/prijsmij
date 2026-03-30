@@ -813,6 +813,9 @@ function PaymentsTab() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [expandedLog, setExpandedLog] = useState<number | null>(null);
   const [view, setView] = useState<"orders" | "logs">("orders");
+  const [testPaynlId, setTestPaynlId] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testLoading, setTestLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -853,6 +856,22 @@ function PaymentsTab() {
     }
   }
 
+  async function handleTestPaynl() {
+    if (!token || !testPaynlId.trim()) return;
+    setTestLoading(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`/api/payments/admin/test-paynl/${encodeURIComponent(testPaynlId.trim())}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTestResult(await res.json());
+    } catch (e: any) {
+      setTestResult({ error: e.message });
+    } finally {
+      setTestLoading(false);
+    }
+  }
+
   const paidCount = orders.filter(o => o.status === "paid").length;
   const pendingCount = orders.filter(o => o.status === "pending").length;
   const totalCredits = orders.filter(o => o.status === "paid").reduce((s, o) => s + o.creditsAmount, 0);
@@ -872,6 +891,30 @@ function PaymentsTab() {
             <p className="text-xs text-muted-foreground mt-1">{c.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Pay.nl API Diagnostiek */}
+      <div className="border border-blue-200 bg-blue-50 rounded-xl p-4">
+        <p className="text-sm font-semibold text-blue-800 mb-2">Pay.nl API diagnostiek</p>
+        <div className="flex gap-2 items-center flex-wrap">
+          <input
+            type="text"
+            placeholder="Pay.nl order ID (bijv. 3349008045Xa605c)"
+            value={testPaynlId}
+            onChange={e => setTestPaynlId(e.target.value)}
+            className="border border-blue-300 rounded px-3 py-1 text-sm flex-1 min-w-[240px] bg-white"
+            onKeyDown={e => e.key === "Enter" && handleTestPaynl()}
+          />
+          <Button size="sm" variant="outline" className="border-blue-400 text-blue-800" onClick={handleTestPaynl} disabled={testLoading || !testPaynlId.trim()}>
+            {testLoading ? <RefreshCw className="w-3 h-3 animate-spin mr-1" /> : null}
+            Test status API
+          </Button>
+        </div>
+        {testResult && (
+          <pre className="mt-3 text-xs bg-white border border-blue-200 rounded p-3 overflow-x-auto max-h-48">
+            {JSON.stringify(testResult, null, 2)}
+          </pre>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
