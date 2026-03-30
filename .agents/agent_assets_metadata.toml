@@ -12,3 +12,9 @@ id = "7BzsfzPvgvQiBo1NfE_S_"
 uri = "file://INSTRUCTIES.md"
 type = "text"
 title = "INSTRUCTIES.md — Installatiehandleiding PrijsMij"
+
+[[outputs]]
+id = "f-fXazVawhXo4Sf-AFZ5L"
+uri = "file://INSTRUCTIES.txt"
+type = "text"
+title = "INSTRUCTIES — Installatiehandleiding PrijsMij"
