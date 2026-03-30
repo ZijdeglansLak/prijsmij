@@ -1,16 +1,44 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, CREDIT_BUNDLES } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
-import { requireSellerOrAdmin } from "./auth";
+import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
+import { eq, sql, desc } from "drizzle-orm";
+import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus } from "../services/paynl";
 
 const router: IRouter = Router();
 
+// Persist a payment log entry (best-effort, never throws)
+async function logPayment(entry: {
+  source: string;
+  action?: string;
+  extra1?: string;
+  paynlOrderId?: string;
+  internalOrderId?: number;
+  rawBody?: string;
+  result?: string;
+  errorMessage?: string;
+  creditsAdded?: number;
+}): Promise<void> {
+  try {
+    await db.insert(paymentLogsTable).values({
+      source: entry.source,
+      action: entry.action ?? null,
+      extra1: entry.extra1 ?? null,
+      paynlOrderId: entry.paynlOrderId ?? null,
+      internalOrderId: entry.internalOrderId ?? null,
+      rawBody: entry.rawBody ? entry.rawBody.slice(0, 2000) : null,
+      result: entry.result ?? null,
+      errorMessage: entry.errorMessage ?? null,
+      creditsAdded: entry.creditsAdded ?? null,
+    });
+  } catch { /* ignore logging errors */ }
+}
+
 // Shared helper: marks order as paid and adds credits — idempotent
-async function processPayment(orderId: number, paynlOrderId?: string | null): Promise<boolean> {
+async function processPayment(orderId: number, paynlOrderId?: string | null): Promise<{ done: boolean; credits: number }> {
   const [order] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
-  if (!order || order.status === "paid") return order?.status === "paid";
+  if (!order) return { done: false, credits: 0 };
+  if (order.status === "paid") return { done: true, credits: order.creditsAmount };
 
   await db.update(paymentOrdersTable)
     .set({ status: "paid", paidAt: new Date(), ...(paynlOrderId ? { paynlOrderId } : {}) })
@@ -27,7 +55,7 @@ async function processPayment(orderId: number, paynlOrderId?: string | null): Pr
     amountPaidCents: order.amountCents,
   });
 
-  return true;
+  return { done: true, credits: order.creditsAmount };
 }
 
 // POST /payments/checkout — start Pay.nl transaction, returns paymentUrl
@@ -65,6 +93,13 @@ router.post("/payments/checkout", requireSellerOrAdmin, async (req, res) => {
       .set({ paynlOrderId: transaction.orderId })
       .where(eq(paymentOrdersTable.id, order.id));
 
+    await logPayment({
+      source: "checkout",
+      paynlOrderId: transaction.orderId,
+      internalOrderId: order.id,
+      result: "created",
+    });
+
     res.json({ paymentUrl: transaction.paymentUrl, orderId: order.id });
   } catch (err: any) {
     req.log.error({ err }, "Failed to start payment");
@@ -83,6 +118,7 @@ router.get("/payments/return", async (req, res) => {
     if (!order) { res.redirect(`${appUrl}/supplier/credits?payment=error`); return; }
 
     if (order.status === "paid") {
+      await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "already_paid" });
       res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
       return;
     }
@@ -94,12 +130,15 @@ router.get("/payments/return", async (req, res) => {
         req.log.info({ orderId, paynlOrderId: order.paynlOrderId, isPaid, action }, "Pay.nl status check on return");
 
         if (isPaid) {
-          await processPayment(order.id, order.paynlOrderId);
+          const { credits } = await processPayment(order.id, order.paynlOrderId);
+          await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "paid_via_status_check", creditsAdded: credits });
           res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
           return;
         }
-      } catch (err) {
+        await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "still_pending" });
+      } catch (err: any) {
         req.log.error({ err }, "Failed to check Pay.nl status on return");
+        await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "error", errorMessage: err.message });
       }
     }
 
@@ -114,7 +153,8 @@ router.get("/payments/return", async (req, res) => {
 async function handleExchange(params: Record<string, string>, log: any): Promise<"TRUE" | "FALSE"> {
   const action = (params.action ?? "").toLowerCase();
   const extra1 = params.extra1 ?? "";
-  const paynlOrderId = params.orderId ?? params.paymentSessionId ?? "";
+  const paynlOrderId = params.orderId ?? params.paymentSessionId ?? params.transactionId ?? "";
+  const rawBody = JSON.stringify(params);
 
   log.info({ action, extra1, paynlOrderId, allParams: params }, "Pay.nl exchange received");
 
@@ -135,34 +175,47 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
 
   if (!order) {
     log.warn({ action, extra1, paynlOrderId }, "Pay.nl exchange: order not found — returning TRUE to stop retries");
+    await logPayment({ source: "exchange", action, extra1, paynlOrderId, rawBody, result: "order_not_found" });
     return "TRUE";
   }
 
-  // new_ppt = Pay.nl's action for a (possibly) successful payment attempt — verify via API
   if (action === "new_ppt" || action === "paid" || action === "authorize" || action === "capture") {
     let shouldCredit = action === "paid" || action === "authorize" || action === "capture";
 
-    if (action === "new_ppt" && order.paynlOrderId) {
-      try {
-        const { isPaid } = await getPaynlTransactionStatus(order.paynlOrderId);
-        shouldCredit = isPaid;
-        log.info({ orderId: order.id, paynlOrderId: order.paynlOrderId, isPaid }, "Pay.nl status verified for new_ppt");
-      } catch (err) {
-        log.error({ err }, "Failed to verify Pay.nl status for new_ppt — crediting based on exchange alone");
+    if (action === "new_ppt") {
+      const lookupId = order.paynlOrderId || paynlOrderId;
+      if (lookupId) {
+        try {
+          const { isPaid, action: paynlStatus } = await getPaynlTransactionStatus(lookupId);
+          shouldCredit = isPaid;
+          log.info({ orderId: order.id, lookupId, isPaid, paynlStatus }, "Pay.nl status verified for new_ppt");
+        } catch (err: any) {
+          log.error({ err }, "Failed to verify Pay.nl status for new_ppt — crediting based on exchange alone");
+          shouldCredit = true;
+        }
+      } else {
+        // No Pay.nl ID to verify — credit based on exchange action alone
         shouldCredit = true;
       }
     }
 
     if (shouldCredit) {
-      await processPayment(order.id, paynlOrderId || order.paynlOrderId);
-      log.info({ orderId: order.id, action }, "Credits processed via exchange webhook");
+      const { done, credits } = await processPayment(order.id, paynlOrderId || order.paynlOrderId);
+      log.info({ orderId: order.id, action, done }, "Credits processed via exchange webhook");
+      await logPayment({ source: "exchange", action, extra1, paynlOrderId, internalOrderId: order.id, rawBody, result: done ? "paid_credits_added" : "already_paid", creditsAdded: credits });
+    } else {
+      await logPayment({ source: "exchange", action, extra1, paynlOrderId, internalOrderId: order.id, rawBody, result: "payment_not_confirmed" });
     }
   } else if (action === "cancel") {
     if (order.status === "pending") {
       await db.update(paymentOrdersTable).set({ status: "cancelled" }).where(eq(paymentOrdersTable.id, order.id));
     }
+    await logPayment({ source: "exchange", action, extra1, paynlOrderId, internalOrderId: order.id, rawBody, result: "cancelled" });
   } else if (action === "refund") {
     await db.update(paymentOrdersTable).set({ status: "failed" }).where(eq(paymentOrdersTable.id, order.id));
+    await logPayment({ source: "exchange", action, extra1, paynlOrderId, internalOrderId: order.id, rawBody, result: "refunded" });
+  } else {
+    await logPayment({ source: "exchange", action, extra1, paynlOrderId, internalOrderId: order.id, rawBody, result: `unknown_action:${action}` });
   }
 
   return "TRUE";
@@ -173,8 +226,9 @@ router.post("/payments/exchange", async (req, res) => {
   try {
     const result = await handleExchange(req.body ?? {}, req.log);
     res.send(result);
-  } catch (err) {
+  } catch (err: any) {
     req.log.error({ err }, "Pay.nl exchange error");
+    await logPayment({ source: "exchange", rawBody: JSON.stringify(req.body ?? {}), result: "error", errorMessage: err.message });
     res.send("FALSE");
   }
 });
@@ -186,14 +240,14 @@ router.get("/payments/exchange", async (req, res) => {
     for (const [k, v] of Object.entries(req.query)) { params[k] = String(v); }
     const result = await handleExchange(params, req.log);
     res.send(result);
-  } catch (err) {
+  } catch (err: any) {
     req.log.error({ err }, "Pay.nl GET exchange error");
+    await logPayment({ source: "exchange_get", rawBody: JSON.stringify(req.query), result: "error", errorMessage: err.message });
     res.send("FALSE");
   }
 });
 
 // GET /payments/status/:orderId — poll payment status (sellers and admins)
-// Also actively checks Pay.nl if order is still pending
 router.get("/payments/status/:orderId", requireSellerOrAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId as number;
@@ -203,23 +257,90 @@ router.get("/payments/status/:orderId", requireSellerOrAdmin, async (req, res) =
     const [order] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
     if (!order || order.userId !== userId) { res.status(404).json({ error: "Order niet gevonden" }); return; }
 
-    // If still pending, check Pay.nl directly so the user doesn't have to wait for the webhook
     if (order.status === "pending" && order.paynlOrderId) {
       try {
         const { isPaid } = await getPaynlTransactionStatus(order.paynlOrderId);
         if (isPaid) {
-          await processPayment(order.id, order.paynlOrderId);
+          const { credits } = await processPayment(order.id, order.paynlOrderId);
+          await logPayment({ source: "status_poll", internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "paid_via_poll", creditsAdded: credits });
           res.json({ status: "paid", credits: order.creditsAmount });
           return;
         }
-      } catch {
-        // Ignore — return DB status
-      }
+      } catch { /* ignore */ }
     }
 
     res.json({ status: order.status, credits: order.creditsAmount });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Admin endpoints ────────────────────────────────────────────────────────
+
+// GET /payments/admin/orders — all payment orders with user info
+router.get("/payments/admin/orders", requireAdmin, async (req, res) => {
+  try {
+    const orders = await db
+      .select({
+        id: paymentOrdersTable.id,
+        userId: paymentOrdersTable.userId,
+        bundleName: paymentOrdersTable.bundleName,
+        creditsAmount: paymentOrdersTable.creditsAmount,
+        amountCents: paymentOrdersTable.amountCents,
+        paynlOrderId: paymentOrdersTable.paynlOrderId,
+        status: paymentOrdersTable.status,
+        createdAt: paymentOrdersTable.createdAt,
+        paidAt: paymentOrdersTable.paidAt,
+        userEmail: userAccountsTable.email,
+        userContactName: userAccountsTable.contactName,
+        userStoreName: userAccountsTable.storeName,
+      })
+      .from(paymentOrdersTable)
+      .leftJoin(userAccountsTable, eq(paymentOrdersTable.userId, userAccountsTable.id))
+      .orderBy(desc(paymentOrdersTable.createdAt))
+      .limit(200);
+
+    res.json(orders);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /payments/admin/logs — all exchange/webhook logs
+router.get("/payments/admin/logs", requireAdmin, async (req, res) => {
+  try {
+    const logs = await db
+      .select()
+      .from(paymentLogsTable)
+      .orderBy(desc(paymentLogsTable.createdAt))
+      .limit(500);
+
+    res.json(logs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /payments/admin/orders/:id/process — manually process a pending order
+router.post("/payments/admin/orders/:id/process", requireAdmin, async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    if (isNaN(orderId)) { res.status(400).json({ error: "Ongeldig ID" }); return; }
+
+    const [order] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
+    if (!order) { res.status(404).json({ error: "Order niet gevonden" }); return; }
+
+    if (order.status === "paid") {
+      res.json({ ok: true, message: "Order was al betaald", credits: order.creditsAmount });
+      return;
+    }
+
+    const { done, credits } = await processPayment(order.id, order.paynlOrderId);
+    await logPayment({ source: "admin_manual", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "manual_paid", creditsAdded: credits });
+
+    res.json({ ok: done, message: `${credits} credits bijgeschreven`, credits });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

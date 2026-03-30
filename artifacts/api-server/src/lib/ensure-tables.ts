@@ -110,6 +110,20 @@ export async function ensureTables(): Promise<void> {
 
       ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS paynl_service_id TEXT;
       ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS paynl_token TEXT;
+
+      CREATE TABLE IF NOT EXISTS payment_logs (
+        id                SERIAL PRIMARY KEY,
+        created_at        TIMESTAMP NOT NULL DEFAULT NOW(),
+        source            TEXT NOT NULL,
+        action            TEXT,
+        extra1            TEXT,
+        paynl_order_id    TEXT,
+        internal_order_id INTEGER,
+        raw_body          TEXT,
+        result            TEXT,
+        error_message     TEXT,
+        credits_added     INTEGER
+      );
     `);
 
     logger.info("Database tables verified/created");

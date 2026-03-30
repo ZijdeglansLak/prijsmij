@@ -51,6 +51,20 @@ export const paymentOrdersTable = pgTable("payment_orders", {
   paidAt: timestamp("paid_at"),
 });
 
+export const paymentLogsTable = pgTable("payment_logs", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  source: text("source").notNull(),
+  action: text("action"),
+  extra1: text("extra1"),
+  paynlOrderId: text("paynl_order_id"),
+  internalOrderId: integer("internal_order_id"),
+  rawBody: text("raw_body"),
+  result: text("result"),
+  errorMessage: text("error_message"),
+  creditsAdded: integer("credits_added"),
+});
+
 export type UserAccount = typeof userAccountsTable.$inferSelect;
 export type UserRole = "buyer" | "seller";
 export type PaymentOrder = typeof paymentOrdersTable.$inferSelect;

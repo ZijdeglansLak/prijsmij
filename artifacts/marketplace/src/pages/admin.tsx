@@ -3,11 +3,12 @@ import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
+import { Badge } from "@/components/ui/badge";
 
-type Tab = "categories" | "users" | "settings";
+type Tab = "categories" | "users" | "settings" | "payments";
 
 interface UserRecord {
   id: number;
@@ -79,11 +80,18 @@ function AdminDashboard() {
           >
             <WifiOff className="w-4 h-4" /> Instellingen
           </button>
+          <button
+            onClick={() => setTab("payments")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "payments" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <CreditCard className="w-4 h-4" /> Betalingen
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
         {tab === "users" && <UsersTab />}
         {tab === "settings" && <SettingsTab />}
+        {tab === "payments" && <PaymentsTab />}
       </div>
     </Layout>
   );
@@ -735,6 +743,239 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
             <Button size="sm" onClick={() => onSave({ contactName, email, storeName: storeName || undefined, role, isAdmin, newPassword: newPassword || undefined })}>Opslaan</Button>
             <Button size="sm" variant="outline" onClick={onToggleEdit}>Annuleren</Button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Betalingen Tab ─────────────────────────────────────────────────────────
+
+interface PaymentOrder {
+  id: number;
+  userId: number;
+  bundleName: string;
+  creditsAmount: number;
+  amountCents: number;
+  paynlOrderId: string | null;
+  status: "pending" | "paid" | "failed" | "cancelled";
+  createdAt: string;
+  paidAt: string | null;
+  userEmail: string | null;
+  userContactName: string | null;
+  userStoreName: string | null;
+}
+
+interface PaymentLog {
+  id: number;
+  createdAt: string;
+  source: string;
+  action: string | null;
+  extra1: string | null;
+  paynlOrderId: string | null;
+  internalOrderId: number | null;
+  rawBody: string | null;
+  result: string | null;
+  errorMessage: string | null;
+  creditsAdded: number | null;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "paid") return <Badge className="bg-green-100 text-green-800 border-green-300 gap-1"><CheckCircle className="w-3 h-3" />{status}</Badge>;
+  if (status === "pending") return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 gap-1"><Clock className="w-3 h-3" />{status}</Badge>;
+  if (status === "cancelled") return <Badge className="bg-gray-100 text-gray-700 border-gray-300 gap-1"><XCircle className="w-3 h-3" />{status}</Badge>;
+  if (status === "failed") return <Badge className="bg-red-100 text-red-800 border-red-300 gap-1"><XCircle className="w-3 h-3" />{status}</Badge>;
+  return <Badge variant="outline">{status}</Badge>;
+}
+
+function ResultBadge({ result }: { result: string | null }) {
+  if (!result) return <span className="text-muted-foreground text-xs">—</span>;
+  const color =
+    result.includes("paid") || result === "already_paid" ? "text-green-700 bg-green-50 border border-green-200" :
+    result.includes("error") ? "text-red-700 bg-red-50 border border-red-200" :
+    result.includes("cancel") || result.includes("refund") ? "text-gray-600 bg-gray-50 border border-gray-200" :
+    result.includes("pending") || result === "created" || result === "still_pending" ? "text-yellow-700 bg-yellow-50 border border-yellow-200" :
+    "text-blue-700 bg-blue-50 border border-blue-200";
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${color}`}>{result}</span>;
+}
+
+function fmtDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function PaymentsTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<PaymentOrder[]>([]);
+  const [logs, setLogs] = useState<PaymentLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<number | null>(null);
+  const [expandedLog, setExpandedLog] = useState<number | null>(null);
+  const [view, setView] = useState<"orders" | "logs">("orders");
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const [oRes, lRes] = await Promise.all([
+        fetch("/api/payments/admin/orders", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/payments/admin/logs", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (oRes.ok) setOrders(await oRes.json());
+      if (lRes.ok) setLogs(await lRes.json());
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleProcess(orderId: number) {
+    if (!token) return;
+    setProcessing(orderId);
+    try {
+      const res = await fetch(`/api/payments/admin/orders/${orderId}/process`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Verwerkt", description: data.message });
+        await load();
+      } else {
+        toast({ title: "Fout", description: data.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Fout", description: "Probeer opnieuw", variant: "destructive" });
+    } finally {
+      setProcessing(null);
+    }
+  }
+
+  const paidCount = orders.filter(o => o.status === "paid").length;
+  const pendingCount = orders.filter(o => o.status === "pending").length;
+  const totalCredits = orders.filter(o => o.status === "paid").reduce((s, o) => s + o.creditsAmount, 0);
+  const totalRevenue = orders.filter(o => o.status === "paid").reduce((s, o) => s + o.amountCents, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Betaald", value: paidCount, color: "text-green-700" },
+          { label: "In behandeling", value: pendingCount, color: "text-yellow-700" },
+          { label: "Credits verkocht", value: totalCredits, color: "text-primary" },
+          { label: "Omzet", value: `€${(totalRevenue / 100).toFixed(2)}`, color: "text-foreground" },
+        ].map(c => (
+          <div key={c.label} className="bg-muted rounded-xl p-4 text-center">
+            <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
+            <p className="text-xs text-muted-foreground mt-1">{c.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <button onClick={() => setView("orders")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${view === "orders" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+            Bestellingen ({orders.length})
+          </button>
+          <button onClick={() => setView("logs")} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${view === "logs" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+            Pay.nl logboek ({logs.length})
+          </button>
+        </div>
+        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Vernieuwen
+        </Button>
+      </div>
+
+      {view === "orders" && (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                {["#", "Datum", "Gebruiker", "Bundel", "Credits", "Bedrag", "Pay.nl ID", "Status", "Actie"].map(h => (
+                  <th key={h} className="px-3 py-2 text-left font-semibold text-xs text-muted-foreground whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Laden...</td></tr>}
+              {!loading && orders.length === 0 && (
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Geen bestellingen</td></tr>
+              )}
+              {orders.map(o => (
+                <tr key={o.id} className="border-t border-border hover:bg-muted/20 transition-colors">
+                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{o.id}</td>
+                  <td className="px-3 py-2 text-xs whitespace-nowrap">{fmtDate(o.createdAt)}</td>
+                  <td className="px-3 py-2">
+                    <div className="text-xs font-medium">{o.userContactName ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground">{o.userEmail ?? "—"}</div>
+                  </td>
+                  <td className="px-3 py-2 text-xs">{o.bundleName}</td>
+                  <td className="px-3 py-2 text-xs font-bold text-primary">{o.creditsAmount}</td>
+                  <td className="px-3 py-2 text-xs font-mono">€{(o.amountCents / 100).toFixed(2)}</td>
+                  <td className="px-3 py-2 text-xs font-mono text-muted-foreground max-w-[120px] truncate">{o.paynlOrderId ?? "—"}</td>
+                  <td className="px-3 py-2"><StatusBadge status={o.status} /></td>
+                  <td className="px-3 py-2">
+                    {o.status === "pending" && (
+                      <Button size="sm" variant="outline" className="h-7 text-xs px-2" disabled={processing === o.id} onClick={() => handleProcess(o.id)}>
+                        {processing === o.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verwerk"}
+                      </Button>
+                    )}
+                    {o.status === "paid" && <span className="text-xs text-muted-foreground">{fmtDate(o.paidAt)}</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {view === "logs" && (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                {["Datum", "Bron", "Actie", "Extra1", "Pay.nl ID", "Intern #", "Resultaat", "+Credits", "Details"].map(h => (
+                  <th key={h} className="px-3 py-2 text-left font-semibold text-xs text-muted-foreground whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Laden...</td></tr>}
+              {!loading && logs.length === 0 && (
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Geen logregels — log wordt gevuld bij de volgende Pay.nl terugmelding</td></tr>
+              )}
+              {logs.map(l => (
+                <>
+                  <tr key={l.id} className="border-t border-border hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setExpandedLog(expandedLog === l.id ? null : l.id)}>
+                    <td className="px-3 py-2 text-xs whitespace-nowrap">{fmtDate(l.createdAt)}</td>
+                    <td className="px-3 py-2 text-xs font-mono">{l.source}</td>
+                    <td className="px-3 py-2 text-xs font-mono font-bold">{l.action ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs font-mono text-muted-foreground">{l.extra1 ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs font-mono text-muted-foreground max-w-[100px] truncate">{l.paynlOrderId ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs font-mono">{l.internalOrderId ?? "—"}</td>
+                    <td className="px-3 py-2"><ResultBadge result={l.result} /></td>
+                    <td className="px-3 py-2 text-xs font-bold text-green-700">{l.creditsAdded != null ? `+${l.creditsAdded}` : "—"}</td>
+                    <td className="px-3 py-2"><ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedLog === l.id ? "rotate-90" : ""}`} /></td>
+                  </tr>
+                  {expandedLog === l.id && (
+                    <tr key={`${l.id}-detail`}>
+                      <td colSpan={9} className="px-4 py-3 bg-muted/30">
+                        {l.errorMessage && <p className="text-red-600 text-xs mb-2 font-semibold">Fout: {l.errorMessage}</p>}
+                        {l.rawBody ? (
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground mb-1">Ontvangen data van Pay.nl:</p>
+                            <pre className="text-xs bg-background rounded-lg p-3 overflow-x-auto border border-border max-h-40 whitespace-pre-wrap">{(() => { try { return JSON.stringify(JSON.parse(l.rawBody), null, 2); } catch { return l.rawBody; } })()}</pre>
+                          </div>
+                        ) : <p className="text-xs text-muted-foreground">Geen raw body beschikbaar</p>}
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
