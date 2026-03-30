@@ -81,4 +81,27 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
   } catch (err) { req.log.error({ err }, "Failed to create connection"); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// GET /supplier/notification-preferences — sellers only
+router.get("/supplier/notification-preferences", requireSeller, async (req, res) => {
+  try {
+    const userId = (req as any).userId as number;
+    const [user] = await db.select({ ids: userAccountsTable.notificationCategoryIds }).from(userAccountsTable).where(eq(userAccountsTable.id, userId));
+    if (!user) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
+    const ids: number[] = JSON.parse(user.ids || "[]");
+    res.json({ categoryIds: ids });
+  } catch (err) { req.log.error({ err }, "Failed to get notification preferences"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// PUT /supplier/notification-preferences — sellers only
+router.put("/supplier/notification-preferences", requireSeller, async (req, res) => {
+  try {
+    const userId = (req as any).userId as number;
+    const { categoryIds } = req.body;
+    if (!Array.isArray(categoryIds)) { res.status(400).json({ error: "categoryIds moet een array zijn" }); return; }
+    const ids = categoryIds.filter((id: unknown) => typeof id === "number" && Number.isInteger(id));
+    await db.update(userAccountsTable).set({ notificationCategoryIds: JSON.stringify(ids) }).where(eq(userAccountsTable.id, userId));
+    res.json({ success: true, categoryIds: ids });
+  } catch (err) { req.log.error({ err }, "Failed to update notification preferences"); res.status(500).json({ error: "Internal server error" }); }
+});
+
 export default router;

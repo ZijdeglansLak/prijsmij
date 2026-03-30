@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListCategories, useGetCategoryById, useCreateRequest } from "@workspace/api-client-react";
-import type { CreateRequestBodyAllowedOfferTypesItem, TemplateFieldType } from "@workspace/api-client-react";
+import type { CreateRequestBodyAllowedOfferTypesItem } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/contexts/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, Check, Sparkles } from "lucide-react";
 
@@ -14,12 +15,12 @@ export default function CreateRequest() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const { data: categories } = useListCategories();
   const { data: categoryDetail } = useGetCategoryById(categoryId!, { query: { enabled: !!categoryId }});
   const createMutation = useCreateRequest();
 
-  // Form State
   const [title, setTitle] = useState("");
   const [brand, setBrand] = useState("");
   const [description, setDescription] = useState("");
@@ -48,24 +49,31 @@ export default function CreateRequest() {
           consumerEmail
         }
       });
-      toast({ title: "Gelukt!", description: "Je uitvraag staat live!" });
+      toast({ title: t.create.success, description: t.create.successDesc });
       setLocation(`/requests/${result.id}`);
-    } catch (e) {
-      toast({ title: "Fout", description: "Vul alle verplichte velden in.", variant: "destructive" });
+    } catch {
+      toast({ title: t.general.error, description: t.create.errorDesc, variant: "destructive" });
     }
   };
 
   const toggleOfferType = (type: CreateRequestBodyAllowedOfferTypesItem) => {
-    setAllowedOffers(prev => 
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    setAllowedOffers(prev =>
+      prev.includes(type) ? prev.filter(x => x !== type) : [...prev, type]
     );
+  };
+
+  const offerTypeLabel = (type: string) => {
+    if (type === 'new') return t.bid.new;
+    if (type === 'refurbished') return t.bid.refurbished;
+    if (type === 'occasion') return t.bid.occasion;
+    return type;
   };
 
   return (
     <Layout>
       <div className="bg-secondary text-white py-12">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h1 className="text-3xl font-extrabold mb-4">Plaats een nieuwe uitvraag</h1>
+          <h1 className="text-3xl font-extrabold mb-4">{t.create.title}</h1>
           <div className="flex justify-center items-center gap-4 mt-8">
             {[1, 2, 3].map(i => (
               <div key={i} className="flex items-center gap-4">
@@ -84,7 +92,7 @@ export default function CreateRequest() {
           {/* STEP 1 */}
           {step === 1 && (
             <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-2xl font-bold mb-6 text-center">Wat zoek je precies?</h2>
+              <h2 className="text-2xl font-bold mb-6 text-center">{t.create.step1Title}</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {categories?.map(cat => (
                   <button
@@ -103,16 +111,16 @@ export default function CreateRequest() {
           {/* STEP 2 */}
           {step === 2 && categoryDetail && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-2xl font-bold mb-6">Specificaties voor {categoryDetail.name}</h2>
+              <h2 className="text-2xl font-bold mb-6">{t.create.step2TitleFor} {categoryDetail.name}</h2>
               <div className="space-y-6 bg-card p-8 rounded-2xl border border-border shadow-sm">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-bold mb-2">Titel van je uitvraag *</label>
-                    <Input placeholder="Bv: Samsung 65 inch OLED" value={title} onChange={e => setTitle(e.target.value)} />
+                    <label className="block text-sm font-bold mb-2">{t.create.titleLabel} *</label>
+                    <Input placeholder={t.create.titlePlaceholder} value={title} onChange={e => setTitle(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold mb-2">Voorkeursmerk *</label>
-                    <Input placeholder="Bv: Samsung, LG, of Allemaal" value={brand} onChange={e => setBrand(e.target.value)} />
+                    <label className="block text-sm font-bold mb-2">{t.create.brandLabel} *</label>
+                    <Input placeholder={t.create.brandPlaceholder} value={brand} onChange={e => setBrand(e.target.value)} />
                   </div>
                 </div>
 
@@ -122,17 +130,17 @@ export default function CreateRequest() {
                       {field.label} {field.required && '*'}
                     </label>
                     {field.type === 'select' ? (
-                      <select 
+                      <select
                         className="w-full h-10 px-3 rounded-md border border-input bg-transparent"
                         value={specs[field.key] || ""}
                         onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
                       >
-                        <option value="">Kies een optie...</option>
+                        <option value="">{t.create.chooseOption}</option>
                         {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
                     ) : (
-                      <Input 
-                        placeholder={field.placeholder} 
+                      <Input
+                        placeholder={field.placeholder}
                         type={field.type === 'number' ? 'number' : 'text'}
                         value={specs[field.key] || ""}
                         onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
@@ -142,19 +150,19 @@ export default function CreateRequest() {
                 ))}
 
                 <div>
-                  <label className="block text-sm font-bold mb-2">Extra opmerkingen</label>
-                  <textarea 
+                  <label className="block text-sm font-bold mb-2">{t.create.extraNotes}</label>
+                  <textarea
                     className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[100px]"
-                    placeholder="Wat is nog meer belangrijk voor jou?"
+                    placeholder={t.create.extraNotesPlaceholder}
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-between mt-8">
-                <Button variant="outline" onClick={handlePrev}><ChevronLeft className="w-4 h-4 mr-2"/> Terug</Button>
-                <Button onClick={handleNext} disabled={!title || !brand} className="bg-primary hover:bg-primary/90 text-white">Volgende <ChevronRight className="w-4 h-4 ml-2"/></Button>
+                <Button variant="outline" onClick={handlePrev}><ChevronLeft className="w-4 h-4 mr-2"/>{t.general.back}</Button>
+                <Button onClick={handleNext} disabled={!title || !brand} className="bg-primary hover:bg-primary/90 text-white">{t.create.next} <ChevronRight className="w-4 h-4 ml-2"/></Button>
               </div>
             </motion.div>
           )}
@@ -162,12 +170,12 @@ export default function CreateRequest() {
           {/* STEP 3 */}
           {step === 3 && (
             <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <h2 className="text-2xl font-bold mb-6">Voorkeuren & Afronden</h2>
-              
+              <h2 className="text-2xl font-bold mb-6">{t.create.step3Title}</h2>
+
               <div className="space-y-8">
                 <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Sparkles className="w-5 h-5 text-accent" /> Wat mogen winkels aanbieden?</h3>
-                  
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Sparkles className="w-5 h-5 text-accent" /> {t.create.offerTypesTitle}</h3>
+
                   <div className="flex flex-wrap gap-3 mb-6">
                     {(['new', 'refurbished', 'occasion'] as const).map(type => (
                       <button
@@ -175,50 +183,50 @@ export default function CreateRequest() {
                         onClick={() => toggleOfferType(type)}
                         className={`px-4 py-2 rounded-xl font-semibold capitalize border-2 transition-all ${allowedOffers.includes(type) ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-border/80'}`}
                       >
-                        {type === 'new' ? 'Nieuw' : type}
+                        {offerTypeLabel(type)}
                       </button>
                     ))}
                   </div>
 
                   <div className="p-4 bg-muted/50 rounded-xl flex items-start gap-4">
-                    <input 
-                      type="checkbox" 
-                      id="similar" 
-                      checked={allowSimilar} 
+                    <input
+                      type="checkbox"
+                      id="similar"
+                      checked={allowSimilar}
                       onChange={e => setAllowSimilar(e.target.checked)}
                       className="mt-1 w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                     <div>
-                      <label htmlFor="similar" className="font-bold text-secondary block mb-1 cursor-pointer">Winkels mogen een vergelijkbaar alternatief bieden</label>
-                      <p className="text-sm text-muted-foreground">Soms heeft een winkel niet exact jouw model, maar wel een beter nieuwer model voor een goede prijs. Vink dit aan om verrast te worden.</p>
+                      <label htmlFor="similar" className="font-bold text-secondary block mb-1 cursor-pointer">{t.create.similarTitle}</label>
+                      <p className="text-sm text-muted-foreground">{t.create.similarDesc}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
-                  <h3 className="font-bold text-lg mb-4">Jouw contactgegevens</h3>
+                  <h3 className="font-bold text-lg mb-4">{t.create.contactTitle}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-bold mb-2">Je naam *</label>
+                      <label className="block text-sm font-bold mb-2">{t.create.yourName} *</label>
                       <Input value={consumerName} onChange={e => setConsumerName(e.target.value)} />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold mb-2">E-mailadres *</label>
+                      <label className="block text-sm font-bold mb-2">{t.auth.email} *</label>
                       <Input type="email" value={consumerEmail} onChange={e => setConsumerEmail(e.target.value)} />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4">Jouw gegevens zijn veilig. Alleen de winkelier die jij kiest krijgt jouw e-mailadres te zien.</p>
+                  <p className="text-xs text-muted-foreground mt-4">{t.create.privacyNote}</p>
                 </div>
               </div>
 
               <div className="flex justify-between mt-8">
-                <Button variant="outline" onClick={handlePrev}><ChevronLeft className="w-4 h-4 mr-2"/> Terug</Button>
-                <Button 
-                  onClick={handleSubmit} 
-                  disabled={createMutation.isPending || !consumerName || !consumerEmail || allowedOffers.length === 0} 
+                <Button variant="outline" onClick={handlePrev}><ChevronLeft className="w-4 h-4 mr-2"/>{t.general.back}</Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={createMutation.isPending || !consumerName || !consumerEmail || allowedOffers.length === 0}
                   className="bg-primary hover:bg-primary/90 text-white h-12 px-8 text-lg font-bold"
                 >
-                  {createMutation.isPending ? "Bezig..." : "Plaats Uitvraag!"}
+                  {createMutation.isPending ? t.create.submitting : t.create.submit}
                 </Button>
               </div>
             </motion.div>

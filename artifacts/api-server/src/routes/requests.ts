@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, sql, and, desc, asc } from "drizzle-orm";
 import { z } from "zod/v4";
+import { sendNewRequestNotification } from "../services/email";
 
 const router: IRouter = Router();
 
@@ -151,6 +152,24 @@ router.post("/requests", async (req, res) => {
       consumerName: inserted.consumerName,
       consumerEmail: inserted.consumerEmail,
     });
+
+    // Fire-and-forget: notify sellers who watch this category
+    if (cat) {
+      db.select({ id: userAccountsTable.id, email: userAccountsTable.email, storeName: userAccountsTable.storeName, contactName: userAccountsTable.contactName, ids: userAccountsTable.notificationCategoryIds })
+        .from(userAccountsTable)
+        .where(eq(userAccountsTable.role, "seller"))
+        .then(sellers => {
+          for (const seller of sellers) {
+            try {
+              const watchedIds: number[] = JSON.parse(seller.ids || "[]");
+              if (watchedIds.includes(inserted.categoryId)) {
+                const name = seller.storeName || seller.contactName || "Winkelier";
+                sendNewRequestNotification(seller.email, name, cat.name, inserted.title, inserted.id).catch(() => {});
+              }
+            } catch { /* skip */ }
+          }
+        }).catch(() => {});
+    }
   } catch (err) {
     req.log.error({ err }, "Failed to create request");
     res.status(500).json({ error: "Internal server error" });

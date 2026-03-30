@@ -4,6 +4,15 @@
 
 PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gratis een uitvraag voor een product (televisie, auto, wasmachine etc.), leveranciers/winkels bieden hierop aan met hun beste prijs. De laagste bieding staat bovenaan. Als een consument interesse heeft in een bod, betaalt de leverancier 1 credit om de contactgegevens te ontvangen ("Connectie").
 
+## Seller Category Notifications
+
+- **DB column**: `user_accounts.notification_category_ids` (`text NOT NULL DEFAULT '[]'`) — JSON array of category IDs the seller watches
+- **API endpoints**:
+  - `GET /api/supplier/notification-preferences` — returns `{ categoryIds: number[] }`
+  - `PUT /api/supplier/notification-preferences` — saves `{ categoryIds: number[] }`
+- **Email trigger**: When `POST /requests` succeeds, all sellers whose `notification_category_ids` includes the new request's category receive a Dutch notification email (fire-and-forget)
+- **Dashboard UI**: Supplier dashboard shows checkbox grid per active category; saves preferences with confirmation toast
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

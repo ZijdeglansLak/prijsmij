@@ -3,9 +3,10 @@ import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
-import { Coins, Link2, ShoppingCart, LogOut, RefreshCw } from "lucide-react";
+import { Coins, Link2, ShoppingCart, LogOut, RefreshCw, Bell, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Connection {
@@ -17,11 +18,21 @@ interface Connection {
   createdAt: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  icon: string;
+}
+
 export default function SupplierDashboard() {
   const [, setLocation] = useLocation();
   const { user, token, logout, updateCredits, isSeller } = useUserAuth();
   const { t } = useI18n();
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [watchedIds, setWatchedIds] = useState<number[]>([]);
+  const [savingNotifs, setSavingNotifs] = useState(false);
+  const [notifSaved, setNotifSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,9 +46,11 @@ export default function SupplierDashboard() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [meRes, connRes] = await Promise.all([
+      const [meRes, connRes, catRes, notifRes] = await Promise.all([
         fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/supplier/me/connections", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/categories"),
+        fetch("/api/supplier/notification-preferences", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (meRes.ok) {
         const me = await meRes.json();
@@ -46,8 +59,37 @@ export default function SupplierDashboard() {
       if (connRes.ok) {
         setConnections(await connRes.json());
       }
+      if (catRes.ok) {
+        setCategories(await catRes.json());
+      }
+      if (notifRes.ok) {
+        const notifData = await notifRes.json();
+        setWatchedIds(notifData.categoryIds ?? []);
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  function toggleCategory(id: number) {
+    setWatchedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+    setNotifSaved(false);
+  }
+
+  async function saveNotifications() {
+    setSavingNotifs(true);
+    try {
+      await fetch("/api/supplier/notification-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ categoryIds: watchedIds }),
+      });
+      setNotifSaved(true);
+      setTimeout(() => setNotifSaved(false), 3000);
+    } finally {
+      setSavingNotifs(false);
     }
   }
 
@@ -104,6 +146,52 @@ export default function SupplierDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Notification Preferences */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-primary" />
+                {t.notifications.categoryTitle}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">{t.notifications.categoryDesc}</p>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-muted-foreground text-sm">{t.general.loading}</p>
+              ) : categories.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Geen categorieën beschikbaar.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                    {categories.map(cat => (
+                      <label key={cat.id} className="flex items-center gap-2 cursor-pointer group">
+                        <Checkbox
+                          id={`cat-${cat.id}`}
+                          checked={watchedIds.includes(cat.id)}
+                          onCheckedChange={() => toggleCategory(cat.id)}
+                        />
+                        <span className="text-sm group-hover:text-primary transition-colors">
+                          {cat.icon} {cat.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={saveNotifications} disabled={savingNotifs} size="sm">
+                      {savingNotifs ? t.general.loading : t.notifications.save}
+                    </Button>
+                    {notifSaved && (
+                      <span className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" />
+                        {t.notifications.saved}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Connections list */}
           <Card>

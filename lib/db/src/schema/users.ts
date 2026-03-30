@@ -15,6 +15,7 @@ export const userAccountsTable = pgTable("user_accounts", {
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
   username: text("username").unique(),
+  notificationCategoryIds: text("notification_category_ids").notNull().default("[]"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

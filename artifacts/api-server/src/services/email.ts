@@ -72,6 +72,21 @@ export async function sendVerificationEmail(to: string, name: string, token: str
   return link;
 }
 
+export async function sendNewRequestNotification(to: string, storeName: string, categoryName: string, requestTitle: string, requestId: number) {
+  const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
+  const link = `${baseUrl}/requests/${requestId}`;
+  const subject = `Nieuwe uitvraag in ${categoryName} — PrijsMij`;
+  const text = `Hoi ${storeName},\n\nEr is een nieuwe uitvraag geplaatst in de categorie "${categoryName}" die jij volgt:\n\n"${requestTitle}"\n\nBekijk de uitvraag en plaats je bod:\n${link}\n\nMet vriendelijke groet,\nHet PrijsMij-team\n\n---\nJe ontvangt deze e-mail omdat je notificaties hebt ingesteld voor deze categorie. Beheer je voorkeuren via je dashboard.`;
+
+  const transporter = getTransporter();
+  if (transporter) {
+    await transporter.sendMail({ from: FROM, to, subject, text });
+    console.log(`[EMAIL] New request notification sent to ${to} for request ${requestId}`);
+  } else {
+    console.log(`[EMAIL-DEV] New request notification for ${to}: ${link}`);
+  }
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, token: string, lang: Lang = "nl") {
   const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
   const link = `${baseUrl}/auth/reset-password?token=${token}`;

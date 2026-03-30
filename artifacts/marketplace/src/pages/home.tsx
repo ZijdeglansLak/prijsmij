@@ -6,11 +6,13 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, ShoppingBag, Store, Zap, ShieldCheck } from "lucide-react";
 import { useGetStats, useListCategories, useListRequests } from "@workspace/api-client-react";
+import { useI18n } from "@/contexts/i18n";
 
 export default function Home() {
   const { data: stats } = useGetStats();
   const { data: categories } = useListCategories();
   const { data: recentRequests } = useListRequests();
+  const { t } = useI18n();
 
   return (
     <Layout>
@@ -18,71 +20,70 @@ export default function Home() {
       <section className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent"></div>
-          {/* We use the requested image from requirements.yaml */}
-          <img 
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
-            alt="Marketplace background" 
+          <img
+            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            alt="Marketplace background"
             className="w-full h-full object-cover opacity-[0.15] mix-blend-multiply"
           />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-md border border-primary/20 text-primary font-semibold text-sm mb-8"
             >
               <Zap className="w-4 h-4" />
-              <span>De slimste manier om te shoppen</span>
+              <span>{t.home.badge}</span>
             </motion.div>
 
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-5xl md:text-7xl font-extrabold text-secondary leading-tight mb-6"
             >
-              Plaats je wens, <br/>
-              <span className="text-gradient">krijg het beste bod.</span>
+              {t.home.heading1} <br/>
+              <span className="text-gradient">{t.home.heading2}</span>
             </motion.h1>
 
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed"
             >
-              Waarom zoeken als winkels naar jou kunnen komen? Plaats gratis een uitvraag voor je nieuwe TV, wasmachine of auto, en laat leveranciers strijden om de beste prijs.
+              {t.home.subheading}
             </motion.p>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <Link 
-                href="/request/new" 
+              <Link
+                href="/request/new"
                 className="px-8 py-4 rounded-xl font-bold text-lg bg-primary text-primary-foreground shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Plaats nu een uitvraag <ArrowRight className="w-5 h-5" />
+                {t.home.ctaPost} <ArrowRight className="w-5 h-5" />
               </Link>
-              <Link 
-                href="/requests" 
+              <Link
+                href="/requests"
                 className="px-8 py-4 rounded-xl font-bold text-lg bg-white text-secondary border-2 border-border shadow-sm hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 flex items-center justify-center"
               >
-                Bekijk actieve uitvragen
+                {t.home.ctaView}
               </Link>
             </motion.div>
           </div>
 
           {/* Stats Bar */}
           {stats && (
-            <motion.div 
-              initial={{ opacity: 0, y: 40 }} 
-              animate={{ opacity: 1, y: 0 }} 
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.4 }}
               className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8"
             >
@@ -90,25 +91,25 @@ export default function Home() {
                 <div className="text-4xl font-display font-extrabold text-primary mb-2">
                   <AnimatedCounter value={stats.totalActiveRequests} />
                 </div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actieve Uitvragen</div>
+                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t.stats.activeRequests}</div>
               </div>
               <div className="glass-card rounded-2xl p-6 text-center">
                 <div className="text-4xl font-display font-extrabold text-accent mb-2">
                   <AnimatedCounter value={stats.totalBidsToday} />
                 </div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Biedingen Vandaag</div>
+                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t.stats.bidsToday}</div>
               </div>
               <div className="glass-card rounded-2xl p-6 text-center">
                 <div className="text-4xl font-display font-extrabold text-secondary mb-2">
                   <AnimatedCounter value={stats.totalSuppliersActive} />
                 </div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Actieve Winkels</div>
+                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t.stats.activeStores}</div>
               </div>
               <div className="glass-card rounded-2xl p-6 text-center bg-gradient-to-br from-primary to-accent text-white border-none">
                 <div className="text-4xl font-display font-extrabold mb-2">
                   <AnimatedCounter value={Math.round(stats.averageBidsPerRequest * 10) / 10} formatter={(v) => v.toString()} />
                 </div>
-                <div className="text-sm font-semibold opacity-90 uppercase tracking-wider">Biedingen per uitvraag</div>
+                <div className="text-sm font-semibold opacity-90 uppercase tracking-wider">{t.stats.avgBids}</div>
               </div>
             </motion.div>
           )}
@@ -120,8 +121,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl font-bold mb-4">Wat zoek je?</h2>
-              <p className="text-muted-foreground">Kies een categorie en start direct.</p>
+              <h2 className="text-3xl font-bold mb-4">{t.home.what}</h2>
+              <p className="text-muted-foreground">{t.home.whatSub}</p>
             </div>
           </div>
 
@@ -140,7 +141,7 @@ export default function Home() {
                       {cat.icon}
                     </div>
                     <h3 className="font-bold text-lg text-secondary mb-1">{cat.name}</h3>
-                    <p className="text-xs font-semibold text-primary">{cat.activeRequestCount} actief</p>
+                    <p className="text-xs font-semibold text-primary">{cat.activeRequestCount} {t.home.active}</p>
                   </div>
                 </Link>
               </motion.div>
@@ -154,11 +155,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
             <div>
-              <h2 className="text-3xl font-bold mb-4">Populaire uitvragen</h2>
-              <p className="text-muted-foreground">Kijk wat anderen zoeken en welke kortingen ze krijgen.</p>
+              <h2 className="text-3xl font-bold mb-4">{t.home.popularTitle}</h2>
+              <p className="text-muted-foreground">{t.home.popularSub}</p>
             </div>
             <Link href="/requests" className="text-primary font-bold flex items-center gap-2 hover:gap-3 transition-all">
-              Bekijk alles <ArrowRight className="w-4 h-4" />
+              {t.home.viewAll} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
@@ -182,35 +183,35 @@ export default function Home() {
       <section className="py-24 bg-secondary text-secondary-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Hoe werkt het?</h2>
-            <p className="text-secondary-foreground/70 max-w-2xl mx-auto">In drie simpele stappen de beste deal voor jouw nieuwe aankoop.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">{t.home.howTitle}</h2>
+            <p className="text-secondary-foreground/70 max-w-2xl mx-auto">{t.home.howSubtitle}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
             <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-30"></div>
-            
+
             <div className="relative text-center z-10">
               <div className="w-24 h-24 mx-auto rounded-3xl bg-secondary-foreground/10 flex items-center justify-center mb-6 border border-white/10 backdrop-blur-sm">
                 <ShoppingBag className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-white">1. Plaats uitvraag</h3>
-              <p className="text-secondary-foreground/70">Vul in wat je precies zoekt. Een specifiek model TV, of een auto met bepaalde opties. Gratis en vrijblijvend.</p>
+              <h3 className="text-xl font-bold mb-3 text-white">1. {t.home.step1Title}</h3>
+              <p className="text-secondary-foreground/70">{t.home.step1Text}</p>
             </div>
-            
+
             <div className="relative text-center z-10">
               <div className="w-24 h-24 mx-auto rounded-3xl bg-secondary-foreground/10 flex items-center justify-center mb-6 border border-white/10 backdrop-blur-sm">
                 <Store className="w-10 h-10 text-accent" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-white">2. Winkels bieden</h3>
-              <p className="text-secondary-foreground/70">Aangesloten (web)winkels zien jouw uitvraag en doen hun scherpste bod om jou als klant te winnen.</p>
+              <h3 className="text-xl font-bold mb-3 text-white">2. {t.home.step2Title}</h3>
+              <p className="text-secondary-foreground/70">{t.home.step2Text}</p>
             </div>
 
             <div className="relative text-center z-10">
               <div className="w-24 h-24 mx-auto rounded-3xl bg-primary flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
                 <ShieldCheck className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-white">3. Kies de beste deal</h3>
-              <p className="text-secondary-foreground/70">Vergelijk de biedingen. Tevreden? Tegen een kleine vergoeding brengen we je in contact met de winnende winkel.</p>
+              <h3 className="text-xl font-bold mb-3 text-white">3. {t.home.step3Title}</h3>
+              <p className="text-secondary-foreground/70">{t.home.step3Text}</p>
             </div>
           </div>
         </div>
