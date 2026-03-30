@@ -325,31 +325,48 @@ router.get("/payments/admin/logs", requireAdmin, async (req, res) => {
   }
 });
 
-// GET /payments/admin/test-paynl/:paynlOrderId — raw Pay.nl status check for diagnostics (tries both auth orders)
+// GET /payments/admin/test-paynl/:paynlOrderId — raw Pay.nl status check for diagnostics
 router.get("/payments/admin/test-paynl/:paynlOrderId", requireAdmin, async (req, res) => {
   const { paynlOrderId } = req.params;
   try {
     const { serviceId, token } = await getPaynlCredentials();
-    const url = `https://rest.pay.nl/v2/transactions/${paynlOrderId}`;
 
-    const tryFormat = async (label: string, creds: string) => {
-      const r = await fetch(url, { headers: { "Authorization": `Basic ${creds}`, "Accept": "application/json" } });
-      const txt = await r.text();
-      let body: any;
-      try { body = JSON.parse(txt); } catch { body = txt.slice(0, 400); }
-      return { format: label, httpStatus: r.status, httpOk: r.ok, body };
+    const tryFetch = async (label: string, url: string, headers: Record<string, string>) => {
+      try {
+        const r = await fetch(url, { headers });
+        const txt = await r.text();
+        let body: any;
+        try { body = JSON.parse(txt); } catch { body = txt.slice(0, 400) || "(lege body)"; }
+        return { label, url, httpStatus: r.status, httpOk: r.ok, body };
+      } catch (e: any) {
+        return { label, url, error: e.message };
+      }
     };
 
-    const [fmt1, fmt2] = await Promise.all([
-      tryFormat("token:serviceId", Buffer.from(`${token}:${serviceId}`).toString("base64")),
-      tryFormat("serviceId:token", Buffer.from(`${serviceId}:${token}`).toString("base64")),
+    const results = await Promise.all([
+      // v2 REST API — token:serviceId
+      tryFetch("v2 token:serviceId", `https://rest.pay.nl/v2/transactions/${paynlOrderId}`, {
+        "Authorization": `Basic ${Buffer.from(`${token}:${serviceId}`).toString("base64")}`, "Accept": "application/json",
+      }),
+      // v2 REST API — serviceId:token
+      tryFetch("v2 serviceId:token", `https://rest.pay.nl/v2/transactions/${paynlOrderId}`, {
+        "Authorization": `Basic ${Buffer.from(`${serviceId}:${token}`).toString("base64")}`, "Accept": "application/json",
+      }),
+      // v1 legacy API — token as query param
+      tryFetch("v1 query-param", `https://rest.pay.nl/v1/Transaction/info?transactionId=${paynlOrderId}&serviceId=${serviceId}&apiToken=${token}`, {
+        "Accept": "application/json",
+      }),
+      // v1 legacy API — Basic auth serviceId:token
+      tryFetch("v1 basic-auth", `https://rest.pay.nl/v1/Transaction/info?transactionId=${paynlOrderId}`, {
+        "Authorization": `Basic ${Buffer.from(`${serviceId}:${token}`).toString("base64")}`, "Accept": "application/json",
+      }),
     ]);
 
     res.json({
-      url,
       credentialsPresent: !!(serviceId && token),
       serviceIdPrefix: serviceId?.slice(0, 8) + "...",
-      attempts: [fmt1, fmt2],
+      tokenPrefix: token?.slice(0, 6) + "...",
+      results,
     });
   } catch (err: any) {
     res.json({ error: err.message });
