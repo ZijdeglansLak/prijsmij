@@ -107,6 +107,9 @@ export async function ensureTables(): Promise<void> {
 
       INSERT INTO site_settings (offline_mode)
       SELECT FALSE WHERE NOT EXISTS (SELECT 1 FROM site_settings LIMIT 1);
+
+      ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS paynl_service_id TEXT;
+      ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS paynl_token TEXT;
     `);
 
     logger.info("Database tables verified/created");

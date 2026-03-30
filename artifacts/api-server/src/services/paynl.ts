@@ -1,6 +1,38 @@
+import { db } from "@workspace/db";
+import { siteSettingsTable } from "@workspace/db/schema";
+
 export interface PaynlTransactionResult {
   orderId: string;
   paymentUrl: string;
+}
+
+async function getPaynlCredentials(): Promise<{ serviceId: string; token: string }> {
+  try {
+    const rows = await db.select({
+      paynlServiceId: siteSettingsTable.paynlServiceId,
+      paynlToken: siteSettingsTable.paynlToken,
+    }).from(siteSettingsTable).limit(1);
+
+    const dbServiceId = rows[0]?.paynlServiceId?.trim();
+    const dbToken = rows[0]?.paynlToken?.trim();
+
+    const serviceId = dbServiceId || process.env.PAYNL_SERVICE_ID || "";
+    const token = dbToken || process.env.PAYNL_TOKEN || "";
+
+    if (!serviceId || !token) {
+      throw new Error("Pay.nl is niet geconfigureerd. Stel de Service ID en Token in via het beheermenu onder Instellingen → Betaling.");
+    }
+
+    return { serviceId, token };
+  } catch (err: any) {
+    if (err.message.includes("Pay.nl is niet geconfigureerd")) throw err;
+    const serviceId = process.env.PAYNL_SERVICE_ID || "";
+    const token = process.env.PAYNL_TOKEN || "";
+    if (!serviceId || !token) {
+      throw new Error("Pay.nl is niet geconfigureerd. Stel de Service ID en Token in via het beheermenu onder Instellingen → Betaling.");
+    }
+    return { serviceId, token };
+  }
 }
 
 export async function createPaynlTransaction(opts: {
@@ -11,16 +43,10 @@ export async function createPaynlTransaction(opts: {
   ipAddress: string;
   extra1?: string;
 }): Promise<PaynlTransactionResult> {
-  const token = process.env.PAYNL_TOKEN;
-  const serviceId = process.env.PAYNL_SERVICE_ID;
-
-  if (!token || !serviceId) {
-    throw new Error("PAYNL_TOKEN en PAYNL_SERVICE_ID moeten worden ingesteld als omgevingsvariabelen.");
-  }
+  const { serviceId, token } = await getPaynlCredentials();
 
   const isTestMode = process.env.PAYNL_TEST_MODE === "1";
 
-  // Pay.nl v2 REST API — uses Basic auth: token as username, empty password
   const body: Record<string, any> = {
     serviceId,
     amount: {
@@ -38,7 +64,6 @@ export async function createPaynlTransaction(opts: {
     body.extra1 = opts.extra1;
   }
 
-  // Pay.nl Basic Auth: serviceId as username, token/secret as password
   const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
 
   const res = await fetch("https://rest.pay.nl/v2/transactions", {

@@ -13,10 +13,21 @@ async function getOrCreateSettings() {
   return inserted[0];
 }
 
+function maskSecret(val: string | null | undefined): string {
+  if (!val) return "";
+  if (val.length <= 4) return "****";
+  return "****" + val.slice(-4);
+}
+
 router.get("/settings", requireAdmin, async (_req, res) => {
   try {
     const settings = await getOrCreateSettings();
-    res.json(settings);
+    res.json({
+      offlineMode: settings.offlineMode,
+      paynlServiceId: settings.paynlServiceId ?? "",
+      paynlTokenMasked: maskSecret(settings.paynlToken),
+      paynlConfigured: !!(settings.paynlServiceId && settings.paynlToken),
+    });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
   }
@@ -24,14 +35,37 @@ router.get("/settings", requireAdmin, async (_req, res) => {
 
 router.put("/settings", requireAdmin, async (req, res) => {
   try {
-    const { offlineMode } = req.body as { offlineMode: boolean };
+    const { offlineMode, paynlServiceId, paynlToken } = req.body as {
+      offlineMode?: boolean;
+      paynlServiceId?: string;
+      paynlToken?: string;
+    };
+
     const settings = await getOrCreateSettings();
+
+    const updates: Partial<typeof siteSettingsTable.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    if (typeof offlineMode === "boolean") updates.offlineMode = offlineMode;
+    if (typeof paynlServiceId === "string") updates.paynlServiceId = paynlServiceId.trim() || null;
+    if (typeof paynlToken === "string" && paynlToken !== "" && !paynlToken.startsWith("****")) {
+      updates.paynlToken = paynlToken.trim() || null;
+    }
+
     const updated = await db
       .update(siteSettingsTable)
-      .set({ offlineMode: !!offlineMode, updatedAt: new Date() })
+      .set(updates)
       .where(eq(siteSettingsTable.id, settings.id))
       .returning();
-    res.json(updated[0]);
+
+    const s = updated[0];
+    res.json({
+      offlineMode: s.offlineMode,
+      paynlServiceId: s.paynlServiceId ?? "",
+      paynlTokenMasked: maskSecret(s.paynlToken),
+      paynlConfigured: !!(s.paynlServiceId && s.paynlToken),
+    });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });
   }

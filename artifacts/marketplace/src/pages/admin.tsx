@@ -475,10 +475,21 @@ function SettingsTab() {
   const [offlineMode, setOfflineMode] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [paynlServiceId, setPaynlServiceId] = useState("");
+  const [paynlToken, setPaynlToken] = useState("");
+  const [paynlConfigured, setPaynlConfigured] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [savingPaynl, setSavingPaynl] = useState(false);
+
   useEffect(() => {
     fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
-      .then(d => setOfflineMode(d.offlineMode ?? false))
+      .then(d => {
+        setOfflineMode(d.offlineMode ?? false);
+        setPaynlServiceId(d.paynlServiceId ?? "");
+        setPaynlToken(d.paynlTokenMasked ?? "");
+        setPaynlConfigured(d.paynlConfigured ?? false);
+      })
       .catch(() => setOfflineMode(false));
   }, [token]);
 
@@ -501,12 +512,36 @@ function SettingsTab() {
     }
   }
 
+  async function savePaynl(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingPaynl(true);
+    try {
+      const body: Record<string, string> = { paynlServiceId };
+      if (paynlToken && !paynlToken.startsWith("****")) body.paynlToken = paynlToken;
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setPaynlConfigured(d.paynlConfigured);
+      setPaynlToken(d.paynlTokenMasked ?? "");
+      toast({ title: "Pay.nl instellingen opgeslagen" });
+    } catch (err: any) {
+      toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingPaynl(false);
+    }
+  }
+
   if (offlineMode === null) return <p className="text-muted-foreground">Laden...</p>;
 
   return (
-    <div className="max-w-2xl">
-      <h2 className="text-xl font-bold mb-6">Site-instellingen</h2>
+    <div className="max-w-2xl space-y-6">
+      <h2 className="text-xl font-bold">Site-instellingen</h2>
 
+      {/* Online/offline */}
       <div className={`rounded-2xl border-2 p-6 transition-colors ${offlineMode ? "border-destructive/50 bg-destructive/5" : "border-border bg-card"}`}>
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-start gap-4">
@@ -534,13 +569,10 @@ function SettingsTab() {
               disabled={saving}
               className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${offlineMode ? "bg-destructive focus:ring-destructive" : "bg-green-500 focus:ring-green-500"}`}
             >
-              <span
-                className={`block w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 absolute top-1 ${offlineMode ? "translate-x-1" : "translate-x-8"}`}
-              />
+              <span className={`block w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 absolute top-1 ${offlineMode ? "translate-x-1" : "translate-x-8"}`} />
             </button>
           </div>
         </div>
-
         {offlineMode && (
           <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <p className="text-sm text-amber-800 font-medium">
@@ -548,20 +580,68 @@ function SettingsTab() {
             </p>
           </div>
         )}
-
         <div className="mt-6 pt-6 border-t border-border">
-          <Button
-            onClick={toggleOffline}
-            disabled={saving}
-            variant={offlineMode ? "default" : "destructive"}
-            className={offlineMode ? "bg-green-600 hover:bg-green-700 text-white" : ""}
-          >
+          <Button onClick={toggleOffline} disabled={saving} variant={offlineMode ? "default" : "destructive"} className={offlineMode ? "bg-green-600 hover:bg-green-700 text-white" : ""}>
             {saving ? "Opslaan..." : offlineMode ? "Site online zetten" : "Site offline zetten"}
           </Button>
         </div>
       </div>
 
-      <div className="mt-6 p-4 bg-muted rounded-xl">
+      {/* Pay.nl */}
+      <div className="rounded-2xl border-2 border-border bg-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <Key className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg leading-tight">Pay.nl betaalkoppeling</h3>
+            <p className="text-sm text-muted-foreground">Vul je Pay.nl Service ID en Token in</p>
+          </div>
+          {paynlConfigured && (
+            <span className="ml-auto text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Actief</span>
+          )}
+          {!paynlConfigured && (
+            <span className="ml-auto text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Niet geconfigureerd</span>
+          )}
+        </div>
+        <form onSubmit={savePaynl} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium block mb-1">Service ID</label>
+            <Input
+              placeholder="bijv. SL-1810-4555"
+              value={paynlServiceId}
+              onChange={e => setPaynlServiceId(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Token / Secret</label>
+            <div className="relative">
+              <Input
+                type={showToken ? "text" : "password"}
+                placeholder={paynlConfigured ? "Laat leeg om huidige waarde te bewaren" : "Jouw Pay.nl token"}
+                value={paynlToken}
+                onChange={e => setPaynlToken(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(v => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Vind dit in je <a href="https://admin.pay.nl" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Pay.nl dashboard</a> onder Services → API tokens.
+            </p>
+          </div>
+          <Button type="submit" disabled={savingPaynl}>
+            {savingPaynl ? "Opslaan..." : "Pay.nl opslaan"}
+          </Button>
+        </form>
+      </div>
+
+      <div className="p-4 bg-muted rounded-xl">
         <p className="text-xs text-muted-foreground">
           <strong>Hoe werkt het?</strong> Wanneer de site offline is, zien bezoekers een vergrendeld scherm met een inlogformulier. Alleen accounts met beheerdersrechten kunnen dan nog inloggen en de site beheren.
         </p>
