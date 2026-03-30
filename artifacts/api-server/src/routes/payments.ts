@@ -142,25 +142,9 @@ router.get("/payments/return", async (req, res) => {
       return;
     }
 
-    // Webhook may not have arrived yet — query Pay.nl directly
-    if (order.paynlOrderId) {
-      try {
-        const { isPaid, action, rawData } = await getPaynlTransactionStatus(order.paynlOrderId);
-        req.log.info({ orderId, paynlOrderId: order.paynlOrderId, isPaid, action }, "Pay.nl status check on return");
-
-        if (isPaid) {
-          const { credits } = await processPayment(order.id, order.paynlOrderId);
-          await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined, result: "paid_via_status_check", creditsAdded: credits });
-          res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
-          return;
-        }
-        await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined, result: `still_pending:${action}` });
-      } catch (err: any) {
-        req.log.error({ err }, "Failed to check Pay.nl status on return");
-        await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "error", errorMessage: err.message });
-      }
-    }
-
+    // Log return event and redirect to pending — exchange webhook will update status asynchronously.
+    // We don't call Pay.nl status API because service tokens don't have read permissions (403).
+    await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "redirected_to_pending" });
     res.redirect(`${appUrl}/supplier/credits?payment=pending&orderId=${orderId}`);
   } catch (err) {
     req.log.error({ err }, "Payment return error");
@@ -176,6 +160,9 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
   const rawBody = JSON.stringify(params);
 
   log.info({ action, extra1, paynlOrderId, allParams: params }, "Pay.nl exchange received");
+
+  // Log receipt immediately so admin can see Pay.nl is reaching the server
+  await logPayment({ source: "exchange_received", action, extra1, paynlOrderId, rawBody });
 
   // Determine which order we're dealing with
   let order: typeof paymentOrdersTable.$inferSelect | undefined;
@@ -267,28 +254,8 @@ router.get("/payments/status/:orderId", requireSellerOrAdmin, async (req, res) =
     const [order] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
     if (!order || order.userId !== userId) { res.status(404).json({ error: "Order niet gevonden" }); return; }
 
-    if (order.status === "pending" && order.paynlOrderId) {
-      try {
-        const { isPaid, action, rawData } = await getPaynlTransactionStatus(order.paynlOrderId);
-        await logPayment({
-          source: "status_poll",
-          action,
-          internalOrderId: order.id,
-          paynlOrderId: order.paynlOrderId,
-          rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined,
-          result: isPaid ? "paid_via_poll" : `not_paid:${action}`,
-          creditsAdded: isPaid ? order.creditsAmount : undefined,
-        });
-        if (isPaid) {
-          await processPayment(order.id, order.paynlOrderId);
-          res.json({ status: "paid", credits: order.creditsAmount });
-          return;
-        }
-      } catch (err: any) {
-        await logPayment({ source: "status_poll", internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "error", errorMessage: err.message });
-      }
-    }
-
+    // Return current DB status — exchange webhook updates this when Pay.nl confirms payment.
+    // We do NOT call Pay.nl API here because service tokens don't have read permissions (403).
     res.json({ status: order.status, credits: order.creditsAmount });
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
