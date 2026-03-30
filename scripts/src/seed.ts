@@ -1,4 +1,6 @@
-import { db, categoriesTable, requestsTable, bidsTable } from "@workspace/db";
+import { db, categoriesTable, requestsTable, bidsTable, userAccountsTable, siteSettingsTable } from "@workspace/db";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 
 const categories = [
   {
@@ -119,7 +121,27 @@ const categories = [
 ];
 
 async function seed() {
-  console.log("🌱 Seeding categories...");
+  console.log("🌱 PrijsMij database seeden...");
+
+  // Admin account
+  const admins = await db.select({ id: userAccountsTable.id }).from(userAccountsTable).where(eq(userAccountsTable.isAdmin, true)).limit(1);
+  if (admins.length === 0) {
+    const passwordHash = await bcrypt.hash("welkom12345", 10);
+    await db.insert(userAccountsTable).values({ role: "buyer", contactName: "Beheerder", email: "admin@prijsmij.nl", passwordHash, isAdmin: true, emailVerified: true, notificationCategoryIds: "[]" });
+    console.log("  ✅ Admin aangemaakt: admin@prijsmij.nl / welkom12345");
+    console.log("  ⚠️  Wijzig dit wachtwoord na eerste inlog!");
+  } else {
+    console.log("  ✓ Admin bestaat al — overgeslagen");
+  }
+
+  // Site settings
+  const settings = await db.select({ id: siteSettingsTable.id }).from(siteSettingsTable).limit(1);
+  if (settings.length === 0) {
+    await db.insert(siteSettingsTable).values({ offlineMode: false });
+    console.log("  ✅ Site-instellingen aangemaakt");
+  }
+
+  console.log("🌱 Categorieën seeden...");
 
   for (const cat of categories) {
     const existing = await db
