@@ -33,7 +33,7 @@ router.post("/payments/checkout", requireSeller, async (req, res) => {
     const transaction = await createPaynlTransaction({
       amountCents: bundle.priceCents,
       description: `PrijsMij - ${bundle.credits} connecties (${bundle.name})`,
-      finishUrl: `${appUrl}/api/payments/return?orderId=${order.id}`,
+      returnUrl: `${appUrl}/api/payments/return?orderId=${order.id}`,
       exchangeUrl: `${appUrl}/api/payments/exchange`,
       ipAddress: ip,
       extra1: String(order.id),
