@@ -406,4 +406,56 @@ router.post("/payments/admin/orders/:id/process", requireAdmin, async (req, res)
   }
 });
 
+// POST /payments/admin/orders/:id/simulate-exchange — simulate a Pay.nl new_ppt exchange for testing
+router.post("/payments/admin/orders/:id/simulate-exchange", requireAdmin, async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    if (isNaN(orderId)) { res.status(400).json({ error: "Ongeldig ID" }); return; }
+
+    const [order] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
+    if (!order) { res.status(404).json({ error: "Order niet gevonden" }); return; }
+
+    const simulatedParams = {
+      action: "new_ppt",
+      extra1: String(order.id),
+      orderId: order.paynlOrderId ?? `SIM-${order.id}`,
+      _source: "admin_simulation",
+    };
+
+    const result = await handleExchange(simulatedParams, { info: () => {}, warn: () => {}, error: () => {} });
+    await logPayment({ source: "admin_simulate_exchange", action: "new_ppt", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, rawBody: JSON.stringify(simulatedParams), result: `simulation:${result}` });
+
+    const [updated] = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.id, orderId));
+    res.json({ ok: result === "TRUE", simulatedAction: "new_ppt", orderStatus: updated?.status, credits: updated?.creditsAmount });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /payments/admin/exchange-stats — recent exchange log summary
+router.get("/payments/admin/exchange-stats", requireAdmin, async (_req, res) => {
+  try {
+    const logs = await db
+      .select()
+      .from(paymentLogsTable)
+      .orderBy(desc(paymentLogsTable.createdAt))
+      .limit(50);
+
+    const exchangeReceived = logs.filter(l => l.source === "exchange_received");
+    const exchangeProcessed = logs.filter(l => l.source === "exchange");
+    const returnUrl = logs.filter(l => l.source === "return_url");
+
+    res.json({
+      total: logs.length,
+      exchangeReceived: exchangeReceived.length,
+      exchangeProcessed: exchangeProcessed.length,
+      returnUrlHits: returnUrl.length,
+      lastExchange: exchangeReceived[0] ?? null,
+      lastReturnUrl: returnUrl[0] ?? null,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

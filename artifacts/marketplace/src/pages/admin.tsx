@@ -849,17 +849,21 @@ function PaymentsTab() {
   const [testPaynlId, setTestPaynlId] = useState("");
   const [testResult, setTestResult] = useState<any>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [simulating, setSimulating] = useState<number | null>(null);
+  const [exchangeStats, setExchangeStats] = useState<any>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const [oRes, lRes] = await Promise.all([
+      const [oRes, lRes, sRes] = await Promise.all([
         fetch("/api/payments/admin/orders", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/payments/admin/logs", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/payments/admin/exchange-stats", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (oRes.ok) setOrders(await oRes.json());
       if (lRes.ok) setLogs(await lRes.json());
+      if (sRes.ok) setExchangeStats(await sRes.json());
     } catch { /* ignore */ } finally {
       setLoading(false);
     }
@@ -886,6 +890,28 @@ function PaymentsTab() {
       toast({ title: "Fout", description: "Probeer opnieuw", variant: "destructive" });
     } finally {
       setProcessing(null);
+    }
+  }
+
+  async function handleSimulateExchange(orderId: number) {
+    if (!token) return;
+    setSimulating(orderId);
+    try {
+      const res = await fetch(`/api/payments/admin/orders/${orderId}/simulate-exchange`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: data.ok ? "Simulatie geslaagd" : "Simulatie mislukt", description: `Status: ${data.orderStatus} · ${data.credits ?? 0} credits` });
+        await load();
+      } else {
+        toast({ title: "Fout", description: data.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Fout", description: "Probeer opnieuw", variant: "destructive" });
+    } finally {
+      setSimulating(null);
     }
   }
 
@@ -925,6 +951,25 @@ function PaymentsTab() {
           </div>
         ))}
       </div>
+
+      {/* Exchange webhook stats */}
+      {exchangeStats && (
+        <div className={`rounded-xl p-4 border text-sm ${exchangeStats.exchangeReceived > 0 ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>
+          <p className={`font-semibold mb-1 ${exchangeStats.exchangeReceived > 0 ? "text-green-800" : "text-amber-800"}`}>
+            {exchangeStats.exchangeReceived > 0 ? "✓ Pay.nl exchange-webhook actief" : "⚠ Nog geen exchange-webhooks ontvangen"}
+          </p>
+          <div className="flex gap-4 text-xs text-muted-foreground flex-wrap">
+            <span>Exchanges ontvangen: <strong>{exchangeStats.exchangeReceived}</strong></span>
+            <span>Verwerkt: <strong>{exchangeStats.exchangeProcessed}</strong></span>
+            <span>Return URL hits: <strong>{exchangeStats.returnUrlHits}</strong></span>
+          </div>
+          {exchangeStats.exchangeReceived === 0 && (
+            <p className="text-xs text-amber-700 mt-2">
+              Controleer of Pay.nl exchange URL is ingesteld op: <code className="bg-white px-1 rounded">{window.location.origin.replace(/:\d+$/, '')}/api/payments/exchange</code>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Pay.nl API Diagnostiek */}
       <div className="border border-blue-200 bg-blue-50 rounded-xl p-4">
@@ -994,9 +1039,14 @@ function PaymentsTab() {
                   <td className="px-3 py-2"><StatusBadge status={o.status} /></td>
                   <td className="px-3 py-2">
                     {o.status === "pending" && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs px-2" disabled={processing === o.id} onClick={() => handleProcess(o.id)}>
-                        {processing === o.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verwerk"}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="h-7 text-xs px-2" disabled={processing === o.id || simulating === o.id} onClick={() => handleProcess(o.id)}>
+                          {processing === o.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verwerk"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs px-2 text-purple-700 hover:text-purple-900 hover:bg-purple-50" disabled={processing === o.id || simulating === o.id} onClick={() => handleSimulateExchange(o.id)} title="Simuleer Pay.nl exchange webhook">
+                          {simulating === o.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Test"}
+                        </Button>
+                      </div>
                     )}
                     {o.status === "paid" && <span className="text-xs text-muted-foreground">{fmtDate(o.paidAt)}</span>}
                   </td>
