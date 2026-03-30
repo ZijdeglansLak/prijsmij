@@ -30,3 +30,9 @@ id = "qIBsxlAtdExDR8OZg8U_w"
 uri = "file://prijsmij-database.zip"
 type = "unspecified"
 title = "prijsmij-database.zip — Database dump (SQL)"
+
+[[outputs]]
+id = "aKYjZD96Inisj5kADdiYb"
+uri = "file://prijsmij.zip"
+type = "unspecified"
+title = "PrijsMij — volledige broncode"
