@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Store, TrendingUp, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe, ShieldCheck, User } from "lucide-react";
+import { Store, TrendingDown, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe, ShieldCheck, User } from "lucide-react";
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useUserAuth } from "@/contexts/user-auth";
@@ -37,7 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center gap-2 group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-                  <TrendingUp className="w-6 h-6" />
+                  <TrendingDown className="w-6 h-6" />
                 </div>
                 <span className="font-display font-bold text-2xl tracking-tight text-secondary">
                   Prijs<span className="text-primary">Mij</span>
@@ -347,7 +347,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div>
               <Link href="/" className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingDown className="w-5 h-5" />
                 </div>
                 <span className="font-display font-bold text-xl">PrijsMij</span>
               </Link>
