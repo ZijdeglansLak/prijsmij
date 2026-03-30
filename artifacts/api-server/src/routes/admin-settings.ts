@@ -49,7 +49,8 @@ router.put("/settings", requireAdmin, async (req, res) => {
 
     if (typeof offlineMode === "boolean") updates.offlineMode = offlineMode;
     if (typeof paynlServiceId === "string") updates.paynlServiceId = paynlServiceId.trim() || null;
-    if (typeof paynlToken === "string" && paynlToken !== "" && !paynlToken.startsWith("****")) {
+    if (typeof paynlToken === "string" && !paynlToken.startsWith("****")) {
+      // Empty string = explicitly clear (use env var fallback); non-empty = save new value
       updates.paynlToken = paynlToken.trim() || null;
     }
 

@@ -533,7 +533,8 @@ function SettingsTab() {
     setSavingPaynl(true);
     try {
       const body: Record<string, string> = { paynlServiceId };
-      if (paynlToken && !paynlToken.startsWith("****")) body.paynlToken = paynlToken;
+      // Always send token: empty string = explicitly clear (use env var), masked = skip
+      if (!paynlToken.startsWith("****")) body.paynlToken = paynlToken;
       const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -546,6 +547,26 @@ function SettingsTab() {
       toast({ title: "Pay.nl instellingen opgeslagen" });
     } catch (err: any) {
       toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingPaynl(false);
+    }
+  }
+
+  async function clearPaynlToken() {
+    setSavingPaynl(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ paynlToken: "" }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setPaynlConfigured(d.paynlConfigured);
+      setPaynlToken("");
+      toast({ title: "Token gewist — omgevingsvariabele wordt gebruikt" });
+    } catch (err: any) {
+      toast({ title: "Fout bij wissen", description: err.message, variant: "destructive" });
     } finally {
       setSavingPaynl(false);
     }
@@ -651,9 +672,21 @@ function SettingsTab() {
               Vind dit in je <a href="https://admin.pay.nl" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Pay.nl dashboard</a> onder Services → API tokens.
             </p>
           </div>
-          <Button type="submit" disabled={savingPaynl}>
-            {savingPaynl ? "Opslaan..." : "Pay.nl opslaan"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={savingPaynl}>
+              {savingPaynl ? "Opslaan..." : "Pay.nl opslaan"}
+            </Button>
+            {paynlToken.startsWith("****") && (
+              <button
+                type="button"
+                onClick={clearPaynlToken}
+                disabled={savingPaynl}
+                className="text-xs text-destructive underline hover:no-underline disabled:opacity-50"
+              >
+                Wis token (gebruik omgevingsvariabele)
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
