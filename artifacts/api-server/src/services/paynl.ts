@@ -54,14 +54,32 @@ export async function getPaynlTransactionStatus(
   paynlOrderId: string,
 ): Promise<{ isPaid: boolean; action: string; rawData?: any }> {
   const { serviceId, token } = await getPaynlCredentials();
-  const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
+
+  // Pay.nl REST API v2 GET uses token:serviceId order (reversed from POST which also has serviceId in body)
+  const credentialsForGet = Buffer.from(`${token}:${serviceId}`).toString("base64");
 
   const res = await fetch(`https://rest.pay.nl/v2/transactions/${paynlOrderId}`, {
-    headers: { "Authorization": `Basic ${credentials}`, "Accept": "application/json" },
+    headers: { "Authorization": `Basic ${credentialsForGet}`, "Accept": "application/json" },
   });
 
   const text = await res.text();
   if (!res.ok) {
+    // If token:serviceId also gives 403, try serviceId:token as fallback
+    if (res.status === 403) {
+      const credentialsFallback = Buffer.from(`${serviceId}:${token}`).toString("base64");
+      const res2 = await fetch(`https://rest.pay.nl/v2/transactions/${paynlOrderId}`, {
+        headers: { "Authorization": `Basic ${credentialsFallback}`, "Accept": "application/json" },
+      });
+      const text2 = await res2.text();
+      if (!res2.ok) {
+        return { isPaid: false, action: `HTTP_${res2.status}_both_formats_failed`, rawData: text2.slice(0, 300) };
+      }
+      let data2: any;
+      try { data2 = JSON.parse(text2); } catch { return { isPaid: false, action: "PARSE_ERROR", rawData: text2.slice(0, 300) }; }
+      const isPaid2 = isPaidStatus(data2);
+      const action2 = data2?.status?.action ?? data2?.paymentDetails?.state ?? data2?.state ?? String(data2?.status?.code ?? "");
+      return { isPaid: isPaid2, action: action2, rawData: data2 };
+    }
     return { isPaid: false, action: `HTTP_${res.status}`, rawData: text.slice(0, 300) };
   }
 

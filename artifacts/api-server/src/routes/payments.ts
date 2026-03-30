@@ -341,26 +341,31 @@ router.get("/payments/admin/logs", requireAdmin, async (req, res) => {
   }
 });
 
-// GET /payments/admin/test-paynl/:paynlOrderId — raw Pay.nl status check for diagnostics
+// GET /payments/admin/test-paynl/:paynlOrderId — raw Pay.nl status check for diagnostics (tries both auth orders)
 router.get("/payments/admin/test-paynl/:paynlOrderId", requireAdmin, async (req, res) => {
   const { paynlOrderId } = req.params;
   try {
     const { serviceId, token } = await getPaynlCredentials();
-    const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
     const url = `https://rest.pay.nl/v2/transactions/${paynlOrderId}`;
-    const apiRes = await fetch(url, {
-      headers: { "Authorization": `Basic ${credentials}`, "Accept": "application/json" },
-    });
-    const text = await apiRes.text();
-    let parsed: any;
-    try { parsed = JSON.parse(text); } catch { parsed = null; }
+
+    const tryFormat = async (label: string, creds: string) => {
+      const r = await fetch(url, { headers: { "Authorization": `Basic ${creds}`, "Accept": "application/json" } });
+      const txt = await r.text();
+      let body: any;
+      try { body = JSON.parse(txt); } catch { body = txt.slice(0, 400); }
+      return { format: label, httpStatus: r.status, httpOk: r.ok, body };
+    };
+
+    const [fmt1, fmt2] = await Promise.all([
+      tryFormat("token:serviceId", Buffer.from(`${token}:${serviceId}`).toString("base64")),
+      tryFormat("serviceId:token", Buffer.from(`${serviceId}:${token}`).toString("base64")),
+    ]);
+
     res.json({
       url,
-      httpStatus: apiRes.status,
-      httpOk: apiRes.ok,
-      body: parsed ?? text.slice(0, 500),
       credentialsPresent: !!(serviceId && token),
       serviceIdPrefix: serviceId?.slice(0, 8) + "...",
+      attempts: [fmt1, fmt2],
     });
   } catch (err: any) {
     res.json({ error: err.message });
