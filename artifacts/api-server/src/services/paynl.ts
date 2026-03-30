@@ -35,6 +35,22 @@ async function getPaynlCredentials(): Promise<{ serviceId: string; token: string
   }
 }
 
+export async function getPaynlTransactionStatus(paynlOrderId: string): Promise<{ isPaid: boolean; action: string }> {
+  const { serviceId, token } = await getPaynlCredentials();
+  const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
+
+  const res = await fetch(`https://rest.pay.nl/v2/transactions/${paynlOrderId}`, {
+    headers: { "Authorization": `Basic ${credentials}`, "Accept": "application/json" },
+  });
+
+  if (!res.ok) return { isPaid: false, action: "UNKNOWN" };
+
+  const data = await res.json() as any;
+  const action: string = data?.status?.action ?? data?.paymentDetails?.state ?? "";
+  const isPaid = action === "PAID" || action === "AUTHORIZE" || action === "CAPTURE";
+  return { isPaid, action };
+}
+
 export async function createPaynlTransaction(opts: {
   amountCents: number;
   description: string;
