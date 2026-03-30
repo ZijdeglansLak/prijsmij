@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import express, { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
@@ -6,6 +6,25 @@ import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus } from "../services/paynl";
 
 const router: IRouter = Router();
+
+// Parse Pay.nl txt(post) bodies — Pay.nl may send Content-Type: text/plain with &-separated key=value pairs
+// We add express.text() so the raw body is readable, then normalise to a plain object
+function paynlBodyParser(req: any, res: any, next: any) {
+  const ct = (req.headers["content-type"] ?? "").toLowerCase();
+  if (ct.includes("text/plain")) {
+    // Read raw text body
+    express.text({ type: "*/*" })(req, res, () => {
+      if (typeof req.body === "string") {
+        const parsed: Record<string, string> = {};
+        try { new URLSearchParams(req.body).forEach((v, k) => { parsed[k] = v; }); } catch {}
+        req.body = parsed;
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+}
 
 // Persist a payment log entry (best-effort, never throws)
 async function logPayment(entry: {
@@ -222,7 +241,8 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
 }
 
 // POST /payments/exchange — Pay.nl webhook (server-to-server)
-router.post("/payments/exchange", async (req, res) => {
+// paynlBodyParser handles text/plain (Pay.nl txt(post) format with & separator)
+router.post("/payments/exchange", paynlBodyParser, async (req, res) => {
   try {
     const result = await handleExchange(req.body ?? {}, req.log);
     res.send(result);
