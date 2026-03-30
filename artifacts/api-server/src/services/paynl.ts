@@ -35,7 +35,24 @@ async function getPaynlCredentials(): Promise<{ serviceId: string; token: string
   }
 }
 
-export async function getPaynlTransactionStatus(paynlOrderId: string): Promise<{ isPaid: boolean; action: string }> {
+// Pay.nl v2 REST API status codes:
+// 10 = PENDING, 20 = IN_PROGRESS, 50 = PENDING_APPROVAL
+// 80 = VERIFY, 85 = PARTIAL_PAYMENT
+// 90 = AUTHORIZED, 95 = PARTIAL_AUTHORIZED, 100 = PAID
+// -50 = EXPIRED, -60 = DENIED, -70 = CANCEL, -80 = CHARGEBACK, -90 = REFUND
+function isPaidStatus(data: any): boolean {
+  const code = data?.status?.code ?? data?.statusCode ?? data?.paymentDetails?.statusCode;
+  if (typeof code === "number" && code >= 90) return true;
+
+  const action = (data?.status?.action ?? data?.paymentDetails?.state ?? data?.state ?? "").toUpperCase();
+  if (["PAID", "AUTHORIZE", "CAPTURE", "AUTHORIZED", "COMPLETE", "COMPLETED"].includes(action)) return true;
+
+  return false;
+}
+
+export async function getPaynlTransactionStatus(
+  paynlOrderId: string,
+): Promise<{ isPaid: boolean; action: string; rawData?: any }> {
   const { serviceId, token } = await getPaynlCredentials();
   const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
 
@@ -43,12 +60,18 @@ export async function getPaynlTransactionStatus(paynlOrderId: string): Promise<{
     headers: { "Authorization": `Basic ${credentials}`, "Accept": "application/json" },
   });
 
-  if (!res.ok) return { isPaid: false, action: "UNKNOWN" };
+  const text = await res.text();
+  if (!res.ok) {
+    return { isPaid: false, action: `HTTP_${res.status}`, rawData: text.slice(0, 300) };
+  }
 
-  const data = await res.json() as any;
-  const action: string = data?.status?.action ?? data?.paymentDetails?.state ?? "";
-  const isPaid = action === "PAID" || action === "AUTHORIZE" || action === "CAPTURE";
-  return { isPaid, action };
+  let data: any;
+  try { data = JSON.parse(text); } catch { return { isPaid: false, action: "PARSE_ERROR", rawData: text.slice(0, 300) }; }
+
+  const isPaid = isPaidStatus(data);
+  const action = data?.status?.action ?? data?.paymentDetails?.state ?? data?.state ?? String(data?.status?.code ?? "");
+
+  return { isPaid, action, rawData: data };
 }
 
 export async function createPaynlTransaction(opts: {

@@ -145,16 +145,16 @@ router.get("/payments/return", async (req, res) => {
     // Webhook may not have arrived yet — query Pay.nl directly
     if (order.paynlOrderId) {
       try {
-        const { isPaid, action } = await getPaynlTransactionStatus(order.paynlOrderId);
+        const { isPaid, action, rawData } = await getPaynlTransactionStatus(order.paynlOrderId);
         req.log.info({ orderId, paynlOrderId: order.paynlOrderId, isPaid, action }, "Pay.nl status check on return");
 
         if (isPaid) {
           const { credits } = await processPayment(order.id, order.paynlOrderId);
-          await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "paid_via_status_check", creditsAdded: credits });
+          await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined, result: "paid_via_status_check", creditsAdded: credits });
           res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
           return;
         }
-        await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "still_pending" });
+        await logPayment({ source: "return_url", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined, result: `still_pending:${action}` });
       } catch (err: any) {
         req.log.error({ err }, "Failed to check Pay.nl status on return");
         await logPayment({ source: "return_url", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "error", errorMessage: err.message });
@@ -279,14 +279,24 @@ router.get("/payments/status/:orderId", requireSellerOrAdmin, async (req, res) =
 
     if (order.status === "pending" && order.paynlOrderId) {
       try {
-        const { isPaid } = await getPaynlTransactionStatus(order.paynlOrderId);
+        const { isPaid, action, rawData } = await getPaynlTransactionStatus(order.paynlOrderId);
+        await logPayment({
+          source: "status_poll",
+          action,
+          internalOrderId: order.id,
+          paynlOrderId: order.paynlOrderId,
+          rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined,
+          result: isPaid ? "paid_via_poll" : `not_paid:${action}`,
+          creditsAdded: isPaid ? order.creditsAmount : undefined,
+        });
         if (isPaid) {
-          const { credits } = await processPayment(order.id, order.paynlOrderId);
-          await logPayment({ source: "status_poll", internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "paid_via_poll", creditsAdded: credits });
+          await processPayment(order.id, order.paynlOrderId);
           res.json({ status: "paid", credits: order.creditsAmount });
           return;
         }
-      } catch { /* ignore */ }
+      } catch (err: any) {
+        await logPayment({ source: "status_poll", internalOrderId: order.id, paynlOrderId: order.paynlOrderId, result: "error", errorMessage: err.message });
+      }
     }
 
     res.json({ status: order.status, credits: order.creditsAmount });
@@ -355,10 +365,20 @@ router.post("/payments/admin/orders/:id/process", requireAdmin, async (req, res)
       return;
     }
 
-    const { done, credits } = await processPayment(order.id, order.paynlOrderId);
-    await logPayment({ source: "admin_manual", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: "manual_paid", creditsAdded: credits });
+    // First try to verify via Pay.nl API
+    let paynlVerified = false;
+    if (order.paynlOrderId) {
+      try {
+        const { isPaid, action, rawData } = await getPaynlTransactionStatus(order.paynlOrderId);
+        await logPayment({ source: "admin_manual_check", action, internalOrderId: order.id, paynlOrderId: order.paynlOrderId, rawBody: rawData ? JSON.stringify(rawData).slice(0, 2000) : undefined, result: isPaid ? "pay_verified" : `not_paid:${action}` });
+        paynlVerified = isPaid;
+      } catch { /* fall through to forced process */ }
+    }
 
-    res.json({ ok: done, message: `${credits} credits bijgeschreven`, credits });
+    const { done, credits } = await processPayment(order.id, order.paynlOrderId);
+    await logPayment({ source: "admin_manual", internalOrderId: order.id, paynlOrderId: order.paynlOrderId ?? undefined, result: paynlVerified ? "manual_paid_verified" : "manual_paid_forced", creditsAdded: credits });
+
+    res.json({ ok: done, message: `${credits} credits bijgeschreven${paynlVerified ? " (Pay.nl bevestigd)" : " (handmatig)"}`, credits });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
