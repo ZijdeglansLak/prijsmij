@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useSearch } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { useSupplierAuth } from "@/contexts/supplier-auth";
-import { Coins, Check, ArrowLeft, Zap } from "lucide-react";
+import { useUserAuth } from "@/contexts/user-auth";
+import { Coins, Check, ArrowLeft, Zap, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const BUNDLES = [
@@ -58,16 +59,76 @@ const BUNDLES = [
 
 export default function SupplierCredits() {
   const [, setLocation] = useLocation();
-  const { supplier, token, updateCredits } = useSupplierAuth();
+  const search = useSearch();
+  const { user, token, updateCredits, isSeller } = useUserAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<"success" | "pending" | "error" | null>(null);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
 
-  if (!token || !supplier) {
+  // Parse query params from Pay.nl return URL
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const payment = params.get("payment");
+    const credits = params.get("credits");
+    const orderId = params.get("orderId");
+
+    if (payment === "success") {
+      setPaymentStatus("success");
+      if (credits) updateCredits((user?.credits ?? 0) + parseInt(credits));
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "pending" && orderId) {
+      setPaymentStatus("pending");
+      setPendingOrderId(orderId);
+      startPolling(orderId);
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "error") {
+      setPaymentStatus("error");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [search]);
+
+  async function startPolling(orderId: string) {
+    if (!token) return;
+    setPolling(true);
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch(`/api/payments/status/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "paid") {
+            clearInterval(interval);
+            setPolling(false);
+            setPaymentStatus("success");
+            updateCredits((user?.credits ?? 0) + data.credits);
+            setPendingOrderId(null);
+          } else if (data.status === "failed" || data.status === "cancelled") {
+            clearInterval(interval);
+            setPolling(false);
+            setPaymentStatus("error");
+            setPendingOrderId(null);
+          }
+        }
+      } catch {}
+      if (attempts >= 20) {
+        clearInterval(interval);
+        setPolling(false);
+      }
+    }, 3000);
+  }
+
+  if (!token || !isSeller) {
     return (
       <Layout>
         <div className="max-w-md mx-auto py-16 text-center">
           <p className="text-muted-foreground">Log in als winkel om credits te kopen.</p>
-          <Link href="/supplier/login">
+          <Link href="/auth/login">
             <Button className="mt-4">Inloggen</Button>
           </Link>
         </div>
@@ -78,7 +139,7 @@ export default function SupplierCredits() {
   async function handlePurchase(bundleId: string) {
     setLoading(bundleId);
     try {
-      const res = await fetch("/api/supplier/credits/purchase", {
+      const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,14 +149,13 @@ export default function SupplierCredits() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast({ title: "Aankoop mislukt", description: data.error, variant: "destructive" });
+        toast({ title: "Betaling starten mislukt", description: data.error, variant: "destructive" });
         return;
       }
-      updateCredits(data.newBalance);
-      toast({
-        title: `${data.creditsAdded} credits toegevoegd!`,
-        description: `Je hebt nu ${data.newBalance} credits.`,
-      });
+      // Redirect to Pay.nl payment page
+      window.location.href = data.paymentUrl;
+    } catch {
+      toast({ title: "Fout", description: "Probeer het opnieuw.", variant: "destructive" });
     } finally {
       setLoading(null);
     }
@@ -112,15 +172,47 @@ export default function SupplierCredits() {
             </Button>
           </Link>
 
+          {/* Payment status banners */}
+          {paymentStatus === "success" && (
+            <Alert className="mb-6 border-green-500 bg-green-50 text-green-800">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              <AlertDescription className="font-medium">
+                Betaling geslaagd! Je credits zijn toegevoegd aan je account.
+              </AlertDescription>
+            </Alert>
+          )}
+          {paymentStatus === "pending" && (
+            <Alert className="mb-6 border-yellow-500 bg-yellow-50 text-yellow-800">
+              <div className="flex items-center gap-2">
+                {polling ? <Loader2 className="w-4 h-4 animate-spin text-yellow-600" /> : <Clock className="w-4 h-4 text-yellow-600" />}
+                <AlertDescription className="font-medium">
+                  {polling ? "Betaling wordt verwerkt, even geduld..." : "Betaling in behandeling. Ververs de pagina om de status te controleren."}
+                </AlertDescription>
+              </div>
+            </Alert>
+          )}
+          {paymentStatus === "error" && (
+            <Alert className="mb-6 border-red-500 bg-red-50 text-red-800">
+              <XCircle className="w-4 h-4 text-red-600" />
+              <AlertDescription className="font-medium">
+                Betaling geannuleerd of mislukt. Probeer het opnieuw.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
               <Coins className="w-4 h-4" />
-              Huidig saldo: {supplier.credits} credits
+              Huidig saldo: {user?.credits ?? 0} credits
             </div>
             <h1 className="text-3xl font-bold">Connectiebundels</h1>
             <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
               Eén connectie = toegang tot de contactgegevens van één koper die jouw bod heeft geselecteerd.
             </p>
+            <div className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <img src="https://www.pay.nl/images/pay-logo.svg" alt="Pay.nl" className="h-5" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <span>Veilig betalen via Pay.nl · iDEAL, creditcard en meer</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -163,7 +255,9 @@ export default function SupplierCredits() {
                         disabled={loading === bundle.id}
                         onClick={() => handlePurchase(bundle.id)}
                       >
-                        {loading === bundle.id ? "Kopen..." : "Kopen"}
+                        {loading === bundle.id ? (
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Doorsturen...</>
+                        ) : "Betalen via Pay.nl"}
                       </Button>
                     </div>
                   </CardContent>
@@ -174,7 +268,7 @@ export default function SupplierCredits() {
 
           <div className="bg-muted rounded-xl p-6 text-sm text-muted-foreground text-center">
             <p className="font-medium text-foreground mb-1">Hoe werkt het?</p>
-            <p>Je koopt een bundel connecties. Wanneer je op een uitvraag biedt en de koper interesse toont, gebruik je één connectie om de contactgegevens van de koper te ontvangen. Credits vervallen niet.</p>
+            <p>Je koopt een bundel connecties via een veilige betaling met Pay.nl (iDEAL, creditcard, etc.). Na betaling worden je credits direct toegevoegd. Credits vervallen niet.</p>
           </div>
         </motion.div>
       </div>

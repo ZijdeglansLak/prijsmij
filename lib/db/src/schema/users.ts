@@ -38,8 +38,22 @@ export const connectionsTable = pgTable("connections", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const paymentOrdersTable = pgTable("payment_orders", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => userAccountsTable.id).notNull(),
+  bundleId: text("bundle_id").notNull(),
+  bundleName: text("bundle_name").notNull(),
+  creditsAmount: integer("credits_amount").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  paynlOrderId: text("paynl_order_id"),
+  status: text("status", { enum: ["pending", "paid", "failed", "cancelled"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  paidAt: timestamp("paid_at"),
+});
+
 export type UserAccount = typeof userAccountsTable.$inferSelect;
 export type UserRole = "buyer" | "seller";
+export type PaymentOrder = typeof paymentOrdersTable.$inferSelect;
 
 export const CREDIT_BUNDLES = [
   { id: "starter", name: "Starter", credits: 10, priceCents: 3500, originalPriceCents: 3500, label: "€3,50 per connectie", badge: null },
