@@ -3,8 +3,54 @@ import { db } from "@workspace/db";
 import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, CREDIT_BUNDLES } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireAuth, requireSeller } from "./auth";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const router: IRouter = Router();
+const JWT_SECRET = process.env.JWT_SECRET || "prijsmij-secret-change-in-prod";
+
+function makeSupplierToken(user: typeof userAccountsTable.$inferSelect) {
+  return jwt.sign({ userId: user.id, email: user.email, role: user.role, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: "30d" });
+}
+
+function toSupplierResponse(user: typeof userAccountsTable.$inferSelect) {
+  return { id: user.id, storeName: user.storeName ?? user.contactName, contactName: user.contactName, email: user.email, credits: user.credits };
+}
+
+// POST /supplier/login — public
+router.post("/supplier/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) { res.status(400).json({ error: "E-mail en wachtwoord zijn verplicht" }); return; }
+
+    const [user] = await db.select().from(userAccountsTable).where(eq(userAccountsTable.email, email.toLowerCase().trim()));
+    if (!user || user.role !== "seller") { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
+
+    res.json({ token: makeSupplierToken(user), supplier: toSupplierResponse(user) });
+  } catch (err) { req.log.error({ err }, "Supplier login failed"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /supplier/register — public
+router.post("/supplier/register", async (req, res) => {
+  try {
+    const { storeName, contactName, email, password } = req.body;
+    if (!storeName || !contactName || !email || !password) { res.status(400).json({ error: "Alle velden zijn verplicht" }); return; }
+    if (password.length < 8) { res.status(400).json({ error: "Wachtwoord moet minimaal 8 tekens zijn" }); return; }
+
+    const existing = await db.select({ id: userAccountsTable.id }).from(userAccountsTable).where(eq(userAccountsTable.email, email.toLowerCase().trim()));
+    if (existing.length > 0) { res.status(409).json({ error: "Dit e-mailadres is al in gebruik" }); return; }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const [user] = await db.insert(userAccountsTable).values({
+      role: "seller", storeName, contactName, email: email.toLowerCase().trim(), passwordHash, emailVerified: false
+    }).returning();
+
+    res.status(201).json({ token: makeSupplierToken(user), supplier: toSupplierResponse(user) });
+  } catch (err) { req.log.error({ err }, "Supplier register failed"); res.status(500).json({ error: "Internal server error" }); }
+});
 
 // GET /supplier/bundles — public
 router.get("/supplier/bundles", (_req, res) => {
