@@ -38,9 +38,10 @@ export async function createPaynlTransaction(opts: {
     body.extra1 = opts.extra1;
   }
 
-  const credentials = Buffer.from(`${token}:`).toString("base64");
+  // Pay.nl Basic Auth: serviceId as username, token/secret as password
+  const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
 
-  const res = await fetch("https://rest.pay.nl/v2/orders", {
+  const res = await fetch("https://rest.pay.nl/v2/transactions", {
     method: "POST",
     headers: {
       "Authorization": `Basic ${credentials}`,
