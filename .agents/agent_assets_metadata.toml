@@ -18,3 +18,9 @@ id = "f-fXazVawhXo4Sf-AFZ5L"
 uri = "file://INSTRUCTIES.txt"
 type = "text"
 title = "INSTRUCTIES — Installatiehandleiding PrijsMij"
+
+[[outputs]]
+id = "KcCXJPtB6imug7MYBaMzd"
+uri = "file://INSTRUCTIES.zip"
+type = "unspecified"
+title = "INSTRUCTIES.zip — Installatiehandleiding PrijsMij"
