@@ -1,7 +1,7 @@
 import express, { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, like } from "drizzle-orm";
 import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials } from "../services/paynl";
 
@@ -232,14 +232,22 @@ async function handleExchange(params: Record<string, string>, log: any, diagCt?:
     order = rows[0];
   }
 
-  // Fallback: look up by Pay.nl order ID if extra1 was missing or order not found
+  // Fallback 1: exact match on stored Pay.nl order ID
   if (!order && paynlOrderId) {
     const rows = await db.select().from(paymentOrdersTable).where(eq(paymentOrdersTable.paynlOrderId, paynlOrderId));
     order = rows[0];
   }
 
+  // Fallback 2: Pay.nl order_id format is "{session_id}X{suffix}" — match by prefix
+  // e.g. payment_session_id="3350139300" matches paynl_order_id="3350139300X4014f"
+  const sessionId = params.payment_session_id ?? params.paymentSessionId ?? "";
+  if (!order && sessionId) {
+    const rows = await db.select().from(paymentOrdersTable).where(like(paymentOrdersTable.paynlOrderId, `${sessionId}%`));
+    order = rows[0];
+  }
+
   if (!order) {
-    log.warn({ action, extra1, paynlOrderId }, "Pay.nl exchange: order not found — returning TRUE to stop retries");
+    log.warn({ action, extra1, paynlOrderId, sessionId }, "Pay.nl exchange: order not found — returning TRUE to stop retries");
     await logPayment({ source: "exchange", action, extra1, paynlOrderId, rawBody, result: "order_not_found" });
     return "TRUE";
   }
