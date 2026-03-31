@@ -27,6 +27,9 @@ app.use(
 );
 app.use(cors());
 app.use(express.json());
+// Capture raw body for Pay.nl exchange BEFORE urlencoded parser runs.
+// express.raw sets req._body=true so urlencoded skips it afterwards.
+app.use("/api/payments/exchange", express.raw({ type: "*/*", limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
