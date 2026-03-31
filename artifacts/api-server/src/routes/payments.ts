@@ -1,25 +1,38 @@
 import express, { Router, type IRouter } from "express";
+import multer from "multer";
 import { db } from "@workspace/db";
 import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials } from "../services/paynl";
 
+// multer with no storage — only parses text fields (no file uploads)
+const multipartParser = multer().none();
+
 const router: IRouter = Router();
 
 // Parse Pay.nl exchange bodies — Pay.nl sends data in various ways:
+// - POST with Content-Type: multipart/form-data  ← Pay.nl's actual format (discovered via logs)
 // - POST with Content-Type: text/plain and URL-encoded body
 // - POST with Content-Type: application/x-www-form-urlencoded (handled by express.urlencoded globally)
 // - POST with data only in query string (no body)
-// - POST with no Content-Type header at all
-// Strategy: skip if already parsed (has keys), otherwise read raw body and try URL-decode
 function paynlBodyParser(req: any, res: any, next: any) {
   const ct = (req.headers["content-type"] ?? "").toLowerCase();
-  // Already parsed correctly by express.json() or express.urlencoded()
+
+  // Pay.nl sends multipart/form-data — use multer to parse all fields
+  if (ct.includes("multipart/form-data")) {
+    multipartParser(req as any, {} as any, (err?: any) => {
+      if (err) { req.body = {}; }
+      next();
+    });
+    return;
+  }
+
+  // Already parsed correctly (application/json or application/x-www-form-urlencoded)
   if (ct.includes("application/json")) { next(); return; }
   if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) { next(); return; }
 
-  // Try to read raw body as text and parse as URL-encoded key=value pairs
+  // Fallback: read raw body as text and try URL-decode (handles text/plain and no Content-Type)
   express.text({ type: "*/*" })(req, res, () => {
     if (typeof req.body === "string" && req.body.trim()) {
       const parsed: Record<string, string> = {};
