@@ -211,7 +211,10 @@ router.get("/payments/return", async (req, res) => {
 async function handleExchange(params: Record<string, string>, log: any, diagCt?: string): Promise<"TRUE" | "FALSE"> {
   const action = (params.action ?? "").toLowerCase();
   const extra1 = params.extra1 ?? "";
-  const paynlOrderId = params.orderId ?? params.paymentSessionId ?? params.transactionId ?? "";
+  // Pay.nl sends snake_case keys (order_id, payment_session_id) — check both camel and snake variants
+  const paynlOrderId = params.orderId ?? params.order_id
+    ?? params.paymentSessionId ?? params.payment_session_id
+    ?? params.transactionId ?? "";
   // Include content-type in rawBody for diagnostics — helps trace header-stripping issues
   const rawBody = (diagCt ? `[ct:${diagCt}] ` : "") + JSON.stringify(params);
 

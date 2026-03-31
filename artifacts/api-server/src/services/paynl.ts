@@ -118,7 +118,8 @@ export async function createPaynlTransaction(opts: {
   };
 
   if (opts.extra1) {
-    body.extra1 = opts.extra1;
+    // Pay.nl REST v2: custom data goes under "stats", not at root level
+    body.stats = { extra1: opts.extra1 };
   }
 
   const credentials = Buffer.from(`${serviceId}:${token}`).toString("base64");
