@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowLeft, Gavel, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Gavel, AlertCircle, CheckCircle2, Globe, Lock } from "lucide-react";
 import { useSupplierAuth } from "@/contexts/supplier-auth";
 
 export default function PlaceBid() {
@@ -33,6 +33,7 @@ export default function PlaceBid() {
   const [warrantyMonths, setWarrantyMonths] = useState("24");
   const [deliveryDays, setDeliveryDays] = useState("1");
   const [isSimilarModel, setIsSimilarModel] = useState(false);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [priceError, setPriceError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +59,8 @@ export default function PlaceBid() {
           description,
           warrantyMonths: parseInt(warrantyMonths),
           deliveryDays: parseInt(deliveryDays),
-          isSimilarModel
+          isSimilarModel,
+          visibility,
         }
       });
       await queryClient.invalidateQueries({ queryKey: getGetRequestByIdQueryKey(requestId) });
@@ -195,6 +197,30 @@ export default function PlaceBid() {
                     <label htmlFor="similar" className="font-bold cursor-pointer">Dit is een vergelijkbaar alternatief (niet exact het gevraagde merk/model)</label>
                   </div>
                 )}
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-bold mb-3">Zichtbaarheid van dit bod *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setVisibility("public")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-left ${visibility === "public" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                    >
+                      <Globe className={`w-6 h-6 ${visibility === "public" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="font-bold text-sm">Openbaar</span>
+                      <span className="text-xs text-muted-foreground text-center leading-snug">Iedereen kan dit bod zien en er op ingaan</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVisibility("private")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-left ${visibility === "private" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                    >
+                      <Lock className={`w-6 h-6 ${visibility === "private" ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="font-bold text-sm">Alleen aanvrager</span>
+                      <span className="text-xs text-muted-foreground text-center leading-snug">Alleen de persoon die de uitvraag plaatste ziet dit bod</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 

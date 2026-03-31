@@ -258,10 +258,20 @@ router.get("/requests/:id/bids", async (req, res) => {
     }
 
     const offerType = req.query.offerType as string | undefined;
+    const viewerEmail = (req.query.viewerEmail as string | undefined)?.toLowerCase().trim() ?? "";
+
+    // Fetch the request to check its consumer email
+    const [parentRequest] = await db.select({ consumerEmail: requestsTable.consumerEmail })
+      .from(requestsTable).where(eq(requestsTable.id, id));
+    const isOwner = viewerEmail && parentRequest && viewerEmail === parentRequest.consumerEmail.toLowerCase();
 
     const conditions = [eq(bidsTable.requestId, id)];
     if (offerType) {
       conditions.push(eq(bidsTable.offerType, offerType));
+    }
+    // Non-owners only see public bids
+    if (!isOwner) {
+      conditions.push(eq(bidsTable.visibility, "public"));
     }
 
     const bids = await db
@@ -284,6 +294,7 @@ router.get("/requests/:id/bids", async (req, res) => {
         deliveryDays: b.deliveryDays,
         imageUrl: b.imageUrl,
         isSimilarModel: b.isSimilarModel,
+        visibility: b.visibility ?? "public",
         createdAt: b.createdAt,
       }))
     );
@@ -339,6 +350,7 @@ router.post("/requests/:id/bids", async (req, res) => {
         deliveryDays: data.deliveryDays ?? 3,
         imageUrl: data.imageUrl ?? null,
         isSimilarModel: data.isSimilarModel,
+        visibility: data.visibility ?? "public",
       })
       .returning();
 
@@ -355,6 +367,7 @@ router.post("/requests/:id/bids", async (req, res) => {
       deliveryDays: bid.deliveryDays,
       imageUrl: bid.imageUrl,
       isSimilarModel: bid.isSimilarModel,
+      visibility: bid.visibility ?? "public",
       createdAt: bid.createdAt,
     });
   } catch (err) {

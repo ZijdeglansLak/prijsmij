@@ -17,6 +17,7 @@ export const bidsTable = pgTable("bids", {
   deliveryDays: integer("delivery_days").notNull().default(3),
   imageUrl: text("image_url"),
   isSimilarModel: boolean("is_similar_model").notNull().default(false),
+  visibility: text("visibility").notNull().default("public"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -40,4 +41,5 @@ export const createBidBodySchema = z.object({
   deliveryDays: z.number().int().min(0).default(3),
   imageUrl: z.string().nullable().optional(),
   isSimilarModel: z.boolean(),
+  visibility: z.enum(["public", "private"]).default("public"),
 });

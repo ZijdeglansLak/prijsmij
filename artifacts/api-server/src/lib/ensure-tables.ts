@@ -110,6 +110,7 @@ export async function ensureTables(): Promise<void> {
 
       ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS paynl_service_id TEXT;
       ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS paynl_token TEXT;
+      ALTER TABLE bids ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'public';
 
       CREATE TABLE IF NOT EXISTS payment_logs (
         id                SERIAL PRIMARY KEY,
