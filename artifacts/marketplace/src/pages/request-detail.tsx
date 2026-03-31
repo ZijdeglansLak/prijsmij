@@ -4,7 +4,7 @@ import { useGetRequestById, useListBidsForRequest, useExpressInterest } from "@w
 import type { BidOfferType } from "@workspace/api-client-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { useCountdown } from "@/hooks/use-countdown";
-import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock, Globe } from "lucide-react";
+import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -249,13 +249,9 @@ export default function RequestDetail() {
                               Alternatief
                             </span>
                           )}
-                          {(bid as any).visibility === "private" ? (
+                          {(bid as any).visibility === "private" && (
                             <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 flex items-center gap-1">
                               <Lock className="w-3 h-3" /> Alleen voor jou
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200 flex items-center gap-1">
-                              <Globe className="w-3 h-3" /> Openbaar
                             </span>
                           )}
                         </div>

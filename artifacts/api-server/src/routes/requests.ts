@@ -51,7 +51,10 @@ router.get("/requests", async (req, res) => {
       .select()
       .from(bidsTable)
       .where(
-        sql`${bidsTable.requestId} = ANY(ARRAY[${sql.raw(requestIds.join(","))}])`
+        and(
+          sql`${bidsTable.requestId} = ANY(ARRAY[${sql.raw(requestIds.join(","))}])`,
+          eq(bidsTable.visibility, "public")
+        )
       );
 
     const categories = await db.select().from(categoriesTable);
@@ -194,10 +197,18 @@ router.get("/requests/:id", async (req, res) => {
       return;
     }
 
+    const viewerEmail = (req.query.viewerEmail as string | undefined)?.toLowerCase().trim() ?? "";
+    const isOwner = viewerEmail && viewerEmail === request.consumerEmail.toLowerCase();
+
+    const bidConditions = [eq(bidsTable.requestId, id)];
+    if (!isOwner) {
+      bidConditions.push(eq(bidsTable.visibility, "public"));
+    }
+
     const bids = await db
       .select()
       .from(bidsTable)
-      .where(eq(bidsTable.requestId, id))
+      .where(and(...bidConditions))
       .orderBy(asc(bidsTable.price));
 
     const [cat] = await db
