@@ -1,13 +1,33 @@
 import express, { Router, type IRouter } from "express";
-import multer from "multer";
 import { db } from "@workspace/db";
 import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
 import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials } from "../services/paynl";
 
-// multer with no storage — only parses text fields (no file uploads)
-const multipartParser = multer().none();
+// Custom multipart/form-data parser for text fields only (no file uploads needed)
+// Handles Pay.nl's exchange format without needing an Express response object
+function parseMultipartFormData(rawBody: string, contentType: string): Record<string, string> {
+  const boundaryMatch = contentType.match(/boundary=([^\s;,]+)/i);
+  if (!boundaryMatch) return {};
+  const boundary = boundaryMatch[1];
+  const result: Record<string, string> = {};
+  // Prepend \r\n so every part starts with \r\n--boundary
+  const delimiter = "\r\n--" + boundary;
+  const parts = ("\r\n" + rawBody).split(delimiter);
+  for (const part of parts) {
+    if (!part || part === "--" || part === "--\r\n" || part.trim() === "") continue;
+    const sep = part.indexOf("\r\n\r\n");
+    if (sep === -1) continue;
+    const headers = part.slice(0, sep);
+    let value = part.slice(sep + 4);
+    if (value.endsWith("--")) value = value.slice(0, -2);
+    value = value.replace(/\r\n$/, "");
+    const nameMatch = headers.match(/Content-Disposition:[^\r\n]*name="([^"]+)"/i);
+    if (nameMatch) result[nameMatch[1]] = value;
+  }
+  return result;
+}
 
 const router: IRouter = Router();
 
@@ -19,10 +39,14 @@ const router: IRouter = Router();
 function paynlBodyParser(req: any, res: any, next: any) {
   const ct = (req.headers["content-type"] ?? "").toLowerCase();
 
-  // Pay.nl sends multipart/form-data — use multer to parse all fields
+  // Pay.nl sends multipart/form-data — read raw body then parse manually
   if (ct.includes("multipart/form-data")) {
-    multipartParser(req as any, {} as any, (err?: any) => {
-      if (err) { req.body = {}; }
+    express.text({ type: "*/*" })(req, res, () => {
+      if (typeof req.body === "string" && req.body) {
+        req.body = parseMultipartFormData(req.body, ct);
+      } else {
+        req.body = req.body ?? {};
+      }
       next();
     });
     return;
