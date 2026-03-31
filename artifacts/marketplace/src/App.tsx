@@ -102,7 +102,7 @@ function App() {
           </UserAuthProvider>
         </I18nProvider>
       </TooltipProvider>
-      <div className="fixed bottom-2 right-3 text-[10px] text-slate-400/50 select-none pointer-events-none z-50">
+      <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-400/50 select-none pointer-events-none z-50">
         v0.1
       </div>
     </QueryClientProvider>
