@@ -4,6 +4,13 @@
 
 PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gratis een uitvraag voor een product (televisie, auto, wasmachine etc.), leveranciers/winkels bieden hierop aan met hun beste prijs. De laagste bieding staat bovenaan. Als een consument interesse heeft in een bod, betaalt de leverancier 1 credit om de contactgegevens te ontvangen ("Connectie").
 
+## Versieconventie
+
+- Versienummer zichtbaar in `artifacts/marketplace/src/App.tsx` (onderaan elke pagina)
+- **Regel: bij élke git push naar GitHub het versienummer met 0.1 ophogen**
+- Commit als: `release: vX.X - omschrijving`
+- Huidige versie: **v0.5**
+
 ## Seller Category Notifications
 
 - **DB column**: `user_accounts.notification_category_ids` (`text NOT NULL DEFAULT '[]'`) — JSON array of category IDs the seller watches
