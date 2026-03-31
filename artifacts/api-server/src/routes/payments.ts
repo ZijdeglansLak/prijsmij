@@ -8,9 +8,19 @@ import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials 
 // Custom multipart/form-data parser for text fields only (no file uploads needed)
 // Handles Pay.nl's exchange format without needing an Express response object
 function parseMultipartFormData(rawBody: string, contentType: string): Record<string, string> {
-  const boundaryMatch = contentType.match(/boundary=([^\s;,]+)/i);
-  if (!boundaryMatch) return {};
-  const boundary = boundaryMatch[1];
+  // Try to get boundary from Content-Type header first
+  let boundary = contentType.match(/boundary=([^\s;,]+)/i)?.[1] ?? "";
+
+  // Fallback: extract boundary from first line of body (handles Nginx stripping Content-Type)
+  if (!boundary) {
+    const firstLine = rawBody.trimStart().split(/\r?\n/)[0];
+    if (firstLine.startsWith("--")) {
+      boundary = firstLine.replace(/^--/, "").trim();
+    }
+  }
+
+  if (!boundary) return {};
+
   const result: Record<string, string> = {};
   // Prepend \r\n so every part starts with \r\n--boundary
   const delimiter = "\r\n--" + boundary;
@@ -35,11 +45,19 @@ const router: IRouter = Router();
 // This runs at route-level, AFTER global express.json/urlencoded (which skip non-matching types)
 const captureRawBody = express.raw({ type: "*/*", limit: "2mb" });
 
-// Parse any raw body string into key=value params, trying multipart then URL-encoded
+// Parse any raw body string into key=value params, trying multipart then URL-encoded.
+// Detects multipart by Content-Type header OR by body content (body starts with "--").
+// The body-content detection handles Nginx proxies that strip Content-Type headers.
 function parsePaynlBody(rawStr: string, contentType: string): Record<string, string> {
-  if (contentType.includes("multipart/form-data")) {
-    return parseMultipartFormData(rawStr, contentType);
+  const ct = contentType.toLowerCase();
+  const looksMultipart = rawStr.trimStart().startsWith("--");
+
+  if (ct.includes("multipart/form-data") || looksMultipart) {
+    const parsed = parseMultipartFormData(rawStr, contentType);
+    // Only use multipart result if we actually got named fields
+    if (Object.keys(parsed).length > 0) return parsed;
   }
+
   // Fallback: URL-encoded (text/plain or application/x-www-form-urlencoded)
   const result: Record<string, string> = {};
   try { new URLSearchParams(rawStr).forEach((v, k) => { result[k] = v; }); } catch {}
@@ -190,11 +208,12 @@ router.get("/payments/return", async (req, res) => {
 });
 
 // Shared exchange processor: handles both POST and GET Pay.nl webhooks
-async function handleExchange(params: Record<string, string>, log: any): Promise<"TRUE" | "FALSE"> {
+async function handleExchange(params: Record<string, string>, log: any, diagCt?: string): Promise<"TRUE" | "FALSE"> {
   const action = (params.action ?? "").toLowerCase();
   const extra1 = params.extra1 ?? "";
   const paynlOrderId = params.orderId ?? params.paymentSessionId ?? params.transactionId ?? "";
-  const rawBody = JSON.stringify(params);
+  // Include content-type in rawBody for diagnostics — helps trace header-stripping issues
+  const rawBody = (diagCt ? `[ct:${diagCt}] ` : "") + JSON.stringify(params);
 
   log.info({ action, extra1, paynlOrderId, allParams: params }, "Pay.nl exchange received");
 
@@ -257,21 +276,22 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
 // POST /payments/exchange — Pay.nl webhook (server-to-server)
 // captureRawBody reads the body as Buffer before any global middleware can interfere
 router.post("/payments/exchange", captureRawBody, async (req, res) => {
-  const ct = (req.headers["content-type"] ?? "").toLowerCase();
+  const ct = req.headers["content-type"] ?? "";
   try {
-    // req.body is a Buffer from captureRawBody, or possibly already-parsed object
+    // captureRawBody gives us a Buffer; fall back to string if somehow pre-parsed
     const rawStr = Buffer.isBuffer(req.body) ? req.body.toString("utf8")
       : typeof req.body === "string" ? req.body
       : "";
 
     // Parse body (multipart or URL-encoded), then merge query string params
+    // parsePaynlBody auto-detects multipart by body content even if Content-Type is stripped
     const params: Record<string, string> = rawStr ? parsePaynlBody(rawStr, ct) : {};
     for (const [k, v] of Object.entries(req.query ?? {})) { if (!params[k]) params[k] = String(v); }
 
-    // Log content-type for diagnostics (stored in extra1 field temporarily if needed)
-    req.log.info({ contentType: ct, parsedKeys: Object.keys(params), rawLen: rawStr.length }, "Pay.nl exchange incoming");
+    // Store CT header + raw body start in extra diagnostics log field
+    req.log.info({ contentType: ct, parsedKeys: Object.keys(params), rawLen: rawStr.length, rawStart: rawStr.slice(0, 80) }, "Pay.nl exchange incoming");
 
-    const result = await handleExchange(params, req.log);
+    const result = await handleExchange(params, req.log, ct);
     res.send(result);
   } catch (err: any) {
     req.log.error({ err }, "Pay.nl exchange error");
