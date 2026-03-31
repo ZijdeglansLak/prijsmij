@@ -31,42 +31,19 @@ function parseMultipartFormData(rawBody: string, contentType: string): Record<st
 
 const router: IRouter = Router();
 
-// Parse Pay.nl exchange bodies — Pay.nl sends data in various ways:
-// - POST with Content-Type: multipart/form-data  ← Pay.nl's actual format (discovered via logs)
-// - POST with Content-Type: text/plain and URL-encoded body
-// - POST with Content-Type: application/x-www-form-urlencoded (handled by express.urlencoded globally)
-// - POST with data only in query string (no body)
-function paynlBodyParser(req: any, res: any, next: any) {
-  const ct = (req.headers["content-type"] ?? "").toLowerCase();
+// Middleware: capture raw body as Buffer before any other parser can consume the stream
+// This runs at route-level, AFTER global express.json/urlencoded (which skip non-matching types)
+const captureRawBody = express.raw({ type: "*/*", limit: "2mb" });
 
-  // Pay.nl sends multipart/form-data — read raw body then parse manually
-  if (ct.includes("multipart/form-data")) {
-    express.text({ type: "*/*" })(req, res, () => {
-      if (typeof req.body === "string" && req.body) {
-        req.body = parseMultipartFormData(req.body, ct);
-      } else {
-        req.body = req.body ?? {};
-      }
-      next();
-    });
-    return;
+// Parse any raw body string into key=value params, trying multipart then URL-encoded
+function parsePaynlBody(rawStr: string, contentType: string): Record<string, string> {
+  if (contentType.includes("multipart/form-data")) {
+    return parseMultipartFormData(rawStr, contentType);
   }
-
-  // Already parsed correctly (application/json or application/x-www-form-urlencoded)
-  if (ct.includes("application/json")) { next(); return; }
-  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) { next(); return; }
-
-  // Fallback: read raw body as text and try URL-decode (handles text/plain and no Content-Type)
-  express.text({ type: "*/*" })(req, res, () => {
-    if (typeof req.body === "string" && req.body.trim()) {
-      const parsed: Record<string, string> = {};
-      try { new URLSearchParams(req.body).forEach((v, k) => { parsed[k] = v; }); } catch {}
-      req.body = Object.keys(parsed).length > 0 ? parsed : {};
-    } else if (!req.body || typeof req.body !== "object") {
-      req.body = {};
-    }
-    next();
-  });
+  // Fallback: URL-encoded (text/plain or application/x-www-form-urlencoded)
+  const result: Record<string, string> = {};
+  try { new URLSearchParams(rawStr).forEach((v, k) => { result[k] = v; }); } catch {}
+  return result;
 }
 
 // Persist a payment log entry (best-effort, never throws)
@@ -278,18 +255,27 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
 }
 
 // POST /payments/exchange — Pay.nl webhook (server-to-server)
-// Merges body + query params to handle all Pay.nl exchange formats
-router.post("/payments/exchange", paynlBodyParser, async (req, res) => {
+// captureRawBody reads the body as Buffer before any global middleware can interfere
+router.post("/payments/exchange", captureRawBody, async (req, res) => {
+  const ct = (req.headers["content-type"] ?? "").toLowerCase();
   try {
-    // Pay.nl sometimes sends data in query string even on POST, so merge both
-    const params: Record<string, string> = {};
-    for (const [k, v] of Object.entries(req.query ?? {})) { params[k] = String(v); }
-    for (const [k, v] of Object.entries(req.body ?? {})) { if (v !== undefined) params[k] = String(v); }
+    // req.body is a Buffer from captureRawBody, or possibly already-parsed object
+    const rawStr = Buffer.isBuffer(req.body) ? req.body.toString("utf8")
+      : typeof req.body === "string" ? req.body
+      : "";
+
+    // Parse body (multipart or URL-encoded), then merge query string params
+    const params: Record<string, string> = rawStr ? parsePaynlBody(rawStr, ct) : {};
+    for (const [k, v] of Object.entries(req.query ?? {})) { if (!params[k]) params[k] = String(v); }
+
+    // Log content-type for diagnostics (stored in extra1 field temporarily if needed)
+    req.log.info({ contentType: ct, parsedKeys: Object.keys(params), rawLen: rawStr.length }, "Pay.nl exchange incoming");
+
     const result = await handleExchange(params, req.log);
     res.send(result);
   } catch (err: any) {
     req.log.error({ err }, "Pay.nl exchange error");
-    await logPayment({ source: "exchange", rawBody: JSON.stringify(req.body ?? {}), result: "error", errorMessage: err.message });
+    await logPayment({ source: "exchange", rawBody: `ct:${ct}`, result: "error", errorMessage: err.message });
     res.send("FALSE");
   }
 });
