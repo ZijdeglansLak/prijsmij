@@ -7,23 +7,29 @@ import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials 
 
 const router: IRouter = Router();
 
-// Parse Pay.nl txt(post) bodies — Pay.nl may send Content-Type: text/plain with &-separated key=value pairs
-// We add express.text() so the raw body is readable, then normalise to a plain object
+// Parse Pay.nl exchange bodies — Pay.nl sends data in various ways:
+// - POST with Content-Type: text/plain and URL-encoded body
+// - POST with Content-Type: application/x-www-form-urlencoded (handled by express.urlencoded globally)
+// - POST with data only in query string (no body)
+// - POST with no Content-Type header at all
+// Strategy: skip if already parsed (has keys), otherwise read raw body and try URL-decode
 function paynlBodyParser(req: any, res: any, next: any) {
   const ct = (req.headers["content-type"] ?? "").toLowerCase();
-  if (ct.includes("text/plain")) {
-    // Read raw text body
-    express.text({ type: "*/*" })(req, res, () => {
-      if (typeof req.body === "string") {
-        const parsed: Record<string, string> = {};
-        try { new URLSearchParams(req.body).forEach((v, k) => { parsed[k] = v; }); } catch {}
-        req.body = parsed;
-      }
-      next();
-    });
-  } else {
+  // Already parsed correctly by express.json() or express.urlencoded()
+  if (ct.includes("application/json")) { next(); return; }
+  if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) { next(); return; }
+
+  // Try to read raw body as text and parse as URL-encoded key=value pairs
+  express.text({ type: "*/*" })(req, res, () => {
+    if (typeof req.body === "string" && req.body.trim()) {
+      const parsed: Record<string, string> = {};
+      try { new URLSearchParams(req.body).forEach((v, k) => { parsed[k] = v; }); } catch {}
+      req.body = Object.keys(parsed).length > 0 ? parsed : {};
+    } else if (!req.body || typeof req.body !== "object") {
+      req.body = {};
+    }
     next();
-  }
+  });
 }
 
 // Persist a payment log entry (best-effort, never throws)
@@ -235,10 +241,14 @@ async function handleExchange(params: Record<string, string>, log: any): Promise
 }
 
 // POST /payments/exchange — Pay.nl webhook (server-to-server)
-// paynlBodyParser handles text/plain (Pay.nl txt(post) format with & separator)
+// Merges body + query params to handle all Pay.nl exchange formats
 router.post("/payments/exchange", paynlBodyParser, async (req, res) => {
   try {
-    const result = await handleExchange(req.body ?? {}, req.log);
+    // Pay.nl sometimes sends data in query string even on POST, so merge both
+    const params: Record<string, string> = {};
+    for (const [k, v] of Object.entries(req.query ?? {})) { params[k] = String(v); }
+    for (const [k, v] of Object.entries(req.body ?? {})) { if (v !== undefined) params[k] = String(v); }
+    const result = await handleExchange(params, req.log);
     res.send(result);
   } catch (err: any) {
     req.log.error({ err }, "Pay.nl exchange error");
