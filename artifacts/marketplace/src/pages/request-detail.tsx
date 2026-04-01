@@ -36,20 +36,25 @@ export default function RequestDetail() {
   const { toast } = useToast();
   const { supplier, token, isLoggedIn, updateCredits } = useSupplierAuth();
 
-  const handleInterest = async () => {
-    if (!interestBidId || !consumerEmail) return;
+  const handleInterest = async (bidId?: number) => {
+    const targetBidId = bidId ?? interestBidId;
+    const email = user?.email ?? consumerEmail;
+    const name = user?.contactName ?? consumerName ?? email;
+    if (!targetBidId || !email) return;
     
     try {
       const result = await expressInterestMutation.mutateAsync({
         id: requestId,
-        data: { bidId: interestBidId, consumerEmail, consumerName: consumerName || consumerEmail }
+        data: { bidId: targetBidId, consumerEmail: email, consumerName: name }
       } as any);
       
       toast({
-        title: "Succes!",
-        description: `We hebben de verkoper gemaild via ${result.contactEmail}.`,
+        title: "Interesse bevestigd!",
+        description: `De verkoper is op de hoogte gebracht en neemt snel contact met je op.`,
       });
       setInterestBidId(null);
+      setConsumerEmail("");
+      setConsumerName("");
     } catch (e) {
       toast({
         title: "Fout",
@@ -282,10 +287,11 @@ export default function RequestDetail() {
                         <div className="flex flex-col gap-2 w-full sm:w-auto">
                           {!isSeller && (
                             <Button 
-                              onClick={() => setInterestBidId(bid.id)}
+                              onClick={() => user ? handleInterest(bid.id) : setInterestBidId(bid.id)}
+                              disabled={expressInterestMutation.isPending}
                               className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
                             >
-                              Toon Interesse
+                              {expressInterestMutation.isPending ? "..." : "Toon Interesse"}
                             </Button>
                           )}
                           {isLoggedIn && (bid as any).hasInterest && (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useListCategories, useGetCategoryById, useCreateRequest } from "@workspace/api-client-react";
@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/contexts/i18n";
+import { useUserAuth } from "@/contexts/user-auth";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, Check, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Sparkles, LogIn } from "lucide-react";
+import { Link } from "wouter";
 
 export default function CreateRequest() {
   const [step, setStep] = useState(1);
@@ -16,6 +18,7 @@ export default function CreateRequest() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { t } = useI18n();
+  const { user, isLoggedIn, isSeller } = useUserAuth();
 
   const { data: categories } = useListCategories();
   const { data: categoryDetail } = useGetCategoryById(categoryId!, { query: { enabled: !!categoryId }});
@@ -27,8 +30,15 @@ export default function CreateRequest() {
   const [specs, setSpecs] = useState<Record<string, string>>({});
   const [allowedOffers, setAllowedOffers] = useState<CreateRequestBodyAllowedOfferTypesItem[]>(['new']);
   const [allowSimilar, setAllowSimilar] = useState(false);
-  const [consumerName, setConsumerName] = useState("");
-  const [consumerEmail, setConsumerEmail] = useState("");
+  const [consumerName, setConsumerName] = useState(() => user?.contactName ?? "");
+  const [consumerEmail, setConsumerEmail] = useState(() => user?.email ?? "");
+
+  useEffect(() => {
+    if (user) {
+      setConsumerName(user.contactName);
+      setConsumerEmail(user.email);
+    }
+  }, [user]);
 
   const handleNext = () => setStep(s => s + 1);
   const handlePrev = () => setStep(s => s - 1);
@@ -68,6 +78,51 @@ export default function CreateRequest() {
     if (type === 'occasion') return t.bid.occasion;
     return type;
   };
+
+  if (!isLoggedIn) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="max-w-md w-full text-center">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center mb-6">
+              <LogIn className="w-10 h-10 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold text-secondary mb-3">Inloggen vereist</h2>
+            <p className="text-muted-foreground mb-8">
+              Om een uitvraag te plaatsen heb je een account nodig. Log in of maak een gratis account aan.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/auth/login">
+                <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white px-8">
+                  Inloggen
+                </Button>
+              </Link>
+              <Link href="/auth/register">
+                <Button variant="outline" className="w-full sm:w-auto px-8">
+                  Account aanmaken
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isSeller) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="max-w-md w-full text-center">
+            <p className="text-muted-foreground mb-4">Winkeliers kunnen geen uitvragen plaatsen.</p>
+            <Link href="/requests">
+              <Button variant="outline">Bekijk uitvragen</Button>
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -205,16 +260,29 @@ export default function CreateRequest() {
 
                 <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
                   <h3 className="font-bold text-lg mb-4">{t.create.contactTitle}</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold mb-2">{t.create.yourName} *</label>
-                      <Input value={consumerName} onChange={e => setConsumerName(e.target.value)} />
+                  {user ? (
+                    <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 font-bold text-primary text-sm">
+                        {user.contactName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-secondary">{user.contactName}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                      <Check className="w-5 h-5 text-primary ml-auto" />
                     </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-2">{t.auth.email} *</label>
-                      <Input type="email" value={consumerEmail} onChange={e => setConsumerEmail(e.target.value)} />
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-bold mb-2">{t.create.yourName} *</label>
+                        <Input value={consumerName} onChange={e => setConsumerName(e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold mb-2">{t.auth.email} *</label>
+                        <Input type="email" value={consumerEmail} onChange={e => setConsumerEmail(e.target.value)} />
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-4">{t.create.privacyNote}</p>
                 </div>
               </div>
