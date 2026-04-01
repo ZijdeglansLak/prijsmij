@@ -108,7 +108,7 @@ router.put("/admin/users/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (isNaN(id)) { res.status(400).json({ error: "Ongeldig gebruikers-id" }); return; }
 
-    const { contactName, email, storeName, role, isAdmin, newPassword } = req.body;
+    const { contactName, email, storeName, role, isAdmin, newPassword, credits } = req.body;
     const updates: Partial<typeof userAccountsTable.$inferInsert> = {};
 
     if (contactName && typeof contactName === "string") updates.contactName = contactName.trim();
@@ -123,6 +123,7 @@ router.put("/admin/users/:id", requireAdmin, async (req, res) => {
     if (typeof storeName === "string") updates.storeName = storeName.trim() || null;
     if (role && (role === "buyer" || role === "seller")) updates.role = role;
     if (typeof isAdmin === "boolean") updates.isAdmin = isAdmin;
+    if (typeof credits === "number" && credits >= 0) updates.credits = credits;
     if (newPassword && typeof newPassword === "string" && newPassword.length >= 6) {
       updates.passwordHash = await bcrypt.hash(newPassword, 10);
     }

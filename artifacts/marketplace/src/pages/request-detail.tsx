@@ -189,8 +189,17 @@ export default function RequestDetail() {
             {/* Place bid CTA */}
             <div className="bg-gradient-to-br from-primary to-accent rounded-2xl p-6 text-white text-center shadow-lg">
               <Truck className="w-10 h-10 mx-auto mb-3 opacity-90" />
-              <h3 className="font-bold text-lg mb-2">Ben je een winkelier?</h3>
-              <p className="text-white/80 text-sm mb-4">Plaats een scherp bod en win de opdracht.</p>
+              {isLoggedIn && supplier ? (
+                <>
+                  <h3 className="font-bold text-lg mb-2">Hallo, {supplier.storeName}!</h3>
+                  <p className="text-white/80 text-sm mb-4">Plaats een scherp bod en win deze opdracht.</p>
+                </>
+              ) : (
+                <>
+                  <h3 className="font-bold text-lg mb-2">Ben je een winkelier?</h3>
+                  <p className="text-white/80 text-sm mb-4">Plaats een scherp bod en win de opdracht.</p>
+                </>
+              )}
               <Link href={`/requests/${requestId}/bid`}>
                 <Button variant="secondary" className="w-full font-bold shadow-sm">Bod plaatsen</Button>
               </Link>

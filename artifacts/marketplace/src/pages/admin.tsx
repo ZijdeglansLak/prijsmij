@@ -753,6 +753,7 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
   const [role, setRole] = useState(user.role);
   const [isAdmin, setIsAdmin] = useState(user.isAdmin);
   const [newPassword, setNewPassword] = useState("");
+  const [credits, setCredits] = useState(user.credits ?? 0);
 
   const roleIcon = user.isAdmin ? <ShieldCheck className="w-4 h-4 text-primary" /> : user.role === "seller" ? <Store className="w-4 h-4 text-blue-500" /> : <ShoppingBag className="w-4 h-4 text-green-500" />;
   const roleLabel = user.isAdmin ? "Beheerder" : user.role === "seller" ? "Verkoper" : "Koper";
@@ -797,6 +798,16 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
                 <Input value={storeName} onChange={e => setStoreName(e.target.value)} className="h-8 text-sm" placeholder="Winkelnaam" />
               </div>
             )}
+            <div>
+              <label className="text-xs font-bold mb-1 flex items-center gap-1"><Coins className="w-3 h-3 text-primary" /> Credits</label>
+              <Input
+                type="number"
+                min={0}
+                value={credits}
+                onChange={e => setCredits(parseInt(e.target.value) || 0)}
+                className="h-8 text-sm"
+              />
+            </div>
             {!user.isAdmin && (
               <div>
                 <label className="text-xs font-bold mb-1 block">Rol</label>
@@ -820,7 +831,7 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
             )}
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => onSave({ contactName, email, storeName: storeName || undefined, role, isAdmin, newPassword: newPassword || undefined })}>Opslaan</Button>
+            <Button size="sm" onClick={() => onSave({ contactName, email, storeName: storeName || undefined, role, isAdmin, credits, newPassword: newPassword || undefined })}>Opslaan</Button>
             <Button size="sm" variant="outline" onClick={onToggleEdit}>Annuleren</Button>
           </div>
         </div>
