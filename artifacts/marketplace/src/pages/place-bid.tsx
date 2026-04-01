@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,6 +35,19 @@ export default function PlaceBid() {
   const [isSimilarModel, setIsSimilarModel] = useState(false);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [priceError, setPriceError] = useState("");
+
+  // Once request loads: pre-fill modelName and clamp offerType to allowed values
+  useEffect(() => {
+    if (!request) return;
+    if (!request.allowSimilarModels) {
+      setModelName(request.brand ? `${request.brand} – ${request.title}` : request.title);
+    }
+    const allowed = request.allowedOfferTypes as string[];
+    if (allowed.length > 0 && !allowed.includes(offerType)) {
+      setOfferType(allowed[0] as CreateBidBodyOfferType);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,13 +146,29 @@ export default function PlaceBid() {
               
               <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl flex items-start gap-3 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                <div>De koper accepteert: <span className="font-bold capitalize">{request.allowedOfferTypes.join(', ')}</span>. Alternatieve modellen zijn {request.allowSimilarModels ? 'toegestaan' : 'NIET toegestaan'}.</div>
+                <div>De koper accepteert: <span className="font-bold">{(request.allowedOfferTypes as string[]).map(t => t === "new" ? "Nieuw" : t === "refurbished" ? "Refurbished" : "Occasion").join(', ')}</span>. Alternatieve modellen zijn {request.allowSimilarModels ? 'toegestaan' : 'NIET toegestaan'}.</div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="col-span-2">
-                  <label className="block text-sm font-bold mb-1">Exacte Modelnaam *</label>
-                  <Input required placeholder="Bv: Samsung QE65S95C (2023)" value={modelName} onChange={e => setModelName(e.target.value)} />
+                  <label className="block text-sm font-bold mb-1">
+                    {request.allowSimilarModels ? "Exacte Modelnaam *" : "Product"}
+                  </label>
+                  {request.allowSimilarModels ? (
+                    <Input
+                      required
+                      placeholder="Bv: Samsung QE65S95C (2023)"
+                      value={modelName}
+                      onChange={e => setModelName(e.target.value)}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground select-none">
+                      {modelName || request.title}
+                    </div>
+                  )}
+                  {request.allowSimilarModels && (
+                    <p className="text-xs text-muted-foreground mt-1">Vul de exacte model- of typenaam in die je aanbiedt.</p>
+                  )}
                 </div>
                 
                 <div>
@@ -160,15 +189,23 @@ export default function PlaceBid() {
 
                 <div>
                   <label className="block text-sm font-bold mb-1">Staat van product *</label>
-                  <select 
-                    className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
-                    value={offerType}
-                    onChange={e => setOfferType(e.target.value as CreateBidBodyOfferType)}
-                  >
-                    <option value="new">Nieuw</option>
-                    <option value="refurbished">Refurbished</option>
-                    <option value="occasion">Occasion</option>
-                  </select>
+                  {(request.allowedOfferTypes as string[]).length === 1 ? (
+                    <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground select-none capitalize">
+                      {(request.allowedOfferTypes as string[])[0] === "new" ? "Nieuw"
+                        : (request.allowedOfferTypes as string[])[0] === "refurbished" ? "Refurbished"
+                        : "Occasion"}
+                    </div>
+                  ) : (
+                    <select
+                      className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
+                      value={offerType}
+                      onChange={e => setOfferType(e.target.value as CreateBidBodyOfferType)}
+                    >
+                      {(request.allowedOfferTypes as string[]).includes("new") && <option value="new">Nieuw</option>}
+                      {(request.allowedOfferTypes as string[]).includes("refurbished") && <option value="refurbished">Refurbished</option>}
+                      {(request.allowedOfferTypes as string[]).includes("occasion") && <option value="occasion">Occasion</option>}
+                    </select>
+                  )}
                 </div>
 
                 <div>
