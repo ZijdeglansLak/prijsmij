@@ -77,7 +77,7 @@ export default function AuthLogin() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-bold">{t.auth.password}</label>
-                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium">
+                <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline font-medium" tabIndex={-1}>
                   {t.auth.forgotPassword}
                 </Link>
               </div>
