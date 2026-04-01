@@ -369,6 +369,8 @@ router.post("/requests/:id/bids", async (req, res) => {
     sendNewBidNotification(
       request.consumerEmail,
       request.consumerName,
+      data.modelName,
+      data.price,
       requestId
     ).catch(() => {});
 
