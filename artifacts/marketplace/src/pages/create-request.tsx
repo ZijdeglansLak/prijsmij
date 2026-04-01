@@ -181,25 +181,46 @@ export default function CreateRequest() {
 
                 {categoryDetail.fields.map(field => (
                   <div key={field.key}>
-                    <label className="block text-sm font-bold mb-2">
-                      {field.label} {field.required && '*'}
-                    </label>
-                    {field.type === 'select' ? (
-                      <select
-                        className="w-full h-10 px-3 rounded-md border border-input bg-transparent"
-                        value={specs[field.key] || ""}
-                        onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
-                      >
-                        <option value="">{t.create.chooseOption}</option>
-                        {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
+                    {field.type === 'boolean' ? (
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5 rounded border-gray-300"
+                          checked={specs[field.key] === 'true'}
+                          onChange={e => setSpecs({...specs, [field.key]: e.target.checked ? 'true' : 'false'})}
+                        />
+                        <span className="text-sm font-bold">{field.label} {field.required && '*'}</span>
+                      </label>
                     ) : (
-                      <Input
-                        placeholder={field.placeholder}
-                        type={field.type === 'number' ? 'number' : 'text'}
-                        value={specs[field.key] || ""}
-                        onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
-                      />
+                      <>
+                        <label className="block text-sm font-bold mb-2">
+                          {field.label} {field.required && '*'}
+                        </label>
+                        {field.type === 'select' ? (
+                          <select
+                            className="w-full h-10 px-3 rounded-md border border-input bg-transparent"
+                            value={specs[field.key] || ""}
+                            onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
+                          >
+                            <option value="">{t.create.chooseOption}</option>
+                            {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        ) : field.type === 'textarea' ? (
+                          <textarea
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
+                            placeholder={field.placeholder}
+                            value={specs[field.key] || ""}
+                            onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
+                          />
+                        ) : (
+                          <Input
+                            placeholder={field.placeholder}
+                            type={field.type === 'number' ? 'number' : 'text'}
+                            value={specs[field.key] || ""}
+                            onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 ))}

@@ -64,6 +64,7 @@ router.get("/admin/categories", requireAdmin, async (req, res) => {
       description: cat.description,
       isActive: cat.isActive,
       activeRequestCount: countMap.get(cat.id) ?? 0,
+      fields: cat.fields ?? [],
     })));
   } catch (err) {
     req.log.error({ err }, "Failed to list categories (admin)");

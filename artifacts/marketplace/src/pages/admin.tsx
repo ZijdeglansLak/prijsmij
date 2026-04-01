@@ -97,7 +97,7 @@ function AdminDashboard() {
   );
 }
 
-type CategoryFieldType = "text" | "number" | "select";
+type CategoryFieldType = "text" | "number" | "select" | "textarea" | "boolean";
 
 interface CategoryField {
   key: string;
@@ -314,11 +314,13 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [newOptionText, setNewOptionText] = useState<Record<number, string>>({});
 
-  const typeLabel: Record<CategoryFieldType, string> = { text: "Tekst", number: "Getal", select: "Keuzelijst" };
+  const typeLabel: Record<CategoryFieldType, string> = { text: "Tekst", number: "Getal", select: "Keuzelijst", textarea: "Tekstvak", boolean: "Ja/Nee" };
   const typeColor: Record<CategoryFieldType, string> = {
     text: "bg-blue-50 text-blue-700",
     number: "bg-purple-50 text-purple-700",
     select: "bg-green-50 text-green-700",
+    textarea: "bg-orange-50 text-orange-700",
+    boolean: "bg-pink-50 text-pink-700",
   };
 
   function genKey(label: string) {
@@ -327,7 +329,11 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
   }
 
   function addField(type: CategoryFieldType) {
-    const f: CategoryField = { key: `veld_${Date.now()}`, label: "Nieuw veld", type, required: false, placeholder: "", options: type === "select" ? [] : undefined };
+    const f: CategoryField = {
+      key: `veld_${Date.now()}`, label: "Nieuw veld", type, required: false,
+      placeholder: type === "boolean" ? undefined : "",
+      options: type === "select" ? [] : undefined,
+    };
     onChange([...fields, f]);
     setExpandedIdx(fields.length);
   }
@@ -391,15 +397,17 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
                   <label className="text-xs font-bold mb-1 block">Sleutel (auto)</label>
                   <Input value={field.key} readOnly className="h-8 text-sm bg-muted/60 text-muted-foreground font-mono" />
                 </div>
-                <div>
-                  <label className="text-xs font-bold mb-1 block">Placeholder</label>
-                  <Input
-                    value={field.placeholder ?? ""}
-                    onChange={e => updateField(idx, { placeholder: e.target.value })}
-                    className="h-8 text-sm"
-                    placeholder="Bijv. typ hier..."
-                  />
-                </div>
+                {field.type !== "boolean" && (
+                  <div>
+                    <label className="text-xs font-bold mb-1 block">Placeholder</label>
+                    <Input
+                      value={field.placeholder ?? ""}
+                      onChange={e => updateField(idx, { placeholder: e.target.value })}
+                      className="h-8 text-sm"
+                      placeholder="Bijv. typ hier..."
+                    />
+                  </div>
+                )}
                 <div className="flex items-end pb-1.5">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -451,7 +459,7 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
         </div>
       ))}
 
-      <div className="flex gap-2 pt-2">
+      <div className="flex flex-wrap gap-2 pt-2">
         <Button size="sm" variant="outline" onClick={() => addField("text")} className="text-xs h-8 gap-1">
           <Plus className="w-3 h-3" /> Tekst
         </Button>
@@ -460,6 +468,12 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
         </Button>
         <Button size="sm" variant="outline" onClick={() => addField("select")} className="text-xs h-8 gap-1">
           <Plus className="w-3 h-3" /> Keuzelijst
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => addField("textarea")} className="text-xs h-8 gap-1">
+          <Plus className="w-3 h-3" /> Tekstvak
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => addField("boolean")} className="text-xs h-8 gap-1">
+          <Plus className="w-3 h-3" /> Ja/Nee
         </Button>
       </div>
     </div>
