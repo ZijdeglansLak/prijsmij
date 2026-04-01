@@ -496,6 +496,8 @@ function SettingsTab() {
   const [paynlConfigured, setPaynlConfigured] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [savingPaynl, setSavingPaynl] = useState(false);
+  const [initialSellerCredits, setInitialSellerCredits] = useState(10);
+  const [savingCredits, setSavingCredits] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
@@ -505,9 +507,28 @@ function SettingsTab() {
         setPaynlServiceId(d.paynlServiceId ?? "");
         setPaynlToken(d.paynlTokenMasked ?? "");
         setPaynlConfigured(d.paynlConfigured ?? false);
+        setInitialSellerCredits(d.initialSellerCredits ?? 10);
       })
       .catch(() => setOfflineMode(false));
   }, [token]);
+
+  async function saveSellerCredits(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingCredits(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ initialSellerCredits }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Startcredits opgeslagen" });
+    } catch {
+      toast({ title: "Fout bij opslaan", variant: "destructive" });
+    } finally {
+      setSavingCredits(false);
+    }
+  }
 
   async function toggleOffline() {
     setSaving(true);
@@ -622,6 +643,32 @@ function SettingsTab() {
             {saving ? "Opslaan..." : offlineMode ? "Site online zetten" : "Site offline zetten"}
           </Button>
         </div>
+      </div>
+
+      {/* Initial seller credits */}
+      <div className="rounded-2xl border-2 border-border bg-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Coins className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg leading-tight">Startcredits nieuwe winkeliers</h3>
+            <p className="text-sm text-muted-foreground">Aantal gratis credits dat nieuwe winkeliers bij registratie ontvangen</p>
+          </div>
+        </div>
+        <form onSubmit={saveSellerCredits} className="flex items-center gap-4">
+          <input
+            type="number"
+            min={0}
+            max={1000}
+            value={initialSellerCredits}
+            onChange={e => setInitialSellerCredits(parseInt(e.target.value) || 0)}
+            className="w-32 h-10 rounded-lg border border-border px-3 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          <Button type="submit" disabled={savingCredits}>
+            {savingCredits ? "Opslaan..." : "Opslaan"}
+          </Button>
+        </form>
       </div>
 
       {/* Pay.nl */}

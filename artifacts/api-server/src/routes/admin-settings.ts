@@ -27,6 +27,7 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       paynlServiceId: settings.paynlServiceId ?? "",
       paynlTokenMasked: maskSecret(settings.paynlToken),
       paynlConfigured: !!(settings.paynlServiceId && settings.paynlToken),
+      initialSellerCredits: settings.initialSellerCredits ?? 10,
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -35,10 +36,11 @@ router.get("/settings", requireAdmin, async (_req, res) => {
 
 router.put("/settings", requireAdmin, async (req, res) => {
   try {
-    const { offlineMode, paynlServiceId, paynlToken } = req.body as {
+    const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits } = req.body as {
       offlineMode?: boolean;
       paynlServiceId?: string;
       paynlToken?: string;
+      initialSellerCredits?: number;
     };
 
     const settings = await getOrCreateSettings();
@@ -50,8 +52,10 @@ router.put("/settings", requireAdmin, async (req, res) => {
     if (typeof offlineMode === "boolean") updates.offlineMode = offlineMode;
     if (typeof paynlServiceId === "string") updates.paynlServiceId = paynlServiceId.trim() || null;
     if (typeof paynlToken === "string" && !paynlToken.startsWith("****")) {
-      // Empty string = explicitly clear (use env var fallback); non-empty = save new value
       updates.paynlToken = paynlToken.trim() || null;
+    }
+    if (typeof initialSellerCredits === "number" && initialSellerCredits >= 0) {
+      updates.initialSellerCredits = initialSellerCredits;
     }
 
     const updated = await db
@@ -66,6 +70,7 @@ router.put("/settings", requireAdmin, async (req, res) => {
       paynlServiceId: s.paynlServiceId ?? "",
       paynlTokenMasked: maskSecret(s.paynlToken),
       paynlConfigured: !!(s.paynlServiceId && s.paynlToken),
+      initialSellerCredits: s.initialSellerCredits ?? 10,
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });

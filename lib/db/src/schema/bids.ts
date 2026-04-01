@@ -18,6 +18,9 @@ export const bidsTable = pgTable("bids", {
   imageUrl: text("image_url"),
   isSimilarModel: boolean("is_similar_model").notNull().default(false),
   visibility: text("visibility").notNull().default("public"),
+  buyerInterestEmail: text("buyer_interest_email"),
+  buyerInterestName: text("buyer_interest_name"),
+  buyerInterestAt: timestamp("buyer_interest_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

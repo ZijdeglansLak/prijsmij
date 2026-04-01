@@ -4,15 +4,228 @@ import { RequestCard } from "@/components/request-card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, ShoppingBag, Store, Zap, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShoppingBag, Store, Zap, ShieldCheck, Clock, TrendingDown, Bell, Star } from "lucide-react";
 import { useGetStats, useListCategories, useListRequests } from "@workspace/api-client-react";
 import { useI18n } from "@/contexts/i18n";
+import { useUserAuth } from "@/contexts/user-auth";
+import { useSupplierAuth } from "@/contexts/supplier-auth";
+import { useEffect, useState } from "react";
+const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace("/marketplace", "/api");
+
+interface ConsumerRequest {
+  id: number;
+  title: string;
+  brand: string;
+  categoryName: string;
+  categoryIcon: string;
+  bidCount: number;
+  lowestBidPrice: number | null;
+  lowestBidStore: string | null;
+  lowestBid: { id: number; supplierStore: string; price: number; modelName: string; hasInterest: boolean } | null;
+  expiresAt: string;
+  createdAt: string;
+  isExpired: boolean;
+}
+
+interface SupplierRequest {
+  id: number;
+  title: string;
+  brand: string;
+  categoryName: string;
+  categoryIcon: string;
+  bidCount: number;
+  lowestBidPrice: number | null;
+  expiresAt: string;
+}
+
+interface InterestedBid {
+  bidId: number;
+  requestId: number;
+  requestTitle: string;
+  supplierStore: string;
+  price: number;
+  modelName: string;
+  buyerName: string;
+  buyerEmail: string;
+  interestAt: string;
+  alreadyConnected: boolean;
+}
+
+function timeLeft(expiresAt: string) {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Verlopen";
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  if (days > 0) return `${days}d ${hours}u`;
+  return `${hours}u`;
+}
+
+function ConsumerDashboard({ email }: { email: string }) {
+  const [requests, setRequests] = useState<ConsumerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/consumer/requests?email=${encodeURIComponent(email)}`)
+      .then((r) => r.json())
+      .then((d) => { setRequests(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [email]);
+
+  if (loading) return null;
+  if (requests.length === 0) return (
+    <div className="text-center py-10 text-muted-foreground">
+      Je hebt nog geen uitvragen geplaatst.{" "}
+      <Link href="/request/new" className="text-primary font-semibold underline">Maak je eerste uitvraag</Link>
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {requests.map((r) => (
+        <Link key={r.id} href={`/requests/${r.id}`}>
+          <div className="bg-white rounded-2xl border border-border p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">{r.categoryIcon}</span>
+              <span className="text-xs text-muted-foreground font-medium">{r.categoryName}</span>
+              {r.isExpired && <span className="ml-auto text-xs bg-red-100 text-red-600 rounded-full px-2 py-0.5 font-semibold">Verlopen</span>}
+            </div>
+            <h3 className="font-bold text-secondary mb-1 line-clamp-2">{r.title}</h3>
+            {r.brand && <p className="text-xs text-muted-foreground mb-3">{r.brand}</p>}
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-primary">{r.bidCount} bod{r.bidCount === 1 ? "" : "den"}</span>
+              {r.lowestBidPrice !== null && (
+                <span className="flex items-center gap-1 text-green-600 font-bold">
+                  <TrendingDown className="w-3 h-3" />€{r.lowestBidPrice.toFixed(2)}
+                </span>
+              )}
+              {!r.isExpired && (
+                <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                  <Clock className="w-3 h-3" />{timeLeft(r.expiresAt)}
+                </span>
+              )}
+            </div>
+            {r.lowestBid && !r.lowestBid.hasInterest && !r.isExpired && (
+              <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+                Laagste bod: <span className="font-semibold text-secondary">{r.lowestBid.supplierStore}</span>
+              </div>
+            )}
+            {r.lowestBid?.hasInterest && (
+              <div className="mt-3 pt-3 border-t border-green-100">
+                <span className="text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-semibold">✓ Interesse bevestigd</span>
+              </div>
+            )}
+          </div>
+        </Link>
+      ))}
+      <Link href="/request/new">
+        <div className="bg-primary/5 border-2 border-dashed border-primary/30 rounded-2xl p-5 flex flex-col items-center justify-center gap-3 hover:bg-primary/10 transition-all cursor-pointer h-full min-h-[160px]">
+          <ShoppingBag className="w-8 h-8 text-primary/60" />
+          <span className="text-sm font-semibold text-primary">Nieuwe uitvraag plaatsen</span>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+function SellerDashboard({ token }: { token: string }) {
+  const [categoryReqs, setCategoryReqs] = useState<SupplierRequest[]>([]);
+  const [interestedBids, setInterestedBids] = useState<InterestedBid[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      fetch(`${API}/supplier/category-requests`, { headers }).then((r) => r.json()),
+      fetch(`${API}/supplier/interested-bids`, { headers }).then((r) => r.json()),
+    ]).then(([reqs, bids]) => {
+      setCategoryReqs(Array.isArray(reqs) ? reqs : []);
+      setInterestedBids(Array.isArray(bids) ? bids : []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [token]);
+
+  if (loading) return null;
+
+  return (
+    <div className="space-y-8">
+      {interestedBids.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="w-5 h-5 text-amber-500" />
+            <h3 className="font-bold text-xl text-secondary">Geïnteresseerde kopers</h3>
+            <span className="ml-2 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{interestedBids.length}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {interestedBids.slice(0, 4).map((b) => (
+              <Link key={b.bidId} href={`/requests/${b.requestId}`}>
+                <div className="bg-white rounded-2xl border border-amber-200 p-5 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-bold text-secondary line-clamp-2">{b.requestTitle}</h4>
+                    {b.alreadyConnected && <span className="ml-2 text-xs bg-green-100 text-green-700 rounded-full px-2 py-0.5 font-semibold shrink-0">Verbonden</span>}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">{b.modelName} — <span className="font-semibold text-primary">€{b.price.toFixed(2)}</span></p>
+                  <div className="text-xs text-muted-foreground">
+                    Koper: <span className="font-semibold text-secondary">{b.buyerName}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Bell className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-xl text-secondary">Uitvragen in jouw categorieën</h3>
+        </div>
+        {categoryReqs.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            Geen actieve uitvragen in jouw categorieën.{" "}
+            <Link href="/winkel/instellingen" className="text-primary font-semibold underline">Stel je categorieën in</Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categoryReqs.map((r) => (
+              <Link key={r.id} href={`/requests/${r.id}`}>
+                <div className="bg-white rounded-2xl border border-border p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">{r.categoryIcon}</span>
+                    <span className="text-xs text-muted-foreground font-medium">{r.categoryName}</span>
+                  </div>
+                  <h4 className="font-bold text-secondary mb-1 line-clamp-2">{r.title}</h4>
+                  {r.brand && <p className="text-xs text-muted-foreground mb-3">{r.brand}</p>}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-primary">{r.bidCount} bod{r.bidCount === 1 ? "" : "den"}</span>
+                    {r.lowestBidPrice !== null && (
+                      <span className="flex items-center gap-1 text-green-600 font-bold text-xs">
+                        <TrendingDown className="w-3 h-3" />€{r.lowestBidPrice.toFixed(2)}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                      <Clock className="w-3 h-3" />{timeLeft(r.expiresAt)}
+                    </span>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <span className="text-xs bg-primary/10 text-primary rounded-full px-3 py-1 font-semibold">Bod plaatsen</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { data: stats } = useGetStats();
   const { data: categories } = useListCategories();
   const { data: recentRequests } = useListRequests();
   const { t } = useI18n();
+  const { user, isBuyer, isSeller, isLoggedIn } = useUserAuth();
+  const { token } = useSupplierAuth();
 
   return (
     <Layout>
@@ -64,12 +277,14 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <Link
-                href="/request/new"
-                className="px-8 py-4 rounded-xl font-bold text-lg bg-primary text-primary-foreground shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                {t.home.ctaPost} <ArrowRight className="w-5 h-5" />
-              </Link>
+              {!isSeller && (
+                <Link
+                  href="/request/new"
+                  className="px-8 py-4 rounded-xl font-bold text-lg bg-primary text-primary-foreground shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  {t.home.ctaPost} <ArrowRight className="w-5 h-5" />
+                </Link>
+              )}
               <Link
                 href="/requests"
                 className="px-8 py-4 rounded-xl font-bold text-lg bg-white text-secondary border-2 border-border shadow-sm hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 flex items-center justify-center"
@@ -116,6 +331,46 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Consumer Dashboard — logged-in buyers */}
+      {isBuyer && user && (
+        <section className="py-16 bg-gradient-to-b from-primary/5 to-white border-t border-primary/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-secondary">Welkom terug, {user.contactName.split(" ")[0]}!</h2>
+                <p className="text-muted-foreground mt-1">Jouw actieve uitvragen en binnengekomen biedingen</p>
+              </div>
+              <Link href="/request/new">
+                <Button className="gap-2">
+                  <ShoppingBag className="w-4 h-4" />Nieuwe uitvraag
+                </Button>
+              </Link>
+            </div>
+            <ConsumerDashboard email={user.email} />
+          </div>
+        </section>
+      )}
+
+      {/* Seller Dashboard — logged-in sellers */}
+      {isSeller && token && (
+        <section className="py-16 bg-gradient-to-b from-primary/5 to-white border-t border-primary/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-secondary">Dashboard — {user?.storeName ?? user?.contactName}</h2>
+                <p className="text-muted-foreground mt-1">Overzicht van uitvragen en geïnteresseerde kopers</p>
+              </div>
+              <Link href="/requests">
+                <Button variant="outline" className="gap-2">
+                  <Store className="w-4 h-4" />Alle uitvragen
+                </Button>
+              </Link>
+            </div>
+            <SellerDashboard token={token} />
+          </div>
+        </section>
+      )}
+
       {/* Categories Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -150,34 +405,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recent Requests Section */}
-      <section className="py-24 bg-muted/30 border-t border-border/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
-            <div>
-              <h2 className="text-3xl font-bold mb-4">{t.home.popularTitle}</h2>
-              <p className="text-muted-foreground">{t.home.popularSub}</p>
+      {/* Recent Requests Section — hidden for logged-in sellers (they see their own dashboard) */}
+      {!isSeller && (
+        <section className="py-24 bg-muted/30 border-t border-border/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
+              <div>
+                <h2 className="text-3xl font-bold mb-4">{t.home.popularTitle}</h2>
+                <p className="text-muted-foreground">{t.home.popularSub}</p>
+              </div>
+              <Link href="/requests" className="text-primary font-bold flex items-center gap-2 hover:gap-3 transition-all">
+                {t.home.viewAll} <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-            <Link href="/requests" className="text-primary font-bold flex items-center gap-2 hover:gap-3 transition-all">
-              {t.home.viewAll} <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentRequests?.slice(0, 3).map((req, i) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                key={req.id}
-              >
-                <RequestCard request={req} featured={i === 0} />
-              </motion.div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentRequests?.slice(0, 3).map((req, i) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  key={req.id}
+                >
+                  <RequestCard request={req} featured={i === 0} />
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* How it works */}
       <section className="py-24 bg-secondary text-secondary-foreground">

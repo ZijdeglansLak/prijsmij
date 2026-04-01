@@ -72,6 +72,36 @@ export async function sendVerificationEmail(to: string, name: string, token: str
   return link;
 }
 
+export async function sendNewBidNotification(to: string, consumerName: string, storeName: string, modelName: string, price: number, requestId: number) {
+  const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
+  const link = `${baseUrl}/requests/${requestId}`;
+  const subject = `Nieuw bod op je uitvraag — PrijsMij`;
+  const text = `Hoi ${consumerName},\n\nGoed nieuws! ${storeName} heeft een bod geplaatst op je uitvraag.\n\nModel: ${modelName}\nPrijs: €${price.toFixed(2)}\n\nBekijk het bod en alle andere biedingen:\n${link}\n\nMet vriendelijke groet,\nHet PrijsMij-team`;
+
+  const transporter = getTransporter();
+  if (transporter) {
+    await transporter.sendMail({ from: FROM, to, subject, text });
+    console.log(`[EMAIL] New bid notification sent to ${to}`);
+  } else {
+    console.log(`[EMAIL-DEV] New bid notification for ${to}: ${link}`);
+  }
+}
+
+export async function sendBuyerInterestNotification(to: string, storeName: string, consumerName: string, consumerEmail: string, requestTitle: string, requestId: number) {
+  const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
+  const link = `${baseUrl}/requests/${requestId}`;
+  const subject = `Een koper heeft interesse getoond in jouw bod — PrijsMij`;
+  const text = `Hoi ${storeName},\n\n${consumerName} heeft interesse getoond in jouw bod op de uitvraag "${requestTitle}".\n\nContactgegevens koper:\nNaam: ${consumerName}\nE-mail: ${consumerEmail}\n\nBekijk de uitvraag:\n${link}\n\nVia PrijsMij kun je ook een connectie maken om direct contact op te nemen.\n\nMet vriendelijke groet,\nHet PrijsMij-team`;
+
+  const transporter = getTransporter();
+  if (transporter) {
+    await transporter.sendMail({ from: FROM, to, subject, text });
+    console.log(`[EMAIL] Buyer interest notification sent to ${to}`);
+  } else {
+    console.log(`[EMAIL-DEV] Buyer interest notification for ${to}: ${link}`);
+  }
+}
+
 export async function sendNewRequestNotification(to: string, storeName: string, categoryName: string, requestTitle: string, requestId: number) {
   const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
   const link = `${baseUrl}/requests/${requestId}`;

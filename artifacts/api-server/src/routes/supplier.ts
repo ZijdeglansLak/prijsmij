@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, CREDIT_BUNDLES } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, categoriesTable, CREDIT_BUNDLES, siteSettingsTable } from "@workspace/db";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { requireAuth, requireSeller } from "./auth";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -44,8 +44,10 @@ router.post("/supplier/register", async (req, res) => {
     if (existing.length > 0) { res.status(409).json({ error: "Dit e-mailadres is al in gebruik" }); return; }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const settings = await db.select({ initialSellerCredits: siteSettingsTable.initialSellerCredits }).from(siteSettingsTable).limit(1);
+    const initialCredits = settings[0]?.initialSellerCredits ?? 10;
     const [user] = await db.insert(userAccountsTable).values({
-      role: "seller", storeName, contactName, email: email.toLowerCase().trim(), passwordHash, emailVerified: false
+      role: "seller", storeName, contactName, email: email.toLowerCase().trim(), passwordHash, emailVerified: false, credits: initialCredits
     }).returning();
 
     res.status(201).json({ token: makeSupplierToken(user), supplier: toSupplierResponse(user) });
@@ -125,6 +127,110 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
 
     res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, creditsUsed: 1, remainingCredits: fresh.credits });
   } catch (err) { req.log.error({ err }, "Failed to create connection"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /supplier/category-requests — active requests in seller's notification categories
+router.get("/supplier/category-requests", requireSeller, async (req, res) => {
+  try {
+    const userId = (req as any).userId as number;
+    const [user] = await db.select({ ids: userAccountsTable.notificationCategoryIds }).from(userAccountsTable).where(eq(userAccountsTable.id, userId));
+    if (!user) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
+    const categoryIds: number[] = JSON.parse(user.ids || "[]");
+    if (categoryIds.length === 0) { res.json([]); return; }
+
+    const requests = await db.select()
+      .from(requestsTable)
+      .where(
+        and(
+          sql`${requestsTable.categoryId} = ANY(ARRAY[${sql.raw(categoryIds.join(","))}])`,
+          sql`${requestsTable.expiresAt} > NOW()`
+        )
+      )
+      .orderBy(desc(requestsTable.createdAt))
+      .limit(10);
+
+    if (requests.length === 0) { res.json([]); return; }
+
+    const reqIds = requests.map((r) => r.id);
+    const bids = await db.select().from(bidsTable).where(
+      and(
+        sql`${bidsTable.requestId} = ANY(ARRAY[${sql.raw(reqIds.join(","))}])`,
+        eq(bidsTable.visibility, "public")
+      )
+    );
+
+    const bidsByReq = new Map<number, typeof bids[0][]>();
+    for (const b of bids) {
+      if (!bidsByReq.has(b.requestId)) bidsByReq.set(b.requestId, []);
+      bidsByReq.get(b.requestId)!.push(b);
+    }
+
+    const cats = await db.select().from(categoriesTable);
+    const catMap = new Map(cats.map((c) => [c.id, c]));
+
+    res.json(requests.map((r) => {
+      const reqBids = bidsByReq.get(r.id) ?? [];
+      const prices = reqBids.map((b) => parseFloat(String(b.price)));
+      const cat = catMap.get(r.categoryId);
+      return {
+        id: r.id,
+        title: r.title,
+        brand: r.brand,
+        categoryName: cat?.name ?? "",
+        categoryIcon: cat?.icon ?? "",
+        bidCount: reqBids.length,
+        lowestBidPrice: prices.length > 0 ? Math.min(...prices) : null,
+        expiresAt: r.expiresAt,
+        createdAt: r.createdAt,
+      };
+    }));
+  } catch (err) { req.log.error({ err }, "Failed to get category requests"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /supplier/interested-bids — bids this seller placed where buyer showed interest
+router.get("/supplier/interested-bids", requireSeller, async (req, res) => {
+  try {
+    const userId = (req as any).userId as number;
+    const [user] = await db.select({ email: userAccountsTable.email }).from(userAccountsTable).where(eq(userAccountsTable.id, userId));
+    if (!user) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
+
+    const interestedBids = await db.select()
+      .from(bidsTable)
+      .where(and(
+        eq(bidsTable.supplierEmail, user.email),
+        sql`${bidsTable.buyerInterestEmail} IS NOT NULL`
+      ))
+      .orderBy(desc(bidsTable.buyerInterestAt));
+
+    if (interestedBids.length === 0) { res.json([]); return; }
+
+    const reqIds = [...new Set(interestedBids.map((b) => b.requestId))];
+    const requests = await db.select().from(requestsTable).where(
+      sql`${requestsTable.id} = ANY(ARRAY[${sql.raw(reqIds.join(","))}])`
+    );
+    const reqMap = new Map(requests.map((r) => [r.id, r]));
+
+    const alreadyConnected = await db.select({ bidId: connectionsTable.bidId })
+      .from(connectionsTable)
+      .where(eq(connectionsTable.userId, userId));
+    const connectedBidIds = new Set(alreadyConnected.map((c) => c.bidId));
+
+    res.json(interestedBids.map((b) => {
+      const r = reqMap.get(b.requestId);
+      return {
+        bidId: b.id,
+        requestId: b.requestId,
+        requestTitle: r?.title ?? "",
+        supplierStore: b.supplierStore,
+        price: parseFloat(String(b.price)),
+        modelName: b.modelName,
+        buyerName: b.buyerInterestName ?? b.buyerInterestEmail ?? "",
+        buyerEmail: b.buyerInterestEmail ?? "",
+        interestAt: b.buyerInterestAt,
+        alreadyConnected: connectedBidIds.has(b.id),
+      };
+    }));
+  } catch (err) { req.log.error({ err }, "Failed to get interested bids"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // GET /supplier/notification-preferences — sellers only

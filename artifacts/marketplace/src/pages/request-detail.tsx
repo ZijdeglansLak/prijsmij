@@ -20,12 +20,13 @@ export default function RequestDetail() {
   const [filterType, setFilterType] = useState<BidOfferType | "all">("all");
   const [interestBidId, setInterestBidId] = useState<number | null>(null);
   const [consumerEmail, setConsumerEmail] = useState("");
+  const [consumerName, setConsumerName] = useState("");
   const [connectieBidId, setConnectieBidId] = useState<number | null>(null);
   const [connectieResult, setConnectieResult] = useState<{ consumerName: string; consumerEmail: string } | null>(null);
   const [connectieLoading, setConnectieLoading] = useState(false);
 
   const { data: request, isLoading } = useGetRequestById(requestId);
-  const { user } = useUserAuth();
+  const { user, isSeller } = useUserAuth();
   const { data: bids } = useListBidsForRequest(requestId, { 
     offerType: filterType === "all" ? undefined : filterType,
     viewerEmail: user?.email ?? undefined,
@@ -41,8 +42,8 @@ export default function RequestDetail() {
     try {
       const result = await expressInterestMutation.mutateAsync({
         id: requestId,
-        data: { bidId: interestBidId, consumerEmail }
-      });
+        data: { bidId: interestBidId, consumerEmail, consumerName: consumerName || consumerEmail }
+      } as any);
       
       toast({
         title: "Succes!",
@@ -270,13 +271,15 @@ export default function RequestDetail() {
                           {formatCurrency(bid.price)}
                         </div>
                         <div className="flex flex-col gap-2 w-full sm:w-auto">
-                          <Button 
-                            onClick={() => setInterestBidId(bid.id)}
-                            className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
-                          >
-                            Toon Interesse
-                          </Button>
-                          {isLoggedIn && (
+                          {!isSeller && (
+                            <Button 
+                              onClick={() => setInterestBidId(bid.id)}
+                              className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
+                            >
+                              Toon Interesse
+                            </Button>
+                          )}
+                          {isLoggedIn && (bid as any).hasInterest && (
                             <Button
                               variant="outline"
                               className="w-full sm:w-auto h-11 border-primary text-primary hover:bg-primary/5"
@@ -298,32 +301,44 @@ export default function RequestDetail() {
       </div>
 
       {/* Interest Dialog */}
-      <Dialog open={!!interestBidId} onOpenChange={(o) => !o && setInterestBidId(null)}>
+      <Dialog open={!!interestBidId} onOpenChange={(o) => { if (!o) { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Interesse in dit bod?</DialogTitle>
             <DialogDescription className="text-base mt-2">
-              Geweldig! Vul je e-mailadres in zodat de winkelier contact met je op kan nemen.
+              Geweldig! Vul je gegevens in zodat de winkelier contact met je op kan nemen.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-6">
-            <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
-            <Input 
-              type="email" 
-              placeholder="naam@voorbeeld.nl" 
-              value={consumerEmail}
-              onChange={(e) => setConsumerEmail(e.target.value)}
-              className="h-12 text-lg"
-            />
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-secondary mb-2">Jouw naam</label>
+              <Input 
+                type="text"
+                placeholder="Jan Jansen" 
+                value={consumerName}
+                onChange={(e) => setConsumerName(e.target.value)}
+                className="h-12 text-base"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
+              <Input 
+                type="email" 
+                placeholder="naam@voorbeeld.nl" 
+                value={consumerEmail}
+                onChange={(e) => setConsumerEmail(e.target.value)}
+                className="h-12 text-base"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setInterestBidId(null)}>Annuleren</Button>
+            <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); }}>Annuleren</Button>
             <Button 
               onClick={handleInterest} 
               disabled={!consumerEmail || expressInterestMutation.isPending}
               className="bg-primary hover:bg-primary/90 text-white"
             >
-              {expressInterestMutation.isPending ? "Verwerken..." : "Contact Aanvragen (€0,99)"}
+              {expressInterestMutation.isPending ? "Verwerken..." : "Interesse bevestigen"}
             </Button>
           </div>
         </DialogContent>

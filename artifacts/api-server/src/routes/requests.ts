@@ -10,7 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, sql, and, desc, asc } from "drizzle-orm";
 import { z } from "zod/v4";
-import { sendNewRequestNotification } from "../services/email";
+import { sendNewRequestNotification, sendNewBidNotification, sendBuyerInterestNotification } from "../services/email";
 
 const router: IRouter = Router();
 
@@ -306,6 +306,7 @@ router.get("/requests/:id/bids", async (req, res) => {
         imageUrl: b.imageUrl,
         isSimilarModel: b.isSimilarModel,
         visibility: b.visibility ?? "public",
+        hasInterest: !!b.buyerInterestEmail,
         createdAt: b.createdAt,
       }))
     );
@@ -365,6 +366,15 @@ router.post("/requests/:id/bids", async (req, res) => {
       })
       .returning();
 
+    sendNewBidNotification(
+      request.consumerEmail,
+      request.consumerName,
+      data.supplierStore,
+      data.modelName,
+      data.price,
+      requestId
+    ).catch(() => {});
+
     res.status(201).json({
       id: bid.id,
       requestId: bid.requestId,
@@ -395,7 +405,7 @@ router.post("/requests/:id/interest", async (req, res) => {
       return;
     }
 
-    const { bidId, consumerEmail } = req.body;
+    const { bidId, consumerEmail, consumerName } = req.body;
     if (!bidId || !consumerEmail) {
       res.status(400).json({ error: "bidId and consumerEmail are required" });
       return;
@@ -411,6 +421,23 @@ router.post("/requests/:id/interest", async (req, res) => {
       return;
     }
 
+    const [request] = await db.select({ title: requestsTable.title }).from(requestsTable).where(eq(requestsTable.id, requestId));
+
+    await db.update(bidsTable).set({
+      buyerInterestEmail: consumerEmail.toLowerCase().trim(),
+      buyerInterestName: consumerName ?? consumerEmail,
+      buyerInterestAt: new Date(),
+    }).where(eq(bidsTable.id, bidId));
+
+    sendBuyerInterestNotification(
+      bid.supplierEmail,
+      bid.supplierStore,
+      consumerName ?? consumerEmail,
+      consumerEmail,
+      request?.title ?? "uitvraag",
+      requestId
+    ).catch(() => {});
+
     res.json({
       success: true,
       message: `Geweldig! ${bid.supplierStore} wordt op de hoogte gebracht van jouw interesse. Ze nemen snel contact met je op.`,
@@ -418,6 +445,69 @@ router.post("/requests/:id/interest", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Failed to express interest");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/consumer/requests", async (req, res) => {
+  try {
+    const email = (req.query.email as string | undefined)?.toLowerCase().trim();
+    if (!email) {
+      res.status(400).json({ error: "email query parameter required" });
+      return;
+    }
+
+    const requests = await db
+      .select()
+      .from(requestsTable)
+      .where(eq(requestsTable.consumerEmail, email))
+      .orderBy(desc(requestsTable.createdAt));
+
+    const requestIds = requests.map((r) => r.id);
+    let publicBidsByRequest = new Map<number, { count: number; lowestPrice: number | null; bids: typeof bidsTable.$inferSelect[] }>();
+    
+    if (requestIds.length > 0) {
+      const bids = await db.select().from(bidsTable).where(
+        sql`${bidsTable.requestId} = ANY(ARRAY[${sql.raw(requestIds.join(","))}])`
+      );
+      for (const bid of bids) {
+        const entry = publicBidsByRequest.get(bid.requestId) ?? { count: 0, lowestPrice: null, bids: [] };
+        entry.count++;
+        const price = parseFloat(String(bid.price));
+        if (entry.lowestPrice === null || price < entry.lowestPrice) entry.lowestPrice = price;
+        entry.bids.push(bid);
+        publicBidsByRequest.set(bid.requestId, entry);
+      }
+    }
+
+    const categories = await db.select().from(categoriesTable);
+    const catMap = new Map(categories.map((c) => [c.id, c]));
+
+    res.json(requests.map((r) => {
+      const bidInfo = publicBidsByRequest.get(r.id) ?? { count: 0, lowestPrice: null, bids: [] };
+      const cat = catMap.get(r.categoryId);
+      const now = new Date();
+      return {
+        id: r.id,
+        title: r.title,
+        brand: r.brand,
+        categoryId: r.categoryId,
+        categoryName: cat?.name ?? "",
+        categoryIcon: cat?.icon ?? "",
+        bidCount: bidInfo.count,
+        lowestBidPrice: bidInfo.lowestPrice,
+        lowestBidStore: bidInfo.bids.find(b => parseFloat(String(b.price)) === bidInfo.lowestPrice)?.supplierStore ?? null,
+        lowestBid: bidInfo.bids.length > 0 ? (() => {
+          const b = bidInfo.bids.find(bid => parseFloat(String(bid.price)) === bidInfo.lowestPrice)!;
+          return b ? { id: b.id, supplierStore: b.supplierStore, price: parseFloat(String(b.price)), modelName: b.modelName, hasInterest: !!b.buyerInterestEmail } : null;
+        })() : null,
+        expiresAt: r.expiresAt,
+        createdAt: r.createdAt,
+        isExpired: r.expiresAt < now,
+      };
+    }));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get consumer requests");
     res.status(500).json({ error: "Internal server error" });
   }
 });

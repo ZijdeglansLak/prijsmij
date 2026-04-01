@@ -106,23 +106,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className="relative">
                 <button
                   onClick={() => setShowLangMenu(!showLangMenu)}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-1 text-xl hover:scale-110 transition-transform"
+                  title={LABEL[lang]}
                 >
-                  <Globe className="w-4 h-4" />
-                  <span>{FLAG[lang]} {LABEL[lang]}</span>
+                  {FLAG[lang]}
                 </button>
                 {showLangMenu && (
-                  <div className="absolute right-0 top-8 bg-white border border-border rounded-xl shadow-lg p-1 min-w-[120px] z-50">
+                  <div className="absolute right-0 top-8 bg-white border border-border rounded-xl shadow-lg p-1 min-w-[140px] z-50">
                     {LANGUAGES.map(l => (
                       <button
                         key={l}
                         onClick={() => { setLang(l); setShowLangMenu(false); }}
                         className={cn(
                           "w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors",
-                          l === lang ? "bg-primary/10 text-primary" : "hover:bg-muted text-secondary"
+                          l === lang ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted text-secondary"
                         )}
                       >
-                        {FLAG[l]} {LABEL[l]}
+                        <span className="text-lg">{FLAG[l]}</span> {LABEL[l]}
                       </button>
                     ))}
                   </div>
