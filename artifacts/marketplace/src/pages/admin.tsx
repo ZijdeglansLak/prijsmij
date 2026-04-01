@@ -97,6 +97,17 @@ function AdminDashboard() {
   );
 }
 
+type CategoryFieldType = "text" | "number" | "select";
+
+interface CategoryField {
+  key: string;
+  label: string;
+  type: CategoryFieldType;
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
 interface CategoryRecord {
   id: number;
   name: string;
@@ -105,6 +116,7 @@ interface CategoryRecord {
   description: string;
   isActive: boolean;
   activeRequestCount: number;
+  fields: CategoryField[];
 }
 
 function CategoriesTab() {
@@ -195,7 +207,7 @@ function CategoriesTab() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className={`grid gap-4 ${editingId !== null ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"}`}>
         {categories.map(cat => (
           <CategoryCard
             key={cat.id}
@@ -225,23 +237,36 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
   const [name, setName] = useState(cat.name);
   const [icon, setIcon] = useState(cat.icon);
   const [description, setDescription] = useState(cat.description);
+  const [fields, setFields] = useState<CategoryField[]>(cat.fields ?? []);
 
   useEffect(() => {
     setName(cat.name); setIcon(cat.icon); setDescription(cat.description);
+    setFields(cat.fields ?? []);
   }, [cat]);
 
   return (
     <div className={`rounded-2xl border-2 overflow-hidden transition-colors ${cat.isActive ? "border-border bg-card" : "border-dashed border-muted-foreground/30 bg-muted/30"}`}>
       <div className="p-5">
         {isEditing ? (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input value={icon} onChange={e => setIcon(e.target.value)} className="w-20 text-2xl text-center" placeholder="🛒" />
-              <Input value={name} onChange={e => setName(e.target.value)} className="flex-1 font-bold" />
+          <div className="space-y-5">
+            {/* Basisgegevens */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Basisgegevens</p>
+              <div className="flex gap-2">
+                <Input value={icon} onChange={e => setIcon(e.target.value)} className="w-20 text-2xl text-center" placeholder="🛒" />
+                <Input value={name} onChange={e => setName(e.target.value)} className="flex-1 font-bold" />
+              </div>
+              <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving..." />
             </div>
-            <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving..." />
-            <div className="flex gap-2 pt-1">
-              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description })}>
+
+            {/* Formuliervelden */}
+            <div className="border-t border-border pt-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Formuliervelden</p>
+              <CategoryFieldEditor fields={fields} onChange={setFields} />
+            </div>
+
+            <div className="flex gap-2 pt-1 border-t border-border">
+              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description, fields })}>
                 <Check className="w-3 h-3 mr-1" /> {isSaving ? "Opslaan..." : "Opslaan"}
               </Button>
               <Button size="sm" variant="outline" onClick={onCancel}><X className="w-3 h-3 mr-1" /> Annuleren</Button>
@@ -267,9 +292,12 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
             </div>
             <h3 className="font-bold text-base mb-1">{cat.name}</h3>
             <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{cat.description}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
                 {cat.activeRequestCount} uitvragen
+              </span>
+              <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                {(cat.fields ?? []).length} velden
               </span>
               {!cat.isActive && (
                 <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">Inactief</span>
@@ -277,6 +305,162 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; onChange: (f: CategoryField[]) => void }) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [newOptionText, setNewOptionText] = useState<Record<number, string>>({});
+
+  const typeLabel: Record<CategoryFieldType, string> = { text: "Tekst", number: "Getal", select: "Keuzelijst" };
+  const typeColor: Record<CategoryFieldType, string> = {
+    text: "bg-blue-50 text-blue-700",
+    number: "bg-purple-50 text-purple-700",
+    select: "bg-green-50 text-green-700",
+  };
+
+  function genKey(label: string) {
+    return label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 30) || `veld_${Date.now()}`;
+  }
+
+  function addField(type: CategoryFieldType) {
+    const f: CategoryField = { key: `veld_${Date.now()}`, label: "Nieuw veld", type, required: false, placeholder: "", options: type === "select" ? [] : undefined };
+    onChange([...fields, f]);
+    setExpandedIdx(fields.length);
+  }
+
+  function updateField(idx: number, updates: Partial<CategoryField>) {
+    onChange(fields.map((f, i) => i === idx ? { ...f, ...updates } : f));
+  }
+
+  function removeField(idx: number) {
+    onChange(fields.filter((_, i) => i !== idx));
+    setExpandedIdx(null);
+  }
+
+  function addOption(idx: number) {
+    const val = (newOptionText[idx] ?? "").trim();
+    if (!val) return;
+    updateField(idx, { options: [...(fields[idx].options ?? []), val] });
+    setNewOptionText(p => ({ ...p, [idx]: "" }));
+  }
+
+  return (
+    <div className="space-y-2">
+      {fields.length === 0 && (
+        <p className="text-xs text-muted-foreground py-2 text-center italic">Nog geen formuliervelden</p>
+      )}
+
+      {fields.map((field, idx) => (
+        <div key={idx} className="border border-border rounded-xl overflow-hidden">
+          <div
+            className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+            onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
+          >
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${typeColor[field.type]}`}>
+              {typeLabel[field.type]}
+            </span>
+            <span className="flex-1 text-sm font-medium truncate">{field.label || <span className="italic text-muted-foreground">naamloos</span>}</span>
+            {field.required && <span className="text-xs text-destructive font-bold shrink-0">vereist</span>}
+            <button
+              onClick={e => { e.stopPropagation(); removeField(idx); }}
+              className="p-1 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+              title="Verwijder veld"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            {expandedIdx === idx ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+          </div>
+
+          {expandedIdx === idx && (
+            <div className="p-4 border-t border-border bg-muted/20 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold mb-1 block">Label *</label>
+                  <Input
+                    value={field.label}
+                    onChange={e => updateField(idx, { label: e.target.value, key: genKey(e.target.value) })}
+                    className="h-8 text-sm"
+                    placeholder="Bijv. Schermgrootte"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold mb-1 block">Sleutel (auto)</label>
+                  <Input value={field.key} readOnly className="h-8 text-sm bg-muted/60 text-muted-foreground font-mono" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold mb-1 block">Placeholder</label>
+                  <Input
+                    value={field.placeholder ?? ""}
+                    onChange={e => updateField(idx, { placeholder: e.target.value })}
+                    className="h-8 text-sm"
+                    placeholder="Bijv. typ hier..."
+                  />
+                </div>
+                <div className="flex items-end pb-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      onChange={e => updateField(idx, { required: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm font-medium">Verplicht veld</span>
+                  </label>
+                </div>
+              </div>
+
+              {field.type === "select" && (
+                <div>
+                  <label className="text-xs font-bold mb-2 block">Keuze-opties</label>
+                  {(field.options ?? []).length === 0 && (
+                    <p className="text-xs text-muted-foreground mb-2 italic">Nog geen opties toegevoegd</p>
+                  )}
+                  <div className="space-y-1 mb-2">
+                    {(field.options ?? []).map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm bg-white border border-border rounded-lg px-3 py-1.5">{opt}</span>
+                        <button
+                          onClick={() => updateField(idx, { options: (field.options ?? []).filter((_, i) => i !== oi) })}
+                          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newOptionText[idx] ?? ""}
+                      onChange={e => setNewOptionText(p => ({ ...p, [idx]: e.target.value }))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addOption(idx); } }}
+                      placeholder="Optie toevoegen + Enter"
+                      className="h-8 text-sm flex-1"
+                    />
+                    <Button size="sm" variant="outline" onClick={() => addOption(idx)} className="h-8 px-3">
+                      <Plus className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      <div className="flex gap-2 pt-2">
+        <Button size="sm" variant="outline" onClick={() => addField("text")} className="text-xs h-8 gap-1">
+          <Plus className="w-3 h-3" /> Tekst
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => addField("number")} className="text-xs h-8 gap-1">
+          <Plus className="w-3 h-3" /> Getal
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => addField("select")} className="text-xs h-8 gap-1">
+          <Plus className="w-3 h-3" /> Keuzelijst
+        </Button>
       </div>
     </div>
   );

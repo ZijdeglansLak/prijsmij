@@ -115,19 +115,20 @@ router.post("/categories", requireAdmin, async (req, res) => {
   }
 });
 
-// PUT /admin/categories/:id — update name, icon, description, isActive
+// PUT /admin/categories/:id — update name, icon, description, isActive, fields
 router.put("/admin/categories/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) { res.status(400).json({ error: "Ongeldig id" }); return; }
 
-    const { name, icon, description, isActive } = req.body;
+    const { name, icon, description, isActive, fields } = req.body;
     const updates: Partial<typeof categoriesTable.$inferInsert> = { updatedAt: new Date() };
 
     if (name && typeof name === "string") updates.name = name.trim();
     if (icon && typeof icon === "string") updates.icon = icon.trim();
     if (typeof description === "string") updates.description = description.trim();
     if (typeof isActive === "boolean") updates.isActive = isActive;
+    if (Array.isArray(fields)) updates.fields = fields;
 
     const [updated] = await db.update(categoriesTable).set(updates).where(eq(categoriesTable.id, id)).returning();
     if (!updated) { res.status(404).json({ error: "Categorie niet gevonden" }); return; }
