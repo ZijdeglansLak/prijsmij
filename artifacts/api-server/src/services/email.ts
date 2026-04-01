@@ -72,11 +72,11 @@ export async function sendVerificationEmail(to: string, name: string, token: str
   return link;
 }
 
-export async function sendNewBidNotification(to: string, consumerName: string, storeName: string, modelName: string, price: number, requestId: number) {
+export async function sendNewBidNotification(to: string, consumerName: string, requestId: number) {
   const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
   const link = `${baseUrl}/requests/${requestId}`;
-  const subject = `Nieuw bod op je uitvraag — PrijsMij`;
-  const text = `Hoi ${consumerName},\n\nGoed nieuws! ${storeName} heeft een bod geplaatst op je uitvraag.\n\nModel: ${modelName}\nPrijs: €${price.toFixed(2)}\n\nBekijk het bod en alle andere biedingen:\n${link}\n\nMet vriendelijke groet,\nHet PrijsMij-team`;
+  const subject = `Er is een bod geplaatst op je uitvraag — PrijsMij`;
+  const text = `Hoi ${consumerName},\n\nGoed nieuws! Er is een bod geplaatst op je uitvraag.\n\nKlik op de onderstaande link om het bod te bekijken en te accepteren:\n\n${link}\n\nMet vriendelijke groet,\nHet PrijsMij-team`;
 
   const transporter = getTransporter();
   if (transporter) {
