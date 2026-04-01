@@ -285,12 +285,14 @@ export default function Home() {
                   {t.home.ctaPost} <ArrowRight className="w-5 h-5" />
                 </Link>
               )}
-              <Link
-                href="/requests"
-                className="px-8 py-4 rounded-xl font-bold text-lg bg-white text-secondary border-2 border-border shadow-sm hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 flex items-center justify-center"
-              >
-                {t.home.ctaView}
-              </Link>
+              {!(isLoggedIn && isBuyer) && (
+                <Link
+                  href="/requests"
+                  className="px-8 py-4 rounded-xl font-bold text-lg bg-white text-secondary border-2 border-border shadow-sm hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 flex items-center justify-center"
+                >
+                  {t.home.ctaView}
+                </Link>
+              )}
             </motion.div>
           </div>
 
