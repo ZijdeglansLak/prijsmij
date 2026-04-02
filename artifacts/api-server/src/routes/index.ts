@@ -8,6 +8,7 @@ import authRouter from "./auth";
 import adminUsersRouter from "./admin-users";
 import adminSettingsRouter from "./admin-settings";
 import paymentsRouter from "./payments";
+import adminBundlesRouter from "./admin-bundles";
 import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
 
@@ -22,6 +23,7 @@ router.use(supplierRouter);
 router.use(adminUsersRouter);
 router.use("/admin", adminSettingsRouter);
 router.use(paymentsRouter);
+router.use(adminBundlesRouter);
 
 router.get("/site-status", async (_req, res) => {
   try {

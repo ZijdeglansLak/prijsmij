@@ -3,12 +3,12 @@ import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
 
-type Tab = "categories" | "users" | "settings" | "payments";
+type Tab = "categories" | "users" | "settings" | "payments" | "bundles";
 
 interface UserRecord {
   id: number;
@@ -86,12 +86,19 @@ function AdminDashboard() {
           >
             <CreditCard className="w-4 h-4" /> Betalingen
           </button>
+          <button
+            onClick={() => setTab("bundles")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "bundles" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <Coins className="w-4 h-4" /> Bundels
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
         {tab === "users" && <UsersTab />}
         {tab === "settings" && <SettingsTab />}
         {tab === "payments" && <PaymentsTab />}
+        {tab === "bundles" && <BundelsTab />}
       </div>
     </Layout>
   );
@@ -1360,6 +1367,310 @@ function PaymentsTab() {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+interface BundleRecord {
+  id: number;
+  bundleKey: string;
+  name: string;
+  credits: number;
+  priceCents: number;
+  originalPriceCents: number | null;
+  badge: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+const BADGE_OPTIONS = ["", "Populair", "Beste waarde", "Beste prijs"];
+
+function centsToEuro(cents: number): string {
+  return (cents / 100).toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function BundelsTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+  const [bundles, setBundles] = useState<BundleRecord[] | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
+
+  const emptyForm = { bundleKey: "", name: "", credits: "", priceCents: "", originalPriceCents: "", badge: "", sortOrder: "" };
+  const [form, setForm] = useState(emptyForm);
+  const [editForm, setEditForm] = useState<Record<number, typeof emptyForm>>({});
+
+  useEffect(() => { loadBundles(); }, []);
+
+  async function loadBundles() {
+    try {
+      const res = await fetch("/api/admin/bundles", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setBundles(data);
+    } catch {
+      toast({ title: "Fout", description: "Kon bundels niet laden", variant: "destructive" });
+    }
+  }
+
+  function startEdit(b: BundleRecord) {
+    setEditingId(b.id);
+    setEditForm(prev => ({
+      ...prev,
+      [b.id]: {
+        bundleKey: b.bundleKey,
+        name: b.name,
+        credits: String(b.credits),
+        priceCents: String((b.priceCents / 100).toFixed(2)),
+        originalPriceCents: b.originalPriceCents ? String((b.originalPriceCents / 100).toFixed(2)) : "",
+        badge: b.badge ?? "",
+        sortOrder: String(b.sortOrder),
+      }
+    }));
+  }
+
+  async function saveEdit(id: number) {
+    const f = editForm[id];
+    if (!f) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/bundles/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: f.name,
+          credits: parseInt(f.credits),
+          priceCents: f.priceCents,
+          originalPriceCents: f.originalPriceCents || null,
+          badge: f.badge || null,
+          sortOrder: parseInt(f.sortOrder || "0"),
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); toast({ title: "Fout", description: d.error, variant: "destructive" }); return; }
+      toast({ title: "Opgeslagen" });
+      setEditingId(null);
+      await loadBundles();
+    } catch {
+      toast({ title: "Fout", description: "Opslaan mislukt", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleActive(b: BundleRecord) {
+    try {
+      await fetch(`/api/admin/bundles/${b.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isActive: !b.isActive }),
+      });
+      await loadBundles();
+    } catch {
+      toast({ title: "Fout", description: "Status wijzigen mislukt", variant: "destructive" });
+    }
+  }
+
+  async function deleteBundle(id: number) {
+    if (!confirm("Bundel verwijderen? Dit kan niet ongedaan worden gemaakt.")) return;
+    setDeleting(id);
+    try {
+      await fetch(`/api/admin/bundles/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      toast({ title: "Verwijderd" });
+      await loadBundles();
+    } catch {
+      toast({ title: "Fout", description: "Verwijderen mislukt", variant: "destructive" });
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  async function addBundle() {
+    if (!form.bundleKey || !form.name || !form.credits || !form.priceCents) {
+      toast({ title: "Vul alle verplichte velden in", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/bundles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          bundleKey: form.bundleKey,
+          name: form.name,
+          credits: parseInt(form.credits),
+          priceCents: form.priceCents,
+          originalPriceCents: form.originalPriceCents || null,
+          badge: form.badge || null,
+          sortOrder: parseInt(form.sortOrder || "99"),
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); toast({ title: "Fout", description: d.error, variant: "destructive" }); return; }
+      toast({ title: "Bundel aangemaakt" });
+      setForm(emptyForm);
+      setIsAdding(false);
+      await loadBundles();
+    } catch {
+      toast({ title: "Fout", description: "Aanmaken mislukt", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40";
+  const labelCls = "block text-xs font-semibold text-muted-foreground mb-1";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold">Creditbundels</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Prijzen invoeren in euro's (bijv. 35,00 = €35). Beheerders betalen automatisch 1/100e voor tests.
+          </p>
+        </div>
+        {!isAdding && (
+          <Button onClick={() => setIsAdding(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Bundel toevoegen
+          </Button>
+        )}
+      </div>
+
+      {isAdding && (
+        <div className="mb-6 p-5 border border-border rounded-xl bg-muted/30">
+          <h3 className="font-semibold mb-4">Nieuwe bundel</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div>
+              <label className={labelCls}>Sleutel *</label>
+              <input className={inputCls} placeholder="bijv. premium" value={form.bundleKey}
+                onChange={e => setForm(f => ({ ...f, bundleKey: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "") }))} />
+            </div>
+            <div>
+              <label className={labelCls}>Naam *</label>
+              <input className={inputCls} placeholder="bijv. Premium" value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div>
+              <label className={labelCls}>Credits *</label>
+              <input className={inputCls} type="number" min="1" placeholder="200" value={form.credits}
+                onChange={e => setForm(f => ({ ...f, credits: e.target.value }))} />
+            </div>
+            <div>
+              <label className={labelCls}>Prijs (€) *</label>
+              <input className={inputCls} type="number" min="0.01" step="0.01" placeholder="49.00" value={form.priceCents}
+                onChange={e => setForm(f => ({ ...f, priceCents: e.target.value }))} />
+            </div>
+            <div>
+              <label className={labelCls}>Doorgestr. prijs (€)</label>
+              <input className={inputCls} type="number" min="0.01" step="0.01" placeholder="optioneel" value={form.originalPriceCents}
+                onChange={e => setForm(f => ({ ...f, originalPriceCents: e.target.value }))} />
+            </div>
+            <div>
+              <label className={labelCls}>Label</label>
+              <select className={inputCls} value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))}>
+                {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b || "— geen —"}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Volgorde</label>
+              <input className={inputCls} type="number" placeholder="99" value={form.sortOrder}
+                onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))} />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button onClick={addBundle} disabled={saving} size="sm">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+              Opslaan
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setIsAdding(false); setForm(emptyForm); }}>
+              <X className="w-4 h-4 mr-1" /> Annuleren
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {bundles === null ? (
+        <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+      ) : bundles.length === 0 ? (
+        <p className="text-muted-foreground text-center py-12">Geen bundels — voeg er een toe.</p>
+      ) : (
+        <div className="rounded-xl border border-border overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                {["Sleutel", "Naam", "Credits", "Prijs", "Doorgestr.", "Label", "Volgorde", "Status", ""].map(h => (
+                  <th key={h} className="px-3 py-2 text-left font-semibold text-xs text-muted-foreground whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bundles.map(b => (
+                <tr key={b.id} className={`border-t border-border hover:bg-muted/20 transition-colors ${!b.isActive ? "opacity-50" : ""}`}>
+                  {editingId === b.id ? (
+                    <>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{b.bundleKey}</td>
+                      <td className="px-3 py-2 min-w-[120px]"><input className={inputCls} value={editForm[b.id]?.name ?? ""} onChange={e => setEditForm(f => ({ ...f, [b.id]: { ...f[b.id], name: e.target.value } }))} /></td>
+                      <td className="px-3 py-2 min-w-[80px]"><input className={inputCls} type="number" value={editForm[b.id]?.credits ?? ""} onChange={e => setEditForm(f => ({ ...f, [b.id]: { ...f[b.id], credits: e.target.value } }))} /></td>
+                      <td className="px-3 py-2 min-w-[110px]">
+                        <div className="flex items-center gap-1"><span className="text-muted-foreground text-xs">€</span>
+                          <input className={inputCls} type="number" step="0.01" value={editForm[b.id]?.priceCents ?? ""} onChange={e => setEditForm(f => ({ ...f, [b.id]: { ...f[b.id], priceCents: e.target.value } }))} /></div>
+                      </td>
+                      <td className="px-3 py-2 min-w-[110px]">
+                        <div className="flex items-center gap-1"><span className="text-muted-foreground text-xs">€</span>
+                          <input className={inputCls} type="number" step="0.01" value={editForm[b.id]?.originalPriceCents ?? ""} onChange={e => setEditForm(f => ({ ...f, [b.id]: { ...f[b.id], originalPriceCents: e.target.value } }))} /></div>
+                      </td>
+                      <td className="px-3 py-2 min-w-[140px]">
+                        <select className={inputCls} value={editForm[b.id]?.badge ?? ""} onChange={e => setEditForm(f => ({ ...f, [b.id]: { ...f[b.id], badge: e.target.value } }))}>
+                          {BADGE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt || "— geen —"}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2 min-w-[70px]"><input className={inputCls} type="number" value={editForm[b.id]?.sortOrder ?? ""} onChange={e => setEditForm(f => ({ ...f, [b.id]: { ...f[b.id], sortOrder: e.target.value } }))} /></td>
+                      <td className="px-3 py-2"><Badge variant={b.isActive ? "default" : "secondary"}>{b.isActive ? "Actief" : "Inactief"}</Badge></td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" className="h-7 px-2 text-xs" disabled={saving} onClick={() => saveEdit(b.id)}>
+                            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingId(null)}><X className="w-3 h-3" /></Button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{b.bundleKey}</td>
+                      <td className="px-3 py-2 font-semibold">{b.name}</td>
+                      <td className="px-3 py-2">{b.credits}</td>
+                      <td className="px-3 py-2 font-semibold">€{centsToEuro(b.priceCents)}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{b.originalPriceCents ? <span className="line-through">€{centsToEuro(b.originalPriceCents)}</span> : "—"}</td>
+                      <td className="px-3 py-2">{b.badge ? <Badge variant="secondary">{b.badge}</Badge> : <span className="text-muted-foreground text-xs">—</span>}</td>
+                      <td className="px-3 py-2">{b.sortOrder}</td>
+                      <td className="px-3 py-2">
+                        <button onClick={() => toggleActive(b)}
+                          className={`text-xs font-semibold px-2 py-1 rounded-full transition-colors ${b.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                          {b.isActive ? "Actief" : "Inactief"}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => startEdit(b)}><Pencil className="w-3 h-3" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50" disabled={deleting === b.id} onClick={() => deleteBundle(b.id)}>
+                            {deleting === b.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          </Button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-800">
+        <p className="font-semibold mb-1">Prijzen uitgelegd</p>
+        <p>Voer prijzen in <strong>euro's</strong> in (bijv. 35,00 voor €35). Beheerders betalen automatisch 1/100e (= €0,35) om betalingen te testen. Verkopers betalen de volledige ingestelde prijs.</p>
+      </div>
     </div>
   );
 }

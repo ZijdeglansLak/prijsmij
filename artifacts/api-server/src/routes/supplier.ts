@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, categoriesTable, CREDIT_BUNDLES, siteSettingsTable } from "@workspace/db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, categoriesTable, creditBundlesTable, siteSettingsTable } from "@workspace/db";
+import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, requireSeller } from "./auth";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -54,9 +54,18 @@ router.post("/supplier/register", async (req, res) => {
   } catch (err) { req.log.error({ err }, "Supplier register failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// GET /supplier/bundles — public
-router.get("/supplier/bundles", (_req, res) => {
-  res.json(CREDIT_BUNDLES);
+// GET /supplier/bundles — public, reads from DB
+router.get("/supplier/bundles", async (_req, res) => {
+  try {
+    const bundles = await db
+      .select()
+      .from(creditBundlesTable)
+      .where(eq(creditBundlesTable.isActive, true))
+      .orderBy(asc(creditBundlesTable.sortOrder));
+    res.json(bundles);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /supplier/credits/purchase — sellers only
@@ -65,8 +74,8 @@ router.post("/supplier/credits/purchase", requireSeller, async (req, res) => {
     const userId = (req as any).userId as number;
     const { bundleId } = req.body;
 
-    const bundle = CREDIT_BUNDLES.find((b) => b.id === bundleId);
-    if (!bundle) { res.status(400).json({ error: "Onbekende bundel" }); return; }
+    const [bundle] = await db.select().from(creditBundlesTable).where(eq(creditBundlesTable.bundleKey, String(bundleId))).limit(1);
+    if (!bundle || !bundle.isActive) { res.status(400).json({ error: "Onbekende bundel" }); return; }
 
     await db.insert(creditPurchasesTable).values({ userId, bundleName: bundle.name, creditsAmount: bundle.credits, amountPaidCents: bundle.priceCents });
 

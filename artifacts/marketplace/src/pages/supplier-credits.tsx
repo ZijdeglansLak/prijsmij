@@ -10,52 +10,27 @@ import { useUserAuth } from "@/contexts/user-auth";
 import { Coins, Check, ArrowLeft, Zap, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const BUNDLES = [
-  {
-    id: "starter",
-    name: "Starter",
-    credits: 10,
-    price: "0,35",
-    originalPrice: null,
-    pricePerUnit: "€0,035",
-    description: "Probeer het platform",
-    badge: null,
-    color: "border-gray-200",
-  },
-  {
-    id: "popular",
-    name: "Populair",
-    credits: 50,
-    price: "1,20",
-    originalPrice: "1,50",
-    pricePerUnit: "€0,024",
-    description: "Voor actieve verkopers",
-    badge: "Populair",
-    color: "border-primary",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    credits: 100,
-    price: "2,50",
-    originalPrice: "3,00",
-    pricePerUnit: "€0,025",
-    description: "Meeste waarde voor je geld",
-    badge: "Beste waarde",
-    color: "border-green-500",
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    credits: 250,
-    price: "5,50",
-    originalPrice: "7,50",
-    pricePerUnit: "€0,022",
-    description: "Voor grote verkooporganisaties",
-    badge: null,
-    color: "border-purple-400",
-  },
-];
+interface CreditBundle {
+  id: number;
+  bundleKey: string;
+  name: string;
+  credits: number;
+  priceCents: number;
+  originalPriceCents: number | null;
+  badge: string | null;
+  sortOrder: number;
+}
+
+function formatEuro(cents: number): string {
+  return (cents / 100).toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function bundleColor(bundle: CreditBundle, index: number): string {
+  if (bundle.badge === "Populair") return "border-primary";
+  if (bundle.badge === "Beste waarde" || bundle.badge === "Beste prijs") return "border-green-500";
+  if (index === 3) return "border-purple-400";
+  return "border-gray-200";
+}
 
 export default function SupplierCredits() {
   const [, setLocation] = useLocation();
@@ -68,10 +43,19 @@ export default function SupplierCredits() {
   const [polling, setPolling] = useState(false);
   const [pollingStopped, setPollingStopped] = useState(false);
   const [manualChecking, setManualChecking] = useState(false);
+  const [bundles, setBundles] = useState<CreditBundle[]>([]);
+  const [bundlesLoading, setBundlesLoading] = useState(true);
 
   const canAccess = isSeller || isAdmin;
 
-  // Parse query params from Pay.nl return URL
+  useEffect(() => {
+    fetch("/api/supplier/bundles")
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setBundles(data); })
+      .catch(() => {})
+      .finally(() => setBundlesLoading(false));
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(search);
     const payment = params.get("payment");
@@ -157,8 +141,8 @@ export default function SupplierCredits() {
     );
   }
 
-  async function handlePurchase(bundleId: string) {
-    setLoading(bundleId);
+  async function handlePurchase(bundleKey: string) {
+    setLoading(bundleKey);
     try {
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
@@ -166,7 +150,7 @@ export default function SupplierCredits() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ bundleId }),
+        body: JSON.stringify({ bundleId: bundleKey }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -198,7 +182,7 @@ export default function SupplierCredits() {
           {isAdmin && (
             <Alert className="mb-6 border-orange-400 bg-orange-50 text-orange-800">
               <AlertDescription className="font-medium">
-                Testmodus: prijzen zijn gedeeld door 100 (Starter = €0,35 i.p.v. €35).
+                Beheerderskorting actief: jij betaalt 1/100e van de ingestelde prijs (testmodus).
               </AlertDescription>
             </Alert>
           )}
@@ -266,56 +250,75 @@ export default function SupplierCredits() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {BUNDLES.map((bundle, i) => (
-              <motion.div
-                key={bundle.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.08 }}
-              >
-                <Card className={`relative h-full flex flex-col border-2 ${bundle.color} ${bundle.badge ? "shadow-md" : ""}`}>
-                  {bundle.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-primary text-primary-foreground shadow-sm">
-                        {bundle.badge === "Populair" ? <Zap className="w-3 h-3 mr-1" /> : <Check className="w-3 h-3 mr-1" />}
-                        {bundle.badge}
-                      </Badge>
-                    </div>
-                  )}
-                  <CardHeader className="text-center pb-2">
-                    <CardTitle className="text-lg">{bundle.name}</CardTitle>
-                    <CardDescription>{bundle.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col items-center flex-1">
-                    <div className="text-center mb-4">
-                      <p className="text-4xl font-bold text-primary">{bundle.credits}</p>
-                      <p className="text-sm text-muted-foreground">connecties</p>
-                    </div>
-                    <div className="text-center mb-4">
-                      <p className="text-2xl font-bold">€{bundle.price}</p>
-                      {bundle.originalPrice && (
-                        <p className="text-sm text-muted-foreground line-through">€{bundle.originalPrice}</p>
+          {bundlesLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {bundles.map((bundle, i) => {
+                const displayPrice = isAdmin
+                  ? formatEuro(Math.max(1, Math.round(bundle.priceCents / 100)))
+                  : formatEuro(bundle.priceCents);
+                const originalDisplay = bundle.originalPriceCents
+                  ? (isAdmin ? formatEuro(Math.max(1, Math.round(bundle.originalPriceCents / 100))) : formatEuro(bundle.originalPriceCents))
+                  : null;
+                const pricePerUnit = formatEuro(Math.round((isAdmin ? Math.max(1, Math.round(bundle.priceCents / 100)) : bundle.priceCents) / bundle.credits));
+                const color = bundleColor(bundle, i);
+
+                return (
+                  <motion.div
+                    key={bundle.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.08 }}
+                  >
+                    <Card className={`relative h-full flex flex-col border-2 ${color} ${bundle.badge ? "shadow-md" : ""}`}>
+                      {bundle.badge && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <Badge className="bg-primary text-primary-foreground shadow-sm">
+                            {bundle.badge === "Populair" ? <Zap className="w-3 h-3 mr-1" /> : <Check className="w-3 h-3 mr-1" />}
+                            {bundle.badge}
+                          </Badge>
+                        </div>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1">{bundle.pricePerUnit} per connectie</p>
-                    </div>
-                    <div className="mt-auto w-full">
-                      <Button
-                        className="w-full"
-                        variant={bundle.badge ? "default" : "outline"}
-                        disabled={loading === bundle.id}
-                        onClick={() => handlePurchase(bundle.id)}
-                      >
-                        {loading === bundle.id ? (
-                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Doorsturen...</>
-                        ) : "Betalen via Pay.nl"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                      <CardHeader className="text-center pb-2">
+                        <CardTitle className="text-lg">{bundle.name}</CardTitle>
+                        <CardDescription>
+                          {bundle.credits} connecties
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-col items-center flex-1">
+                        <div className="text-center mb-4">
+                          <p className="text-4xl font-bold text-primary">{bundle.credits}</p>
+                          <p className="text-sm text-muted-foreground">connecties</p>
+                        </div>
+                        <div className="text-center mb-4">
+                          <p className="text-2xl font-bold">€{displayPrice}</p>
+                          {originalDisplay && (
+                            <p className="text-sm text-muted-foreground line-through">€{originalDisplay}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">€{pricePerUnit} per connectie</p>
+                        </div>
+                        <div className="mt-auto w-full">
+                          <Button
+                            className="w-full"
+                            variant={bundle.badge ? "default" : "outline"}
+                            disabled={loading === bundle.bundleKey}
+                            onClick={() => handlePurchase(bundle.bundleKey)}
+                          >
+                            {loading === bundle.bundleKey ? (
+                              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Doorsturen...</>
+                            ) : "Betalen via Pay.nl"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="bg-muted rounded-xl p-6 text-sm text-muted-foreground text-center">
             <p className="font-medium text-foreground mb-1">Hoe werkt het?</p>

@@ -69,11 +69,27 @@ export type UserAccount = typeof userAccountsTable.$inferSelect;
 export type UserRole = "buyer" | "seller";
 export type PaymentOrder = typeof paymentOrdersTable.$inferSelect;
 
-export const CREDIT_BUNDLES = [
-  { id: "starter", name: "Starter", credits: 10, priceCents: 35, originalPriceCents: 35, label: "€0,035 per connectie", badge: null },
-  { id: "popular", name: "Popular", credits: 50, priceCents: 120, originalPriceCents: 150, label: "€0,024 per connectie", badge: "Populair" },
-  { id: "pro", name: "Pro", credits: 100, priceCents: 250, originalPriceCents: 300, label: "€0,025 per connectie", badge: "Beste waarde" },
-  { id: "enterprise", name: "Enterprise", credits: 250, priceCents: 550, originalPriceCents: 750, label: "€0,022 per connectie", badge: null },
+export const creditBundlesTable = pgTable("credit_bundles", {
+  id: serial("id").primaryKey(),
+  bundleKey: text("bundle_key").notNull().unique(),
+  name: text("name").notNull(),
+  credits: integer("credits").notNull(),
+  priceCents: integer("price_cents").notNull(),
+  originalPriceCents: integer("original_price_cents"),
+  badge: text("badge"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type CreditBundle = typeof creditBundlesTable.$inferSelect;
+
+export const DEFAULT_CREDIT_BUNDLES = [
+  { bundleKey: "starter",    name: "Starter",    credits: 10,  priceCents: 3500,  originalPriceCents: null, badge: null,           sortOrder: 1 },
+  { bundleKey: "popular",    name: "Populair",   credits: 50,  priceCents: 12000, originalPriceCents: 15000, badge: "Populair",    sortOrder: 2 },
+  { bundleKey: "pro",        name: "Pro",        credits: 100, priceCents: 25000, originalPriceCents: 30000, badge: "Beste waarde", sortOrder: 3 },
+  { bundleKey: "enterprise", name: "Enterprise", credits: 250, priceCents: 55000, originalPriceCents: 75000, badge: null,           sortOrder: 4 },
 ] as const;
 
 export const registerSchema = z.object({

@@ -1,7 +1,7 @@
 import express, { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, CREDIT_BUNDLES } from "@workspace/db";
-import { eq, sql, desc, like } from "drizzle-orm";
+import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLogsTable, creditBundlesTable } from "@workspace/db";
+import { eq, sql, desc, like, asc } from "drizzle-orm";
 import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials } from "../services/paynl";
 
@@ -119,26 +119,36 @@ async function processPayment(orderId: number, paynlOrderId?: string | null): Pr
 router.post("/payments/checkout", requireSellerOrAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId as number;
+    const isAdmin = (req as any).userIsAdmin as boolean;
     const { bundleId } = req.body;
 
-    const bundle = CREDIT_BUNDLES.find((b) => b.id === bundleId);
-    if (!bundle) { res.status(400).json({ error: "Onbekende bundel" }); return; }
+    // Load bundle from DB (bundleId is the bundle_key string, e.g. "starter")
+    const [bundle] = await db
+      .select()
+      .from(creditBundlesTable)
+      .where(eq(creditBundlesTable.bundleKey, String(bundleId)))
+      .limit(1);
+
+    if (!bundle || !bundle.isActive) { res.status(400).json({ error: "Onbekende bundel" }); return; }
+
+    // Admin pays 1/100th of the set price for testing; regular users pay the full price
+    const actualPriceCents = isAdmin ? Math.max(1, Math.round(bundle.priceCents / 100)) : bundle.priceCents;
 
     const appUrl = process.env.APP_URL ?? "https://prijsmij.nl";
 
     const [order] = await db.insert(paymentOrdersTable).values({
       userId,
-      bundleId: bundle.id,
+      bundleId: bundle.bundleKey,
       bundleName: bundle.name,
       creditsAmount: bundle.credits,
-      amountCents: bundle.priceCents,
+      amountCents: actualPriceCents,
       status: "pending",
     }).returning();
 
     const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? "127.0.0.1";
 
     const transaction = await createPaynlTransaction({
-      amountCents: bundle.priceCents,
+      amountCents: actualPriceCents,
       description: `PrijsMij - ${bundle.credits} connecties (${bundle.name})`,
       returnUrl: `${appUrl}/api/payments/return?orderId=${order.id}`,
       exchangeUrl: `${appUrl}/api/payments/exchange`,
