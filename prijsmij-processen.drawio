@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <mxfile host="app.diagrams.net" modified="2026-04-02" version="21.0.0">
+    <diagram id="p1" name="📋 Overzicht">
+      <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+        <root>
+          <mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="h1" value="PrijsMij — Procesoverzicht" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#023d6b;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="10" width="1400" height="50" as="geometry" /></mxCell>
+<mxCell id="sl_koper" value="🛒 Koper" style="swimlane;startSize=32;fillColor=#e8f4fd;strokeColor=#888;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="10" y="80" width="1400" height="160" as="geometry" /></mxCell>
+<mxCell id="k1" value="Registreren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="30" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="k2" value="E-mail verifiëren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="200" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="k3" value="Inloggen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="370" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="k4" value="Uitvraag plaatsen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="540" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="k5" value="Biedingen bekijken" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="720" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="k6" value="Interesse tonen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="900" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="k7" value="Contactgegevens ontvangen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="sl_koper"><mxGeometry x="1080" y="108" width="180" height="44" as="geometry" /></mxCell>
+<mxCell id="ek1" value="" style="" edge="1" source="k1" target="k2" parent="sl_koper"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ek2" value="" style="" edge="1" source="k2" target="k3" parent="sl_koper"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ek3" value="" style="" edge="1" source="k3" target="k4" parent="sl_koper"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ek4" value="" style="" edge="1" source="k4" target="k5" parent="sl_koper"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ek5" value="" style="" edge="1" source="k5" target="k6" parent="sl_koper"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ek6" value="" style="" edge="1" source="k6" target="k7" parent="sl_koper"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="sl_verk" value="🏪 Verkoper" style="swimlane;startSize=32;fillColor=#f0fff4;strokeColor=#888;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="10" y="260" width="1400" height="160" as="geometry" /></mxCell>
+<mxCell id="v1" value="Registreren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="30" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="v2" value="E-mail verifiëren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="200" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="v3" value="Inloggen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="370" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="v4" value="Credits kopen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="540" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="v5" value="Uitvragen bekijken" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="720" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="v6" value="Bod plaatsen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="900" y="108" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="v7" value="Connectie kopen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="sl_verk"><mxGeometry x="1080" y="108" width="140" height="44" as="geometry" /></mxCell>
+<mxCell id="ev1" value="" style="" edge="1" source="v1" target="v2" parent="sl_verk"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ev2" value="" style="" edge="1" source="v2" target="v3" parent="sl_verk"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ev3" value="" style="" edge="1" source="v3" target="v4" parent="sl_verk"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ev4" value="" style="" edge="1" source="v4" target="v5" parent="sl_verk"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ev5" value="" style="" edge="1" source="v5" target="v6" parent="sl_verk"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ev6" value="" style="" edge="1" source="v6" target="v7" parent="sl_verk"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="sl_sys" value="⚙️ Systeem / Platform" style="swimlane;startSize=32;fillColor=#fffbea;strokeColor=#888;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="10" y="440" width="1400" height="180" as="geometry" /></mxCell>
+<mxCell id="s1" value="Verificatie e-mail sturen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="30" y="108" width="160" height="44" as="geometry" /></mxCell>
+<mxCell id="s2" value="JWT token aanmaken" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="250" y="108" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="s3" value="Uitvraag opslaan in DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="440" y="108" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="s4" value="Verkopers notificeren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="440" y="50" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="s5" value="Bod e-mail naar koper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="640" y="108" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="s6" value="Interesse e-mail naar verkoper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="840" y="108" width="180" height="44" as="geometry" /></mxCell>
+<mxCell id="s7" value="Pay.nl webhook" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="1060" y="50" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="s8" value="Credits bijschrijven" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="sl_sys"><mxGeometry x="1060" y="108" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="es7" value="" style="" edge="1" source="s7" target="s8" parent="sl_sys"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="sl_adm" value="🛡️ Beheerder (Admin)" style="swimlane;startSize=32;fillColor=#fef0ff;strokeColor=#888;fontStyle=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="10" y="640" width="1400" height="130" as="geometry" /></mxCell>
+<mxCell id="a1" value="Categorieën beheren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="sl_adm"><mxGeometry x="30" y="68" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="a2" value="Velden per categorie" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="sl_adm"><mxGeometry x="220" y="68" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="a3" value="Gebruikers beheren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="sl_adm"><mxGeometry x="410" y="68" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="a4" value="Credits aanpassen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="sl_adm"><mxGeometry x="600" y="68" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="a5" value="Site-instellingen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="sl_adm"><mxGeometry x="790" y="68" width="150" height="44" as="geometry" /></mxCell>
+<mxCell id="a6" value="Onderhoudsmodus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="sl_adm"><mxGeometry x="980" y="68" width="150" height="44" as="geometry" /></mxCell>
+        </root>
+      </mxGraphModel>
+    </diagram>
+    <diagram id="p2" name="🔐 Registratie & Auth">
+      <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+        <root>
+          <mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="h1" value="Registratie &amp; Authenticatie" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#023d6b;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="10" width="1300" height="50" as="geometry" /></mxCell>
+<mxCell id="ht1" value="Koper Registratie" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#1a6ca8;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="80" width="200" height="30" as="geometry" /></mxCell>
+<mxCell id="r_start" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="130" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="r1" value="Formulier invullen
+(naam, e-mail, ww)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="150" y="122" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="r2" value="E-mail al
+gebruikt?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="112" width="110" height="62" as="geometry" /></mxCell>
+<mxCell id="r3" value="Foutmelding
+"al in gebruik"" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=0;fontSize=10;" vertex="1" parent="1"><mxGeometry x="360" y="210" width="150" height="40" as="geometry" /></mxCell>
+<mxCell id="r4" value="Account aanmaken
+(hash wachtwoord)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="520" y="122" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="r5" value="Verificatie e-mail
+sturen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="720" y="122" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="r6" value="Link klikken in
+e-mail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="920" y="122" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="r7" value="Account
+geactiveerd ✓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1120" y="122" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="r_end" value="KLAAR" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1300" y="130" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="re1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="r_start" target="r1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="r1" target="r2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re3" value="Ja" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" source="r2" target="r3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re4" value="Nee" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="r2" target="r4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="r4" target="r5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="r5" target="r6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="r6" target="r7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="re8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="r7" target="r_end" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht2" value="Inloggen (Koper &amp; Verkoper)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#1a6ca8;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="310" width="260" height="30" as="geometry" /></mxCell>
+<mxCell id="l_start" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="360" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="l1" value="E-mail + wachtwoord
+invoeren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="150" y="352" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="l2" value="Geldig?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="360" y="354" width="110" height="52" as="geometry" /></mxCell>
+<mxCell id="l3" value="Foutmelding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=0;fontSize=10;" vertex="1" parent="1"><mxGeometry x="360" y="440" width="120" height="36" as="geometry" /></mxCell>
+<mxCell id="l4" value="E-mail
+geverifieerd?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="520" y="354" width="120" height="52" as="geometry" /></mxCell>
+<mxCell id="l5" value="Stuur verificatie
+opnieuw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=0;fontSize=10;" vertex="1" parent="1"><mxGeometry x="520" y="440" width="140" height="36" as="geometry" /></mxCell>
+<mxCell id="l6" value="JWT token
+aanmaken (30d)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="700" y="352" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="l7" value="Doorsturen naar
+dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="900" y="352" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="l_end" value="KLAAR" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1100" y="360" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="le1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="l_start" target="l1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="l1" target="l2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le3" value="Nee" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="l2" target="l3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le4" value="Ja" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="l2" target="l4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le5" value="Nee" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="l4" target="l5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le6" value="Ja" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="l4" target="l6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="l6" target="l7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="le8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="l7" target="l_end" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht3" value="Wachtwoord Resetten" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#1a6ca8;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="520" width="240" height="30" as="geometry" /></mxCell>
+<mxCell id="p_start" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="570" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="p1" value=""Wachtwoord vergeten"
+invoeren e-mail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="150" y="562" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="p2" value="Reset-link sturen
+(1 uur geldig)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="360" y="562" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="p3" value="Link klikken +
+nieuw ww invoeren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="560" y="562" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="p4" value="Wachtwoord
+bijwerken" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="770" y="562" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="p_end" value="KLAAR" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="960" y="570" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="pe1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="p_start" target="p1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="p1" target="p2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="p2" target="p3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="p3" target="p4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="p4" target="p_end" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        </root>
+      </mxGraphModel>
+    </diagram>
+    <diagram id="p3" name="📝 Uitvraag & Biedingen">
+      <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+        <root>
+          <mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="h1" value="Uitvraag Plaatsen &amp; Bod Indienen" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#023d6b;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="10" width="1400" height="50" as="geometry" /></mxCell>
+<mxCell id="ht1" value="Koper: Uitvraag Plaatsen" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#1a6ca8;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="80" width="260" height="30" as="geometry" /></mxCell>
+<mxCell id="u_s" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="132" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="u1" value="Inloggen als
+koper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="150" y="124" width="130" height="52" as="geometry" /></mxCell>
+<mxCell id="u2" value="Categorie kiezen
+(8 beschikbaar)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="320" y="124" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="u3" value="Product details
+invullen
+(dynamische velden)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="510" y="110" width="140" height="72" as="geometry" /></mxCell>
+<mxCell id="u4" value="Looptijd + anoniem
+instellen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="700" y="124" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="u5" value="Budget (optioneel)
++ omschrijving" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="900" y="124" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="u6" value="Uitvraag opslaan
+in database" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1100" y="124" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="u7" value="E-mail naar
+geïnteresseerde
+verkopers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1290" y="110" width="150" height="72" as="geometry" /></mxCell>
+<mxCell id="ue1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u_s" target="u1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ue2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u1" target="u2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ue3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u2" target="u3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ue4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u3" target="u4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ue5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u4" target="u5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ue6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u5" target="u6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ue7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="u6" target="u7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht2" value="Verkoper: Bod Plaatsen" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#276749;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="240" width="260" height="30" as="geometry" /></mxCell>
+<mxCell id="b_s" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="292" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="b1" value="Dashboard:
+Uitvragen bekijken" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="150" y="284" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="b2" value="Uitvraag
+openklappen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="350" y="284" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="b3" value="Heeft verkoper
+voldoende credits?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="540" y="278" width="140" height="64" as="geometry" /></mxCell>
+<mxCell id="b4" value="Credits kopen
+via Pay.nl" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="540" y="390" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="b5" value="Bod invullen:
+- Modelnaam
+- Prijs
+- Omschrijving
+- Garantie
+- Levertijd" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="730" y="260" width="150" height="100" as="geometry" /></mxCell>
+<mxCell id="b6" value="1 credit aftrekken" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="930" y="284" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="b7" value="Bod opslaan" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1120" y="284" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="b8" value="E-mail naar koper
+(model + prijs,
+geen winkelnaam)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1310" y="270" width="160" height="72" as="geometry" /></mxCell>
+<mxCell id="be1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="b_s" target="b1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="b1" target="b2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="b2" target="b3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be4" value="Nee" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="b3" target="b4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be4b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="b4" target="b5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be5" value="Ja" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="b3" target="b5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="b5" target="b6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="b6" target="b7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="be8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="b7" target="b8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht3" value="Koper: Biedingen Bekijken" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#1a6ca8;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="430" width="260" height="30" as="geometry" /></mxCell>
+<mxCell id="vb1" value="Uitvraag openen
+(eigen dashboard)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="482" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="vb2" value="Lijst biedingen
+betekijken
+(anoniem: geen winkel)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="220" y="470" width="160" height="72" as="geometry" /></mxCell>
+<mxCell id="vb3" value="Bod
+aansprekend?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="430" y="478" width="120" height="56" as="geometry" /></mxCell>
+<mxCell id="vb4" value="Wachten op
+meer biedingen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#888;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="430" y="580" width="140" height="44" as="geometry" /></mxCell>
+<mxCell id="vb5" value="Interesse tonen
+("Toon Interesse")" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="610" y="482" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="vb6" value="E-mail naar verkoper
+(naam + e-mail koper)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="810" y="482" width="170" height="52" as="geometry" /></mxCell>
+<mxCell id="vb_e" value="LEAD
+GEGENEREERD" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1030" y="490" width="140" height="44" as="geometry" /></mxCell>
+<mxCell id="vbe1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="vb1" target="vb2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="vbe2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="vb2" target="vb3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="vbe3" value="Nee" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="vb3" target="vb4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="vbe4" value="Ja" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="vb3" target="vb5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="vbe5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="vb5" target="vb6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="vbe6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="vb6" target="vb_e" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        </root>
+      </mxGraphModel>
+    </diagram>
+    <diagram id="p4" name="🤝 Lead & Connectie">
+      <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+        <root>
+          <mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="h1" value="Lead Opvolging &amp; Connectie Kopen" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#023d6b;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="10" width="1300" height="50" as="geometry" /></mxCell>
+<mxCell id="c_s" value="START
+(interesse getoond)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="90" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="c1" value="Systeem stuurt
+e-mail naar verkoper
+(naam + e-mail koper)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="220" y="82" width="180" height="68" as="geometry" /></mxCell>
+<mxCell id="c2" value="Verkoper opent
+"Leads" dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="450" y="92" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="c3" value="Al een
+connectie
+gekocht?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="660" y="84" width="120" height="68" as="geometry" /></mxCell>
+<mxCell id="c4" value="Contactgegevens
+al zichtbaar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="660" y="210" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="c5" value="1 credit betalen
+voor connectie" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="840" y="92" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="c6" value="Genoeg
+credits?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1060" y="96" width="120" height="56" as="geometry" /></mxCell>
+<mxCell id="c7" value="Credits kopen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1060" y="210" width="140" height="44" as="geometry" /></mxCell>
+<mxCell id="c8" value="Contactgegevens
+ontsluiten
+(naam + e-mail koper)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1240" y="82" width="180" height="68" as="geometry" /></mxCell>
+<mxCell id="c_e" value="CONNECTIE
+GEMAKT ✓" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1470" y="90" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="ce1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="c_s" target="c1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="c1" target="c2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="c2" target="c3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce4" value="Ja" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="c3" target="c4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce5" value="Nee" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c3" target="c5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="c5" target="c6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce7" value="Nee" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="c6" target="c7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce7b" value="" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c7" target="c8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce8" value="Ja" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="c6" target="c8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ce9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="c8" target="c_e" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht2" value="Zichtbaarheid van Biedingen" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#6a1b9a;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="310" width="280" height="30" as="geometry" /></mxCell>
+<mxCell id="vis1" value="Verkoper plaatst
+bod" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="362" width="140" height="52" as="geometry" /></mxCell>
+<mxCell id="vis2" value="Zichtbaarheid
+instelling?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="210" y="356" width="130" height="64" as="geometry" /></mxCell>
+<mxCell id="vis3" value="Publiek: iedereen
+kan bieding zien" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="400" y="340" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="vis4" value="Privé: alleen
+koper kan zien" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="400" y="420" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="ve1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="vis1" target="vis2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ve2" value="Publiek" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="vis2" target="vis3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ve3" value="Privé" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="vis2" target="vis4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht3" value="Credit Model (Verkoper)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#6a1b9a;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="650" y="310" width="260" height="30" as="geometry" /></mxCell>
+<mxCell id="cr1" value="Bod plaatsen
+kost 1 credit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="650" y="362" width="150" height="52" as="geometry" /></mxCell>
+<mxCell id="cr2" value="Connectie kopen
+kost 1 credit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="850" y="362" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="cr3" value="Registratie:
+10 gratis credits" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1060" y="362" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="cr_info" value="Bundels:
+• Starter: 5 cr — €0,35
+• Popular: 20 cr — €1,20
+• Pro: 50 cr — €2,50
+• Enterprise: 100 cr — €5,50" style="text;html=1;strokeColor=none;fillColor=#f5f5f5;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1060" y="430" width="200" height="90" as="geometry" /></mxCell>
+        </root>
+      </mxGraphModel>
+    </diagram>
+    <diagram id="p5" name="💳 Credits & Betaling">
+      <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+        <root>
+          <mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="h1" value="Credits Kopen &amp; Pay.nl Betaalflow" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#023d6b;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="10" width="1200" height="50" as="geometry" /></mxCell>
+<mxCell id="pay_s" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="100" width="100" height="36" as="geometry" /></mxCell>
+<mxCell id="pay1" value="Verkoper kiest
+credits bundel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="160" y="92" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="pay2" value="Pay.nl betaallink
+aanmaken
+(order aanmaken)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="370" y="82" width="160" height="68" as="geometry" /></mxCell>
+<mxCell id="pay3" value="Verkoper betaalt
+via iDEAL / card
+op Pay.nl" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="580" y="82" width="160" height="68" as="geometry" /></mxCell>
+<mxCell id="pay4" value="Betaling
+gelukt?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="790" y="92" width="120" height="56" as="geometry" /></mxCell>
+<mxCell id="pay5" value="Betaling
+mislukt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=0;fontSize=10;" vertex="1" parent="1"><mxGeometry x="790" y="210" width="130" height="44" as="geometry" /></mxCell>
+<mxCell id="pay6" value="Pay.nl stuurt
+webhook (GET)
+naar /api/payments/
+exchange" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="970" y="72" width="180" height="88" as="geometry" /></mxCell>
+<mxCell id="pay7" value="Webhook valideren
+(stats.extra1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="92" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="pay8" value="Al
+verwerkt?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1410" y="92" width="120" height="56" as="geometry" /></mxCell>
+<mxCell id="pay9" value="Credits bijschrijven
+aan account" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1590" y="92" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="pay10" value="Log opslaan
+in DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#888;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1590" y="190" width="160" height="44" as="geometry" /></mxCell>
+<mxCell id="pay_e" value="CREDITS
+BIJGESCHREVEN ✓" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1800" y="100" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="pe1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay_s" target="pay1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay1" target="pay2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay2" target="pay3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay3" target="pay4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe5" value="Nee" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="pay4" target="pay5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe6" value="Ja" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="pay4" target="pay6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay6" target="pay7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay7" target="pay8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe9" value="Ja (skip)" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;" edge="1" source="pay8" target="pay10" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe10" value="Nee" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="pay8" target="pay9" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay9" target="pay_e" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="pe12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="pay9" target="pay10" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ht2" value="Admin: Beheer" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=#6a1b9a;fontColor=#fff;fontSize=16;fontStyle=1;rounded=1;" vertex="1" parent="1"><mxGeometry x="10" y="320" width="180" height="30" as="geometry" /></mxCell>
+<mxCell id="adm_s" value="Admin
+login" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="10" y="372" width="100" height="52" as="geometry" /></mxCell>
+<mxCell id="adm1" value="Dashboard
+openen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="160" y="372" width="130" height="52" as="geometry" /></mxCell>
+<mxCell id="adm2" value="Categorieën:
+Toevoegen / bewerken
+velden beheren" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="340" y="358" width="160" height="80" as="geometry" /></mxCell>
+<mxCell id="adm3" value="Gebruikers:
+Zoeken / credits
+aanpassen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="550" y="358" width="160" height="80" as="geometry" /></mxCell>
+<mxCell id="adm4" value="Instellingen:
+SMTP / Pay.nl
+Initiële credits" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="760" y="358" width="160" height="80" as="geometry" /></mxCell>
+<mxCell id="adm5" value="Onderhoudsmodus
+aan/uitzetten" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="970" y="372" width="160" height="52" as="geometry" /></mxCell>
+<mxCell id="ae1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="adm_s" target="adm1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ae2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="adm1" target="adm2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ae3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="adm1" target="adm3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ae4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="adm1" target="adm4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+<mxCell id="ae5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="adm1" target="adm5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        </root>
+      </mxGraphModel>
+    </diagram>
+  </mxfile>
