@@ -129,6 +129,28 @@ export async function ensureTables(): Promise<void> {
         error_message     TEXT,
         credits_added     INTEGER
       );
+
+      CREATE TABLE IF NOT EXISTS credit_bundles (
+        id                   SERIAL PRIMARY KEY,
+        bundle_key           TEXT NOT NULL UNIQUE,
+        name                 TEXT NOT NULL,
+        credits              INTEGER NOT NULL,
+        price_cents          INTEGER NOT NULL,
+        original_price_cents INTEGER,
+        badge                TEXT,
+        sort_order           INTEGER NOT NULL DEFAULT 0,
+        is_active            BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at           TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      INSERT INTO credit_bundles (bundle_key, name, credits, price_cents, original_price_cents, badge, sort_order)
+      VALUES
+        ('starter',    'Starter',    10,  3500,  NULL,  NULL,           1),
+        ('popular',    'Populair',   50,  12000, 15000, 'Populair',     2),
+        ('pro',        'Pro',        100, 25000, 30000, 'Beste waarde', 3),
+        ('enterprise', 'Enterprise', 250, 55000, 75000, NULL,           4)
+      ON CONFLICT (bundle_key) DO NOTHING;
     `);
 
     logger.info("Database tables verified/created");
