@@ -3,12 +3,13 @@ import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText } from "lucide-react";
+import { useI18n, type Language } from "@/contexts/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
 
-type Tab = "categories" | "users" | "settings" | "payments" | "bundles";
+type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages";
 
 interface UserRecord {
   id: number;
@@ -92,6 +93,12 @@ function AdminDashboard() {
           >
             <Coins className="w-4 h-4" /> Bundels
           </button>
+          <button
+            onClick={() => setTab("pages")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "pages" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <FileText className="w-4 h-4" /> Pagina's
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
@@ -99,6 +106,7 @@ function AdminDashboard() {
         {tab === "settings" && <SettingsTab />}
         {tab === "payments" && <PaymentsTab />}
         {tab === "bundles" && <BundelsTab />}
+        {tab === "pages" && <PaginasTab />}
       </div>
     </Layout>
   );
@@ -1670,6 +1678,158 @@ function BundelsTab() {
       <div className="mt-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-800">
         <p className="font-semibold mb-1">Prijzen uitgelegd</p>
         <p>Voer prijzen in <strong>euro's</strong> in (bijv. 35,00 voor €35). Beheerders betalen automatisch 1/100e (= €0,35) om betalingen te testen. Verkopers betalen de volledige ingestelde prijs.</p>
+      </div>
+    </div>
+  );
+}
+
+const PAGE_SLUGS = [
+  { slug: "algemene-voorwaarden", label: "Algemene voorwaarden" },
+  { slug: "privacy", label: "Privacy" },
+  { slug: "cookies", label: "Cookies" },
+  { slug: "contact", label: "Contact" },
+  { slug: "veelgestelde-vragen", label: "Veelgestelde vragen" },
+] as const;
+
+const PAGE_LANGS: Language[] = ["nl", "en", "de", "fr"];
+const LANG_LABELS: Record<Language, string> = { nl: "🇳🇱 NL", en: "🇬🇧 EN", de: "🇩🇪 DE", fr: "🇫🇷 FR" };
+
+interface PageRecord { slug: string; lang: string; title: string; content: string; }
+
+function PaginasTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+  const [pages, setPages] = useState<PageRecord[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState<string>(PAGE_SLUGS[0].slug);
+  const [selectedLang, setSelectedLang] = useState<Language>("nl");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadPages(); }, []);
+
+  async function loadPages() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/pages", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setPages(data);
+    } catch {
+      toast({ title: "Fout", description: "Kon pagina's niet laden", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const found = pages.find(p => p.slug === selectedSlug && p.lang === selectedLang);
+    setTitle(found?.title ?? "");
+    setContent(found?.content ?? "");
+  }, [selectedSlug, selectedLang, pages]);
+
+  async function savePage() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/pages/${selectedSlug}/${selectedLang}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title, content }),
+      });
+      if (!res.ok) { const d = await res.json(); toast({ title: "Fout", description: d.error, variant: "destructive" }); return; }
+      toast({ title: "Opgeslagen" });
+      await loadPages();
+    } catch {
+      toast({ title: "Fout", description: "Opslaan mislukt", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-secondary">Paginabeheer</h2>
+          <p className="text-sm text-muted-foreground mt-1">Beheer de inhoud van de footerpagina's per taal. Je kunt HTML gebruiken voor opmaak.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <div className="bg-white border border-border rounded-xl overflow-hidden">
+            {PAGE_SLUGS.map(({ slug, label }) => (
+              <button
+                key={slug}
+                onClick={() => setSelectedSlug(slug)}
+                className={`w-full text-left px-4 py-3 text-sm font-medium border-b border-border last:border-b-0 transition-colors flex items-center gap-2 ${selectedSlug === slug ? "bg-primary/10 text-primary" : "hover:bg-muted text-secondary"}`}
+              >
+                <FileText className="w-4 h-4 flex-shrink-0" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-3">
+          <div className="bg-white border border-border rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-6">
+              {PAGE_LANGS.map(l => (
+                <button
+                  key={l}
+                  onClick={() => setSelectedLang(l)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${selectedLang === l ? "bg-primary text-white" : "bg-muted text-secondary hover:bg-muted/80"}`}
+                >
+                  {LANG_LABELS[l]}
+                </button>
+              ))}
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-secondary mb-1">Paginatitel</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Titel van de pagina"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-secondary mb-1">Inhoud (HTML)</label>
+                  <textarea
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    rows={16}
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
+                    placeholder="<p>Schrijf hier de inhoud van de pagina. Je kunt HTML gebruiken voor opmaak.</p>"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button onClick={savePage} disabled={saving} className="gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Opslaan
+                  </Button>
+                  <a
+                    href={`/pages/${selectedSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Bekijk pagina →
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+            <strong>Tip:</strong> Gebruik HTML voor opmaak, bijv. <code>&lt;h2&gt;Koptekst&lt;/h2&gt;</code>, <code>&lt;p&gt;Alinea&lt;/p&gt;</code>, <code>&lt;ul&gt;&lt;li&gt;...&lt;/li&gt;&lt;/ul&gt;</code>.
+          </div>
+        </div>
       </div>
     </div>
   );

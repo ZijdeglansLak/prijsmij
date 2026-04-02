@@ -343,8 +343,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="bg-secondary text-secondary-foreground py-12 mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+            <div className="col-span-2 md:col-span-1">
               <Link href="/" className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
                   <TrendingDown className="w-5 h-5" />
@@ -367,6 +367,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li>support@prijsmij.nl</li>
                 <li>+31 (0)20 123 4567</li>
                 <li>Amsterdam, Nederland</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-lg mb-6">Informatie</h4>
+              <ul className="space-y-4">
+                <li><Link href="/pages/algemene-voorwaarden" className="text-secondary-foreground/70 hover:text-white transition-colors">Algemene voorwaarden</Link></li>
+                <li><Link href="/pages/privacy" className="text-secondary-foreground/70 hover:text-white transition-colors">Privacy</Link></li>
+                <li><Link href="/pages/cookies" className="text-secondary-foreground/70 hover:text-white transition-colors">Cookies</Link></li>
+                <li><Link href="/pages/contact" className="text-secondary-foreground/70 hover:text-white transition-colors">Contact</Link></li>
+                <li><Link href="/pages/veelgestelde-vragen" className="text-secondary-foreground/70 hover:text-white transition-colors">Veelgestelde vragen</Link></li>
               </ul>
             </div>
           </div>

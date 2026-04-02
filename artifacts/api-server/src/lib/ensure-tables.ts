@@ -151,6 +151,39 @@ export async function ensureTables(): Promise<void> {
         ('pro',        'Pro',        100, 25000, 30000, 'Beste waarde', 3),
         ('enterprise', 'Enterprise', 250, 55000, 75000, NULL,           4)
       ON CONFLICT (bundle_key) DO NOTHING;
+
+      CREATE TABLE IF NOT EXISTS static_pages (
+        id         SERIAL PRIMARY KEY,
+        slug       TEXT NOT NULL,
+        lang       TEXT NOT NULL CHECK (lang IN ('nl','en','de','fr')),
+        title      TEXT NOT NULL DEFAULT '',
+        content    TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE (slug, lang)
+      );
+
+      INSERT INTO static_pages (slug, lang, title, content) VALUES
+        ('algemene-voorwaarden', 'nl', 'Algemene voorwaarden', ''),
+        ('algemene-voorwaarden', 'en', 'Terms and Conditions', ''),
+        ('algemene-voorwaarden', 'de', 'Allgemeine Geschäftsbedingungen', ''),
+        ('algemene-voorwaarden', 'fr', 'Conditions générales', ''),
+        ('privacy', 'nl', 'Privacybeleid', ''),
+        ('privacy', 'en', 'Privacy Policy', ''),
+        ('privacy', 'de', 'Datenschutzerklärung', ''),
+        ('privacy', 'fr', 'Politique de confidentialité', ''),
+        ('cookies', 'nl', 'Cookiebeleid', ''),
+        ('cookies', 'en', 'Cookie Policy', ''),
+        ('cookies', 'de', 'Cookie-Richtlinie', ''),
+        ('cookies', 'fr', 'Politique des cookies', ''),
+        ('contact', 'nl', 'Contact', ''),
+        ('contact', 'en', 'Contact', ''),
+        ('contact', 'de', 'Kontakt', ''),
+        ('contact', 'fr', 'Contact', ''),
+        ('veelgestelde-vragen', 'nl', 'Veelgestelde vragen', ''),
+        ('veelgestelde-vragen', 'en', 'Frequently Asked Questions', ''),
+        ('veelgestelde-vragen', 'de', 'Häufig gestellte Fragen', ''),
+        ('veelgestelde-vragen', 'fr', 'Foire aux questions', '')
+      ON CONFLICT (slug, lang) DO NOTHING;
     `);
 
     logger.info("Database tables verified/created");

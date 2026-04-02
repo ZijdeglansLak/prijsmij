@@ -23,6 +23,7 @@ import Profile from "@/pages/profile";
 import SupplierDashboard from "@/pages/supplier-dashboard";
 import SupplierCredits from "@/pages/supplier-credits";
 import OfflinePage from "@/pages/offline";
+import StaticPage from "@/pages/static-page";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ function Router() {
       {/* Supplier dashboard (sellers only) */}
       <Route path="/supplier/dashboard" component={SupplierDashboard} />
       <Route path="/supplier/credits" component={SupplierCredits} />
+      <Route path="/pages/:slug" component={StaticPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -103,7 +105,7 @@ function App() {
         </I18nProvider>
       </TooltipProvider>
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-400/50 select-none pointer-events-none z-50">
-        v1.5
+        v1.6
       </div>
     </QueryClientProvider>
   );
