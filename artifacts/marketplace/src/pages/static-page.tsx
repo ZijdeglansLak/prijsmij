@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
+import { marked } from "marked";
 import { Layout } from "@/components/layout";
 import { useI18n } from "@/contexts/i18n";
-
 
 interface StaticPageData {
   slug: string;
   lang: string;
   title: string;
   content: string;
+}
+
+function renderContent(raw: string): string {
+  if (!raw) return "";
+  if (raw.trimStart().startsWith("<")) {
+    return raw;
+  }
+  return marked.parse(raw) as string;
 }
 
 export default function StaticPage() {
@@ -55,8 +63,8 @@ export default function StaticPage() {
             </h1>
             {page.content ? (
               <div
-                className="prose prose-slate max-w-none text-secondary/80 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: page.content }}
+                className="prose prose-slate max-w-none"
+                dangerouslySetInnerHTML={{ __html: renderContent(page.content) }}
               />
             ) : (
               <p className="text-muted-foreground italic">

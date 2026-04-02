@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { marked } from "marked";
 import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -1683,6 +1684,93 @@ function BundelsTab() {
   );
 }
 
+interface PageEditorProps {
+  title: string;
+  content: string;
+  saving: boolean;
+  selectedSlug: string;
+  onTitleChange: (v: string) => void;
+  onContentChange: (v: string) => void;
+  onSave: () => void;
+}
+
+function PageEditor({ title, content, saving, selectedSlug, onTitleChange, onContentChange, onSave }: PageEditorProps) {
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const preview = useMemo(() => {
+    if (!content) return "";
+    if (content.trimStart().startsWith("<")) return content;
+    return marked.parse(content) as string;
+  }, [content]);
+
+  return (
+    <>
+      <div className="mb-4">
+        <label className="block text-sm font-semibold text-secondary mb-1">Paginatitel</label>
+        <input
+          type="text"
+          value={title}
+          onChange={e => onTitleChange(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          placeholder="Titel van de pagina"
+        />
+      </div>
+
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-semibold text-secondary">Inhoud</label>
+          <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+            <button
+              onClick={() => setMode("edit")}
+              className={`px-3 py-1.5 font-medium transition-colors ${mode === "edit" ? "bg-primary text-white" : "bg-white text-muted-foreground hover:bg-muted"}`}
+            >
+              Bewerken
+            </button>
+            <button
+              onClick={() => setMode("preview")}
+              className={`px-3 py-1.5 font-medium transition-colors ${mode === "preview" ? "bg-primary text-white" : "bg-white text-muted-foreground hover:bg-muted"}`}
+            >
+              Voorbeeld
+            </button>
+          </div>
+        </div>
+
+        {mode === "edit" ? (
+          <textarea
+            value={content}
+            onChange={e => onContentChange(e.target.value)}
+            rows={16}
+            className="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
+            placeholder={`## Koptekst\n\nSchrijf hier de inhoud. Gebruik Markdown voor opmaak:\n- **vet**, _cursief_\n- # Koptekst 1, ## Koptekst 2\n- - lijstitem`}
+          />
+        ) : (
+          <div className="min-h-[300px] border border-border rounded-lg p-4 bg-white">
+            {preview ? (
+              <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: preview }} />
+            ) : (
+              <p className="text-muted-foreground italic text-sm">Nog geen inhoud om te bekijken.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={onSave} disabled={saving} className="gap-2">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          Opslaan
+        </Button>
+        <a
+          href={`/pages/${selectedSlug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-primary hover:underline"
+        >
+          Bekijk pagina →
+        </a>
+      </div>
+    </>
+  );
+}
+
 const PAGE_SLUGS = [
   { slug: "algemene-voorwaarden", label: "Algemene voorwaarden" },
   { slug: "privacy", label: "Privacy" },
@@ -1788,46 +1876,19 @@ function PaginasTab() {
             {loading ? (
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
             ) : (
-              <>
-                <div className="mb-4">
-                  <label className="block text-sm font-semibold text-secondary mb-1">Paginatitel</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    placeholder="Titel van de pagina"
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-semibold text-secondary mb-1">Inhoud (HTML)</label>
-                  <textarea
-                    value={content}
-                    onChange={e => setContent(e.target.value)}
-                    rows={16}
-                    className="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
-                    placeholder="<p>Schrijf hier de inhoud van de pagina. Je kunt HTML gebruiken voor opmaak.</p>"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button onClick={savePage} disabled={saving} className="gap-2">
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                    Opslaan
-                  </Button>
-                  <a
-                    href={`/pages/${selectedSlug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Bekijk pagina →
-                  </a>
-                </div>
-              </>
+              <PageEditor
+                title={title}
+                content={content}
+                saving={saving}
+                selectedSlug={selectedSlug}
+                onTitleChange={setTitle}
+                onContentChange={setContent}
+                onSave={savePage}
+              />
             )}
           </div>
           <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-            <strong>Tip:</strong> Gebruik HTML voor opmaak, bijv. <code>&lt;h2&gt;Koptekst&lt;/h2&gt;</code>, <code>&lt;p&gt;Alinea&lt;/p&gt;</code>, <code>&lt;ul&gt;&lt;li&gt;...&lt;/li&gt;&lt;/ul&gt;</code>.
+            <strong>Tip:</strong> Gebruik <strong>Markdown</strong> voor opmaak: <code>**vet**</code> → <strong>vet</strong>, <code>_cursief_</code> → <em>cursief</em>, <code># Koptekst</code>, <code>- lijstitem</code>. Klik op "Voorbeeld" om het resultaat te bekijken.
           </div>
         </div>
       </div>

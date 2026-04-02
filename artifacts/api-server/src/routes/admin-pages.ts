@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
+import { requireAdmin } from "./auth";
 
 const router = Router();
 
@@ -12,8 +13,7 @@ const SLUGS = [
   "veelgestelde-vragen",
 ] as const;
 
-router.get("/admin/pages", async (req, res) => {
-  if (!req.userIsAdmin) return res.status(403).json({ error: "Forbidden" });
+router.get("/admin/pages", requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT slug, lang, title, content, updated_at FROM static_pages ORDER BY slug, lang`
@@ -24,8 +24,7 @@ router.get("/admin/pages", async (req, res) => {
   }
 });
 
-router.put("/admin/pages/:slug/:lang", async (req, res) => {
-  if (!req.userIsAdmin) return res.status(403).json({ error: "Forbidden" });
+router.put("/admin/pages/:slug/:lang", requireAdmin, async (req, res) => {
   const { slug, lang } = req.params;
   if (!SLUGS.includes(slug as any)) return res.status(400).json({ error: "Invalid slug" });
   if (!LANGS.includes(lang as any)) return res.status(400).json({ error: "Invalid lang" });
