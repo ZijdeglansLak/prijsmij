@@ -9,6 +9,7 @@ import { useI18n, type Language } from "@/contexts/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
+import { IconPicker, IconDisplay } from "@/components/icon-picker";
 
 type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages";
 
@@ -348,19 +349,23 @@ function CategoryGroupManager({ token, groups, onGroupsChange }: {
       {groups.map(g => (
         <div key={g.id} className="flex items-center gap-3 bg-muted/30 rounded-xl px-4 py-3">
           {editingId === g.id ? (
-            <>
-              <Input className="w-12 text-center" value={editData.icon ?? ""} onChange={e => setEditData(p => ({ ...p, icon: e.target.value }))} placeholder="📁" />
-              <Input className="flex-1" value={editData.name ?? ""} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} />
-              <Input className="w-20" value={editData.slug ?? ""} onChange={e => setEditData(p => ({ ...p, slug: e.target.value }))} />
-              <Input className="w-16" type="number" value={editData.sortOrder ?? 0} onChange={e => setEditData(p => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} />
-              <Button size="sm" disabled={saving} onClick={() => handleUpdate(g.id)}>
-                <Check className="w-3 h-3" />
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setEditingId(null)}><X className="w-3 h-3" /></Button>
-            </>
+            <div className="flex-1 space-y-3">
+              <div className="flex gap-2">
+                <Input className="flex-1" value={editData.name ?? ""} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} placeholder="Naam" />
+                <Input className="w-28" value={editData.slug ?? ""} onChange={e => setEditData(p => ({ ...p, slug: e.target.value }))} placeholder="slug" />
+                <Input className="w-16" type="number" value={editData.sortOrder ?? 0} onChange={e => setEditData(p => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} placeholder="0" />
+              </div>
+              <IconPicker value={editData.icon ?? ""} onChange={v => setEditData(p => ({ ...p, icon: v }))} label="Icoon" />
+              <div className="flex gap-2">
+                <Button size="sm" disabled={saving} onClick={() => handleUpdate(g.id)}>
+                  <Check className="w-3 h-3 mr-1" /> Opslaan
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingId(null)}><X className="w-3 h-3 mr-1" /> Annuleren</Button>
+              </div>
+            </div>
           ) : (
             <>
-              <span className="text-xl">{g.icon}</span>
+              <div className="w-8 h-8 flex-shrink-0"><IconDisplay value={g.icon} size="sm" /></div>
               <span className="font-semibold text-sm flex-1">{g.name}</span>
               <span className="text-xs text-muted-foreground">{g.slug}</span>
               <span className="text-xs bg-muted px-2 py-0.5 rounded">#{g.sortOrder}</span>
@@ -376,13 +381,17 @@ function CategoryGroupManager({ token, groups, onGroupsChange }: {
         </div>
       ))}
       {isAdding && (
-        <div className="flex gap-2 bg-primary/5 rounded-xl px-4 py-3 flex-wrap">
-          <Input className="w-12 text-center" value={newIcon} onChange={e => setNewIcon(e.target.value)} placeholder="📁" />
-          <Input className="flex-1 min-w-[120px]" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Naam" />
-          <Input className="w-32" value={newSlug} onChange={e => setNewSlug(e.target.value)} placeholder="slug" />
-          <Input className="w-16" type="number" value={newSortOrder} onChange={e => setNewSortOrder(e.target.value)} placeholder="0" />
-          <Button size="sm" disabled={saving} onClick={handleCreate}>{saving ? "..." : "Aanmaken"}</Button>
-          <Button size="sm" variant="outline" onClick={() => setIsAdding(false)}>Annuleren</Button>
+        <div className="bg-primary/5 rounded-xl px-4 py-4 space-y-3">
+          <div className="flex gap-2 flex-wrap">
+            <Input className="flex-1 min-w-[120px]" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Naam groep" />
+            <Input className="w-32" value={newSlug} onChange={e => setNewSlug(e.target.value)} placeholder="slug" />
+            <Input className="w-16" type="number" value={newSortOrder} onChange={e => setNewSortOrder(e.target.value)} placeholder="0" />
+          </div>
+          <IconPicker value={newIcon} onChange={setNewIcon} label="Icoon" />
+          <div className="flex gap-2">
+            <Button size="sm" disabled={saving} onClick={handleCreate}>{saving ? "Aanmaken..." : "Aanmaken"}</Button>
+            <Button size="sm" variant="outline" onClick={() => setIsAdding(false)}>Annuleren</Button>
+          </div>
         </div>
       )}
       <Button size="sm" variant="outline" onClick={() => setIsAdding(true)}>
@@ -422,11 +431,9 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
             {/* Basisgegevens */}
             <div className="space-y-3">
               <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Basisgegevens</p>
-              <div className="flex gap-2">
-                <Input value={icon} onChange={e => setIcon(e.target.value)} className="w-20 text-2xl text-center" placeholder="🛒" />
-                <Input value={name} onChange={e => setName(e.target.value)} className="flex-1 font-bold" />
-              </div>
+              <Input value={name} onChange={e => setName(e.target.value)} className="font-bold" placeholder="Naam categorie" />
               <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving..." />
+              <IconPicker value={icon} onChange={setIcon} label="Icoon" />
               {groups.length > 0 && (
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">Groep</p>
@@ -460,7 +467,7 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
         ) : (
           <>
             <div className="flex items-start justify-between mb-3">
-              <div className="text-4xl">{cat.icon}</div>
+              <div className="w-12 h-12"><IconDisplay value={cat.icon} size="lg" /></div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={onToggleActive}

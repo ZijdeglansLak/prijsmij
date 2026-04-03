@@ -198,6 +198,59 @@ export async function ensureTables(): Promise<void> {
       ON CONFLICT (slug, lang) DO NOTHING;
     `);
 
+    // Icon library table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS icon_library (
+        id         SERIAL PRIMARY KEY,
+        name       TEXT NOT NULL,
+        object_path TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Seed 400 test requests if table is empty
+    const { rows: reqCheck } = await client.query("SELECT COUNT(*)::int AS cnt FROM requests");
+    if (reqCheck[0].cnt === 0) {
+      const buyers = [
+        { name: 'Piet Vriesmans', email: 'vriesmans@xs4all.nl' },
+        { name: 'Test Koper', email: 'testkoper@example.com' },
+        { name: 'Jan de Tester', email: 'jan@voorbeeld.nl' },
+      ];
+      const seedData: Array<{ title: string; brand: string; desc: string; catId: number; cond: string; similar: boolean; name: string; email: string; exp: string; created: string }> = [];
+      const catDefs = [
+        { id: 1, brands: ['Samsung','LG','Sony','Philips','TCL','Hisense','Panasonic','Sharp'], adjs: ['4K','OLED','QLED','Smart','8K','Full HD','curved','120Hz'] },
+        { id: 2, brands: ['Bosch','Miele','Samsung','LG','AEG','Siemens','Indesit','Beko'], adjs: ['8kg','10kg','6kg','slimme','frontlader','bovenlader','A+++','stille'] },
+        { id: 3, brands: ['Apple','Dell','HP','Lenovo','Asus','Acer','MSI','Microsoft'], adjs: ['gaming','15 inch','13 inch','zakelijke','lichtgewicht','krachtige','refurbished','ultrabook'] },
+        { id: 4, brands: ['Apple','Samsung','Google','OnePlus','Xiaomi','Oppo','Sony','Nokia'], adjs: ['5G','flagship','128GB','256GB','dual-sim','Pro','Plus','budget'] },
+        { id: 5, brands: ['Volkswagen','Toyota','BMW','Ford','Renault','Audi','Peugeot','Hyundai'], adjs: ['elektrische','hybride','tweedehands','nieuwe','occasion','benzine','diesel','nette'] },
+        { id: 6, brands: ['Bosch','Samsung','LG','Siemens','Whirlpool','AEG','Beko','Smeg'], adjs: ['dubbeldeurs','combi','Amerikaanse','vrijstaande','inbouw','no-frost','retro','RVS'] },
+        { id: 7, brands: ['Canon','Nikon','Sony','Fujifilm','Olympus','Panasonic','Leica','Pentax'], adjs: ['spiegelreflex','mirrorless','compacte','vlog','professionele','beginner','waterdichte','hybride'] },
+        { id: 8, brands: ['Trek','Gazelle','Giant','Batavus','Cortina','Sparta','Raleigh','Cube'], adjs: ['elektrische','stadsfiets','racefiets','mountainbike','bakfiets','speedpedelec','vouwfiets','damesfiets'] },
+      ];
+      const conds = ['["new"]','["new","refurbished"]','["new","occasion"]','["refurbished"]'];
+      let idx = 0;
+      for (const cat of catDefs) {
+        for (let i = 0; i < 50; i++) {
+          const buyer = buyers[idx % buyers.length];
+          const brand = cat.brands[i % cat.brands.length];
+          const adj = cat.adjs[i % cat.adjs.length];
+          const daysAgo = (i % 55) + 1;
+          const daysExp = (i % 25) + 5;
+          const created = new Date(Date.now() - daysAgo * 86400000).toISOString();
+          const exp = new Date(Date.now() + daysExp * 86400000).toISOString();
+          seedData.push({ title: `${brand} ${catDefs.find(c=>c.id===cat.id)?.id === 5 ? 'Auto' : ''}`.trim() || `${brand} product`, brand, desc: `Op zoek naar een ${adj} ${brand} product. Bij voorkeur met garantie. Graag een scherpe aanbieding.`, catId: cat.id, cond: conds[i % conds.length], similar: i % 3 === 0, name: buyer.name, email: buyer.email, exp, created });
+          idx++;
+        }
+      }
+      for (let b = 0; b < seedData.length; b += 50) {
+        const batch = seedData.slice(b, b + 50);
+        const vals = batch.map(r =>
+          `('${r.brand} product','${r.brand}','${r.desc.replace(/'/g,"''")}',${r.catId},'{}','${r.cond}',${r.similar},'${r.name}','${r.email}','${r.exp}','${r.created}')`
+        ).join(',');
+        await client.query(`INSERT INTO requests (title,brand,description,category_id,specifications,allowed_offer_types,allow_similar_models,consumer_name,consumer_email,expires_at,created_at) VALUES ${vals}`);
+      }
+    }
+
     logger.info("Database tables verified/created");
   } catch (err) {
     logger.error({ err }, "Failed to ensure database tables");

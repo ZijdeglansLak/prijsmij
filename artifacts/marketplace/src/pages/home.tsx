@@ -11,6 +11,7 @@ import { useUserAuth } from "@/contexts/user-auth";
 import { useSupplierAuth } from "@/contexts/supplier-auth";
 import { useEffect, useState } from "react";
 import { useCategoryGroups } from "@/hooks/use-category-groups";
+import { IconDisplay } from "@/components/icon-picker";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace("/marketplace", "/api");
 
 interface ConsumerRequest {
@@ -403,8 +404,8 @@ export default function Home() {
               >
                 <Link href={`/requests?categoryId=${cat.id}`} className="group block h-full">
                   <div className="bg-muted/30 rounded-2xl p-6 h-full border border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 text-center">
-                    <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-sm flex items-center justify-center text-3xl mb-4 group-hover:scale-110 group-hover:shadow-md transition-all">
-                      {cat.icon}
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-sm flex items-center justify-center p-2 mb-4 group-hover:scale-110 group-hover:shadow-md transition-all overflow-hidden">
+                      <IconDisplay value={cat.icon} size="lg" />
                     </div>
                     <h3 className="font-bold text-lg text-secondary mb-1">{cat.name}</h3>
                     <p className="text-xs font-semibold text-primary">{cat.activeRequestCount} {t.home.active}</p>
@@ -426,7 +427,7 @@ export default function Home() {
                 {grouped.map(({ group, cats }) => (
                   <div key={group.id}>
                     <div className="flex items-center gap-3 mb-5">
-                      <span className="text-2xl">{group.icon}</span>
+                      <div className="w-8 h-8 flex-shrink-0"><IconDisplay value={group.icon} size="sm" /></div>
                       <h3 className="text-xl font-bold text-secondary">{group.name}</h3>
                       <div className="flex-1 h-px bg-border" />
                     </div>

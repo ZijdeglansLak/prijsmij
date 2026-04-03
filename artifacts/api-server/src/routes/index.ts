@@ -11,6 +11,8 @@ import paymentsRouter from "./payments";
 import adminBundlesRouter from "./admin-bundles";
 import adminPagesRouter from "./admin-pages";
 import adminCategoryGroupsRouter from "./admin-category-groups";
+import adminIconLibraryRouter from "./admin-icon-library";
+import storageRouter from "./storage";
 import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
 
@@ -28,6 +30,8 @@ router.use(paymentsRouter);
 router.use(adminBundlesRouter);
 router.use(adminPagesRouter);
 router.use(adminCategoryGroupsRouter);
+router.use(adminIconLibraryRouter);
+router.use(storageRouter);
 
 router.get("/site-status", async (_req, res) => {
   try {

@@ -9,7 +9,30 @@ PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gra
 - Versienummer zichtbaar in `artifacts/marketplace/src/App.tsx` (onderaan elke pagina)
 - **Regel: bij élke git push naar GitHub het versienummer met 0.1 ophogen**
 - Commit als: `release: vX.X - omschrijving`
-- Huidige versie: **v0.5**
+- Huidige versie: **v1.8** (categorie-groepen + iconen-bibliotheek + 400 seed-uitvragen)
+
+## Recente Features (v1.8)
+
+### Categorie-groepen
+- `category_groups` DB tabel; nullable `group_id` FK op `categories`
+- Admin CRUD via `/api/admin/category-groups`; publieke GET op `/api/category-groups`
+- Homepage toont categorieën gegroepeerd per groep (met groepshoofd + scheidingslijn)
+- Uitvragen-zijbalk toont groepsnamen als tussenkoppen boven categorieën
+- Admin "Categorieën" tab: uitklapbaar groepenbeheer panel + groep-dropdown per categorie
+
+### Iconen-bibliotheek
+- Object Storage (GCS) opgezet via Replit
+- `icon_library` DB tabel: id, name, object_path, created_at
+- Admin routes: `GET/POST/DELETE /api/admin/icon-library`, `POST /api/admin/icon-library/upload-url`
+- Storage serving: `GET /api/storage/objects/*` (privaat), `GET /api/storage/public-objects/*` (publiek)
+- `IconPicker` component (`/src/components/icon-picker.tsx`): modal met emoji-invoer, upload, bibliotheek-grid
+- `IconDisplay` component: rendert automatisch emoji of afbeelding (op basis van slash-prefix)
+- Gebruikt in CategoryCard (edit) en CategoryGroupManager (edit + nieuw) in admin.tsx
+- Homepage en uitvragen-pagina gebruiken `IconDisplay` voor iconen
+
+### Seed-data
+- 400 test uitvragen in de DB: 50 per categorie (8 categorieën), diverse merken + kopers
+- Seed ook in `ensure-tables.ts` zodat nieuwe deploys ook 400 uitvragen krijgen bij lege DB
 
 ## Seller Category Notifications
 
