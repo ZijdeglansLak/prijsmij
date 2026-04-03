@@ -12,7 +12,7 @@ import { useSupplierAuth } from "@/contexts/supplier-auth";
 import { useEffect, useState } from "react";
 import { useCategoryGroups } from "@/hooks/use-category-groups";
 import { IconDisplay } from "@/components/icon-picker";
-const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace("/marketplace", "/api");
+const API = "/api";
 
 interface ConsumerRequest {
   id: number;
