@@ -127,7 +127,16 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
     const [request] = await db.select().from(requestsTable).where(eq(requestsTable.id, bid.requestId));
     if (!request) { res.status(404).json({ error: "Uitvraag niet gevonden" }); return; }
 
+    // Reject if another seller already bought this lead
+    if ((request as any).isClosed) {
+      res.status(409).json({ error: "Deze lead is al door een andere winkel gekocht." });
+      return;
+    }
+
     await db.insert(connectionsTable).values({ userId, requestId: request.id, bidId, consumerName: request.consumerName, consumerEmail: request.consumerEmail });
+
+    // Close the request so no other seller can buy it
+    await db.update(requestsTable).set({ isClosed: true } as any).where(eq(requestsTable.id, request.id));
 
     const [fresh] = await db
       .update(userAccountsTable)

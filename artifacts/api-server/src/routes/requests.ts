@@ -23,7 +23,7 @@ router.get("/requests", async (req, res) => {
     const offerType = req.query.offerType as string | undefined;
     const search = req.query.search as string | undefined;
 
-    const conditions = [sql`${requestsTable.expiresAt} > now()`];
+    const conditions = [sql`${requestsTable.expiresAt} > now()`, sql`${requestsTable.isClosed} = FALSE`];
 
     if (categoryId && !isNaN(categoryId)) {
       conditions.push(eq(requestsTable.categoryId, categoryId));
@@ -254,6 +254,7 @@ router.get("/requests/:id", async (req, res) => {
       createdAt: request.createdAt,
       consumerName: request.consumerName,
       consumerEmail: request.consumerEmail,
+      isClosed: (request as any).isClosed ?? false,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to get request");

@@ -16,6 +16,7 @@ export const requestsTable = pgTable("requests", {
   consumerEmail: text("consumer_email").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  isClosed: boolean("is_closed").notNull().default(false),
 });
 
 export const insertRequestSchema = createInsertSchema(requestsTable).omit({

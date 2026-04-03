@@ -4,7 +4,7 @@ import { useGetRequestById, useListBidsForRequest, useExpressInterest } from "@w
 import type { BidOfferType } from "@workspace/api-client-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { useCountdown } from "@/hooks/use-countdown";
-import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock } from "lucide-react";
+import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -78,6 +78,9 @@ export default function RequestDetail() {
         if (res.status === 402) {
           toast({ title: "Onvoldoende credits", description: data.error, variant: "destructive" });
           setConnectieBidId(null);
+        } else if (res.status === 409) {
+          toast({ title: "Lead al verkocht", description: "Een andere winkel heeft deze lead al gekocht.", variant: "destructive" });
+          setConnectieBidId(null);
         } else {
           toast({ title: "Fout", description: data.error, variant: "destructive" });
         }
@@ -137,6 +140,18 @@ export default function RequestDetail() {
           </div>
         </div>
       </div>
+
+      {/* Gesloten-banner voor verkopers */}
+      {isLoggedIn && (request as any).isClosed && (
+        <div className="bg-red-50 border-b border-red-200">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+            <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-sm font-medium text-red-700">
+              Deze lead is al door een winkel gekocht en staat niet meer open voor connecties.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -295,7 +310,7 @@ export default function RequestDetail() {
                               {expressInterestMutation.isPending ? "..." : "Toon Interesse"}
                             </Button>
                           )}
-                          {isLoggedIn && (bid as any).hasInterest && (
+                          {isLoggedIn && (bid as any).hasInterest && !(request as any).isClosed && (
                             <Button
                               variant="outline"
                               className="w-full sm:w-auto h-11 border-primary text-primary hover:bg-primary/5"
@@ -304,6 +319,11 @@ export default function RequestDetail() {
                               <Link2 className="w-4 h-4 mr-2" />
                               Connectie (1 credit)
                             </Button>
+                          )}
+                          {isLoggedIn && (bid as any).hasInterest && (request as any).isClosed && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                              <XCircle className="w-3.5 h-3.5" /> Lead al verkocht
+                            </span>
                           )}
                         </div>
                       </div>
