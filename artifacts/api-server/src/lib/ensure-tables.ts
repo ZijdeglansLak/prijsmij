@@ -202,6 +202,15 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE`);
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS openai_api_key TEXT`);
 
+    // connections table: migrate from old supplier_id schema to user_id schema
+    await client.query(`ALTER TABLE connections ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES user_accounts(id)`);
+    await client.query(`
+      DO $$ BEGIN
+        ALTER TABLE connections ALTER COLUMN supplier_id DROP NOT NULL;
+      EXCEPTION WHEN others THEN NULL;
+      END $$;
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS kennisbank (
         id         SERIAL PRIMARY KEY,

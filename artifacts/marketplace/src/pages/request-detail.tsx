@@ -55,10 +55,11 @@ export default function RequestDetail() {
       setInterestBidId(null);
       setConsumerEmail("");
       setConsumerName("");
-    } catch (e) {
+    } catch (e: any) {
+      const msg = e?.data?.error ?? e?.message ?? "Er is iets misgegaan. Probeer het opnieuw.";
       toast({
         title: "Fout",
-        description: "Er is iets misgegaan. Probeer het opnieuw.",
+        description: msg,
         variant: "destructive"
       });
     }
