@@ -208,7 +208,8 @@ Als een vraag buiten de scope van PrijsMij valt, zeg je vriendelijk: "Dit valt b
 
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
-  } catch (err) {
+  } catch (err: any) {
+    req.log.error({ err, message: err?.message, status: err?.status, code: err?.code }, "Chatbot OpenAI error");
     res.write(`data: ${JSON.stringify({ error: "Er is een fout opgetreden. Probeer het opnieuw." })}\n\n`);
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
