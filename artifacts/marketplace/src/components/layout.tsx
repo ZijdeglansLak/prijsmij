@@ -3,7 +3,7 @@ import { Store, TrendingDown, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut,
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useUserAuth } from "@/contexts/user-auth";
-import { useI18n, FLAG, LABEL, type Language } from "@/contexts/i18n";
+import { useI18n, FLAG_URL, LABEL, type Language } from "@/contexts/i18n";
 import { Badge } from "@/components/ui/badge";
 
 const LANGUAGES: Language[] = ["nl", "en", "de", "fr"];
@@ -106,10 +106,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className="relative">
                 <button
                   onClick={() => setShowLangMenu(!showLangMenu)}
-                  className="flex items-center gap-1 text-xl hover:scale-110 transition-transform"
+                  className="flex items-center gap-1 hover:scale-110 transition-transform"
                   title={LABEL[lang]}
                 >
-                  {FLAG[lang]}
+                  <img src={FLAG_URL[lang]} alt={LABEL[lang]} className="w-6 h-4 object-cover rounded-sm shadow-sm" />
                 </button>
                 {showLangMenu && (
                   <div className="absolute right-0 top-8 bg-white border border-border rounded-xl shadow-lg p-1 min-w-[140px] z-50">
@@ -122,7 +122,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           l === lang ? "bg-primary/10 text-primary font-bold" : "hover:bg-muted text-secondary"
                         )}
                       >
-                        <span className="text-lg">{FLAG[l]}</span> {LABEL[l]}
+                        <img src={FLAG_URL[l]} alt={LABEL[l]} className="w-5 h-3.5 object-cover rounded-sm shadow-sm" /> {LABEL[l]}
                       </button>
                     ))}
                   </div>
@@ -207,9 +207,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   const idx = LANGUAGES.indexOf(lang);
                   setLang(LANGUAGES[(idx + 1) % LANGUAGES.length]);
                 }}
-                className="text-lg"
+                className="hover:scale-110 transition-transform"
               >
-                {FLAG[lang]}
+                <img src={FLAG_URL[lang]} alt={LABEL[lang]} className="w-6 h-4 object-cover rounded-sm shadow-sm" />
               </button>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -271,11 +271,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       key={l}
                       onClick={() => { setLang(l); }}
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-sm font-bold transition-colors",
+                        "px-3 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5",
                         l === lang ? "bg-primary text-white" : "bg-muted text-secondary"
                       )}
                     >
-                      {FLAG[l]} {LABEL[l]}
+                      <img src={FLAG_URL[l]} alt={LABEL[l]} className="w-5 h-3.5 object-cover rounded-sm shadow-sm" /> {LABEL[l]}
                     </button>
                   ))}
                 </div>

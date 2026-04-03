@@ -11,14 +11,15 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 const LANG_KEY = "prijsmij_lang";
 
-// Flag emojis stored as Unicode escape sequences to prevent corruption during file edits.
-// 🇳🇱 = NL, 🇬🇧 = GB, 🇩🇪 = DE, 🇫🇷 = FR — DO NOT remove or replace with emoji literals.
-const FLAG: Record<Language, string> = {
-  nl: "\uD83C\uDDF3\uD83C\uDDF1", // 🇳🇱
-  en: "\uD83C\uDDEC\uD83C\uDDE7", // 🇬🇧
-  de: "\uD83C\uDDE9\uD83C\uDDEA", // 🇩🇪
-  fr: "\uD83C\uDDEB\uD83C\uDDF7", // 🇫🇷
+// FLAG_URL: image-based flags via flagcdn.com — works on all platforms including Windows
+// (Windows does not render flag emoji, so we use actual flag images instead)
+export const FLAG_URL: Record<Language, string> = {
+  nl: "https://flagcdn.com/nl.svg",
+  en: "https://flagcdn.com/gb.svg",
+  de: "https://flagcdn.com/de.svg",
+  fr: "https://flagcdn.com/fr.svg",
 };
+const FLAG: Record<Language, string> = FLAG_URL as unknown as Record<Language, string>;
 const LABEL: Record<Language, string> = { nl: "NL", en: "EN", de: "DE", fr: "FR" };
 
 export function I18nProvider({ children }: { children: ReactNode }) {
