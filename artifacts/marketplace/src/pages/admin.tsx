@@ -242,7 +242,7 @@ function CategoriesTab() {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div><label className="text-xs font-bold mb-1 block">Naam</label><Input value={name} onChange={e => setName(e.target.value)} /></div>
             <div><label className="text-xs font-bold mb-1 block">Slug</label><Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="bijv. elektronica" /></div>
-            <div><label className="text-xs font-bold mb-1 block">Icoon (emoji)</label><Input value={icon} onChange={e => setIcon(e.target.value)} placeholder="🛒" /></div>
+            <div><IconPicker value={icon} onChange={setIcon} label="Icoon" /></div>
             <div><label className="text-xs font-bold mb-1 block">Beschrijving</label><Input value={description} onChange={e => setDescription(e.target.value)} /></div>
           </div>
           <div className="flex gap-3">
