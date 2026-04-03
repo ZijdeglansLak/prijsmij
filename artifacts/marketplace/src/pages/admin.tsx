@@ -23,6 +23,7 @@ interface UserRecord {
   isAdmin: boolean;
   emailVerified: boolean;
   username?: string | null;
+  isSuspended: boolean;
   createdAt: string;
 }
 
@@ -779,6 +780,22 @@ function UsersTab() {
     } finally { setCreating(false); }
   }
 
+  async function handleSuspend(id: number, suspended: boolean) {
+    try {
+      const res = await fetch(`/api/admin/users/${id}/suspend`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ suspended }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error ?? "Fout", variant: "destructive" }); return; }
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, isSuspended: suspended } : u));
+      toast({ title: suspended ? "Gebruiker geblokkeerd" : "Gebruiker gedeblokkeerd" });
+    } catch {
+      toast({ title: "Fout", variant: "destructive" });
+    }
+  }
+
   async function handleExport() {
     setExporting(true);
     try {
@@ -860,7 +877,7 @@ function UsersTab() {
       ) : (
         <div className="space-y-2">
           {users.map(u => (
-            <UserRow key={u.id} user={u} isEditing={editingId === u.id} onToggleEdit={() => setEditingId(editingId === u.id ? null : u.id)} onSave={updates => handleUpdate(u.id, updates)} />
+            <UserRow key={u.id} user={u} isEditing={editingId === u.id} onToggleEdit={() => setEditingId(editingId === u.id ? null : u.id)} onSave={updates => handleUpdate(u.id, updates)} onSuspend={(suspended) => handleSuspend(u.id, suspended)} />
           ))}
         </div>
       )}
@@ -1148,7 +1165,7 @@ function SettingsTab() {
   );
 }
 
-function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; isEditing: boolean; onToggleEdit: () => void; onSave: (u: object) => void }) {
+function UserRow({ user, isEditing, onToggleEdit, onSave, onSuspend }: { user: UserRecord; isEditing: boolean; onToggleEdit: () => void; onSave: (u: object) => void; onSuspend: (suspended: boolean) => void }) {
   const [contactName, setContactName] = useState(user.contactName);
   const [email, setEmail] = useState(user.email);
   const [storeName, setStoreName] = useState(user.storeName ?? "");
@@ -1167,10 +1184,13 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
           <User2 className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm">{user.contactName}</span>
             {roleIcon}
             <span className="text-xs text-muted-foreground">{roleLabel}</span>
+            {user.isSuspended && (
+              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">Geblokkeerd</span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
         </div>
@@ -1232,9 +1252,19 @@ function UserRow({ user, isEditing, onToggleEdit, onSave }: { user: UserRecord; 
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <Button size="sm" onClick={() => onSave({ contactName, email, storeName: storeName || undefined, role, isAdmin, credits, newPassword: newPassword || undefined })}>Opslaan</Button>
             <Button size="sm" variant="outline" onClick={onToggleEdit}>Annuleren</Button>
+            {!user.isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                className={user.isSuspended ? "text-green-700 border-green-300 hover:bg-green-50" : "text-red-600 border-red-300 hover:bg-red-50"}
+                onClick={() => onSuspend(!user.isSuspended)}
+              >
+                {user.isSuspended ? "Deblokkeren" : "Blokkeren"}
+              </Button>
+            )}
           </div>
         </div>
       )}

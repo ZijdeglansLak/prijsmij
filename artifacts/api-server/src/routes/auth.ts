@@ -147,6 +147,11 @@ router.post("/auth/login", async (req, res) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
 
+    if ((user as any).isSuspended) {
+      res.status(403).json({ error: "Je account is geblokkeerd. Neem contact op met de beheerder." });
+      return;
+    }
+
     res.json({ token: makeToken(user), user: userResponse(user) });
   } catch (err) { req.log.error({ err }, "Login failed"); res.status(500).json({ error: "Internal server error" }); }
 });

@@ -18,12 +18,7 @@ export function QuootjeChatbot() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open && messages.length === 0) {
-      setMessages([{
-        role: "assistant",
-        content: "Hallo! Ik ben Quootje, jouw assistent voor het PrijsMij platform. Hoe kan ik je helpen?",
-      }]);
-    }
+    // No welcome message
   }, [open]);
 
   useEffect(() => {

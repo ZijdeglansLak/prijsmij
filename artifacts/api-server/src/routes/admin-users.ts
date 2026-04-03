@@ -18,6 +18,7 @@ function safeUser(u: typeof userAccountsTable.$inferSelect) {
     isAdmin: u.isAdmin,
     emailVerified: u.emailVerified,
     username: u.username,
+    isSuspended: u.isSuspended,
     createdAt: u.createdAt,
   };
 }
@@ -134,6 +135,23 @@ router.put("/admin/users/:id", requireAdmin, async (req, res) => {
     if (!updated) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
     res.json(safeUser(updated));
   } catch (err) { req.log.error({ err }, "Update user failed"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// PUT /admin/users/:id/suspend — block or unblock a user
+router.put("/admin/users/:id/suspend", requireAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) { res.status(400).json({ error: "Ongeldig gebruikers-id" }); return; }
+    const { suspended } = req.body as { suspended: boolean };
+    if (typeof suspended !== "boolean") { res.status(400).json({ error: "Geef 'suspended' mee als boolean" }); return; }
+
+    const [updated] = await db.update(userAccountsTable)
+      .set({ isSuspended: suspended })
+      .where(eq(userAccountsTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
+    res.json(safeUser(updated));
+  } catch (err) { req.log.error({ err }, "Suspend user failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // POST /admin/users — create admin account
