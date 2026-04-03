@@ -28,6 +28,8 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       paynlTokenMasked: maskSecret(settings.paynlToken),
       paynlConfigured: !!(settings.paynlServiceId && settings.paynlToken),
       initialSellerCredits: settings.initialSellerCredits ?? 10,
+      openaiApiKeyMasked: maskSecret(settings.openaiApiKey),
+      openaiConfigured: !!(settings.openaiApiKey),
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -36,11 +38,12 @@ router.get("/settings", requireAdmin, async (_req, res) => {
 
 router.put("/settings", requireAdmin, async (req, res) => {
   try {
-    const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits } = req.body as {
+    const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits, openaiApiKey } = req.body as {
       offlineMode?: boolean;
       paynlServiceId?: string;
       paynlToken?: string;
       initialSellerCredits?: number;
+      openaiApiKey?: string;
     };
 
     const settings = await getOrCreateSettings();
@@ -57,6 +60,9 @@ router.put("/settings", requireAdmin, async (req, res) => {
     if (typeof initialSellerCredits === "number" && initialSellerCredits >= 0) {
       updates.initialSellerCredits = initialSellerCredits;
     }
+    if (typeof openaiApiKey === "string" && !openaiApiKey.startsWith("****")) {
+      updates.openaiApiKey = openaiApiKey.trim() || null;
+    }
 
     const updated = await db
       .update(siteSettingsTable)
@@ -71,6 +77,8 @@ router.put("/settings", requireAdmin, async (req, res) => {
       paynlTokenMasked: maskSecret(s.paynlToken),
       paynlConfigured: !!(s.paynlServiceId && s.paynlToken),
       initialSellerCredits: s.initialSellerCredits ?? 10,
+      openaiApiKeyMasked: maskSecret(s.openaiApiKey),
+      openaiConfigured: !!(s.openaiApiKey),
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });

@@ -200,6 +200,7 @@ export async function ensureTables(): Promise<void> {
 
     // v2.0 migrations
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE`);
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS openai_api_key TEXT`);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS kennisbank (

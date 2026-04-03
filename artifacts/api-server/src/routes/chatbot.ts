@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import OpenAI from "openai";
 import { requireAuth } from "./auth";
 import nodemailer from "nodemailer";
 
@@ -34,6 +34,27 @@ async function notifyAdminOfHack(userEmail: string, userId: number, message: str
   } catch {
     // Silently fail if email cannot be sent
   }
+}
+
+async function getOpenAIClient(): Promise<OpenAI | null> {
+  // First try: key from site_settings (admin-panel configurable)
+  try {
+    const { rows } = await pool.query(`SELECT openai_api_key FROM site_settings LIMIT 1`);
+    const dbKey = rows[0]?.openai_api_key as string | null | undefined;
+    if (dbKey?.trim()) {
+      return new OpenAI({ apiKey: dbKey.trim() });
+    }
+  } catch {
+    // Column might not exist yet, continue
+  }
+
+  // Fallback: OPENAI_API_KEY2 environment variable
+  const envKey = process.env.OPENAI_API_KEY2;
+  if (envKey?.trim()) {
+    return new OpenAI({ apiKey: envKey.trim() });
+  }
+
+  return null;
 }
 
 const HARMFUL_PATTERNS = [
@@ -83,14 +104,12 @@ router.post("/chatbot/message", requireAuth, async (req: any, res: any) => {
 
   // Check for harmful content
   if (detectHarmfulContent(message)) {
-    // Block the user
     try {
       await pool.query(`UPDATE user_accounts SET is_suspended = TRUE WHERE id = $1`, [userId]);
     } catch {
-      // Might fail if column doesn't exist, continue anyway
+      // Column might not exist, continue
     }
 
-    // Notify admin
     await notifyAdminOfHack(userEmail, userId, message);
 
     res.setHeader("Content-Type", "text/event-stream");
@@ -98,6 +117,18 @@ router.post("/chatbot/message", requireAuth, async (req: any, res: any) => {
     res.setHeader("Connection", "keep-alive");
     res.write(`data: ${JSON.stringify({ content: "Je sessie is beëindigd wegens een overtreding van de gebruiksvoorwaarden. De beheerder is op de hoogte gesteld." })}\n\n`);
     res.write(`data: ${JSON.stringify({ done: true, blocked: true })}\n\n`);
+    res.end();
+    return;
+  }
+
+  // Get OpenAI client
+  const openai = await getOpenAIClient();
+  if (!openai) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.write(`data: ${JSON.stringify({ error: "De chatbot is momenteel niet geconfigureerd. Stel een OpenAI API-sleutel in via het beheerscherm." })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
     return;
   }
@@ -124,12 +155,12 @@ router.post("/chatbot/message", requireAuth, async (req: any, res: any) => {
     // Continue without categories if unavailable
   }
 
-  // Gather context: uitvragen (only for sellers/admins, list summary)
+  // Gather context: uitvragen (only for sellers/admins)
   let uitvragenContext = "";
   if (isSeller) {
     try {
       const { rows } = await pool.query(
-        `SELECT r.title, r.description, c.name as category FROM requests r LEFT JOIN categories c ON r.category_id = c.id WHERE r.status = 'open' ORDER BY r.created_at DESC LIMIT 20`
+        `SELECT r.title, r.description, c.name as category FROM requests r LEFT JOIN categories c ON r.category_id = c.id ORDER BY r.created_at DESC LIMIT 20`
       );
       if (rows.length > 0) {
         uitvragenContext = "\n\n## Beschikbare uitvragen (alleen zichtbaar voor winkeliers)\n" +
@@ -172,7 +203,6 @@ ${uitvragenContext}
 
 Als een vraag buiten de scope van PrijsMij valt, zeg je vriendelijk: "Dit valt buiten mijn kennisgebied als Quootje. Ik kan alleen vragen beantwoorden over het PrijsMij platform en zijn diensten."`;
 
-  // Build message history
   const chatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
   ];
@@ -193,8 +223,8 @@ Als een vraag buiten de scope van PrijsMij valt, zeg je vriendelijk: "Dit valt b
 
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 8192,
+      model: "gpt-4o-mini",
+      max_tokens: 1024,
       messages: chatMessages,
       stream: true,
     });

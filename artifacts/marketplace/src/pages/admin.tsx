@@ -918,6 +918,11 @@ function SettingsTab() {
   const [initialSellerCredits, setInitialSellerCredits] = useState(10);
   const [savingCredits, setSavingCredits] = useState(false);
 
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [savingOpenai, setSavingOpenai] = useState(false);
+  const [openaiConfigured, setOpenaiConfigured] = useState(false);
+
   useEffect(() => {
     fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
@@ -927,6 +932,8 @@ function SettingsTab() {
         setPaynlToken(d.paynlTokenMasked ?? "");
         setPaynlConfigured(d.paynlConfigured ?? false);
         setInitialSellerCredits(d.initialSellerCredits ?? 10);
+        setOpenaiApiKey(d.openaiApiKeyMasked ?? "");
+        setOpenaiConfigured(d.openaiConfigured ?? false);
       })
       .catch(() => setOfflineMode(false));
   }, [token]);
@@ -1009,6 +1016,47 @@ function SettingsTab() {
       toast({ title: "Fout bij wissen", description: err.message, variant: "destructive" });
     } finally {
       setSavingPaynl(false);
+    }
+  }
+
+  async function saveOpenaiKey(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingOpenai(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ openaiApiKey }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setOpenaiConfigured(d.openaiConfigured);
+      setOpenaiApiKey(d.openaiApiKeyMasked ?? "");
+      toast({ title: "OpenAI API-sleutel opgeslagen" });
+    } catch (err: any) {
+      toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingOpenai(false);
+    }
+  }
+
+  async function clearOpenaiKey() {
+    setSavingOpenai(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ openaiApiKey: "" }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setOpenaiConfigured(d.openaiConfigured);
+      setOpenaiApiKey("");
+      toast({ title: "OpenAI API-sleutel gewist — omgevingsvariabele wordt gebruikt" });
+    } catch (err: any) {
+      toast({ title: "Fout bij wissen", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingOpenai(false);
     }
   }
 
@@ -1150,6 +1198,59 @@ function SettingsTab() {
                 className="text-xs text-destructive underline hover:no-underline disabled:opacity-50"
               >
                 Wis token (gebruik omgevingsvariabele)
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* OpenAI chatbot */}
+      <div className="rounded-2xl border-2 border-border bg-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+            <Key className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg leading-tight">Quootje chatbot — OpenAI sleutel</h3>
+            <p className="text-sm text-muted-foreground">Stel de OpenAI API-sleutel in voor de chatbot (valt terug op omgevingsvariabele OPENAI_API_KEY2 als leeg)</p>
+          </div>
+          {openaiConfigured
+            ? <span className="ml-auto text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Actief</span>
+            : <span className="ml-auto text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Niet geconfigureerd</span>
+          }
+        </div>
+        <form onSubmit={saveOpenaiKey} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium block mb-1">API-sleutel</label>
+            <div className="relative">
+              <Input
+                type={showOpenaiKey ? "text" : "password"}
+                placeholder={openaiConfigured ? "Laat leeg om huidige waarde te bewaren" : "sk-..."}
+                value={openaiApiKey}
+                onChange={e => setOpenaiApiKey(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowOpenaiKey(v => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={savingOpenai}>
+              {savingOpenai ? "Opslaan..." : "OpenAI sleutel opslaan"}
+            </Button>
+            {openaiApiKey.startsWith("****") && (
+              <button
+                type="button"
+                onClick={clearOpenaiKey}
+                disabled={savingOpenai}
+                className="text-xs text-destructive underline hover:no-underline disabled:opacity-50"
+              >
+                Wis sleutel (gebruik omgevingsvariabele)
               </button>
             )}
           </div>
