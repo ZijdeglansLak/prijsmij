@@ -7,26 +7,21 @@ import { Upload, X, Trash2, Check, ImagePlus } from "lucide-react";
 interface LibraryIcon {
   id: number;
   name: string;
-  objectPath: string;
-  url: string;
-}
-
-function renderIcon(value: string, className = "text-2xl w-10 h-10 flex items-center justify-center") {
-  if (!value) return <span className={className}>?</span>;
-  if (value.startsWith("/") || value.startsWith("http")) {
-    return <img src={value.startsWith("/api") ? value : `/api/storage${value}`} alt="" className="w-full h-full object-contain" />;
-  }
-  return <span className={className}>{value}</span>;
+  type: "emoji" | "image";
+  value: string | null;
+  url: string | null;
 }
 
 export function IconDisplay({ value, size = "md" }: { value: string; size?: "sm" | "md" | "lg" }) {
-  const sizeClass = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-16 h-16" : "w-10 h-10";
+  const sizeClass = size === "sm" ? "w-8 h-8 text-xl" : size === "lg" ? "w-14 h-14 text-4xl" : "w-10 h-10 text-2xl";
   if (!value) return <div className={`${sizeClass} rounded bg-muted flex items-center justify-center text-muted-foreground text-sm`}>?</div>;
-  if (value.startsWith("/") || value.startsWith("http")) {
+  const isImage = value.startsWith("/") || value.startsWith("http");
+  if (isImage) {
     const src = value.startsWith("/api/storage") ? value : `/api/storage${value}`;
-    return <img src={src} alt="" className={`${sizeClass} object-contain rounded`} />;
+    const imgSize = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-14 h-14" : "w-10 h-10";
+    return <img src={src} alt="" className={`${imgSize} object-contain rounded`} />;
   }
-  return <span className={`${sizeClass} flex items-center justify-center text-2xl`}>{value}</span>;
+  return <span className={`${sizeClass} flex items-center justify-center leading-none`}>{value}</span>;
 }
 
 interface IconPickerProps {
@@ -38,7 +33,7 @@ interface IconPickerProps {
 export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps) {
   const [open, setOpen] = useState(false);
   const [library, setLibrary] = useState<LibraryIcon[]>([]);
-  const [emojiInput, setEmojiInput] = useState(value.startsWith("/") || value.startsWith("http") ? "" : value);
+  const [emojiInput, setEmojiInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadName, setUploadName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -81,14 +76,10 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
       const putRes = await fetch(uploadURL, { method: "PUT", body: selectedFile, headers: { "Content-Type": selectedFile.type } });
       if (!putRes.ok) { alert("Upload mislukt"); return; }
 
-      const objectPath = new URL(uploadURL).pathname.split("/o/")[1]?.split("?")[0];
-      const decodedPath = objectPath ? decodeURIComponent(objectPath) : uploadURL;
-      const finalPath = decodedPath.startsWith("/") ? decodedPath : `/${decodedPath}`;
-
       const saveRes = await fetch("/api/admin/icon-library", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: uploadName || selectedFile.name, objectPath: uploadURL }),
+        body: JSON.stringify({ name: uploadName || selectedFile.name, objectPath: uploadURL, type: "image" }),
       });
       if (saveRes.ok) {
         const saved = await saveRes.json();
@@ -100,6 +91,25 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
     finally { setUploading(false); }
   }
 
+  async function addEmoji() {
+    const em = emojiInput.trim();
+    if (!em) return;
+    try {
+      const res = await fetch("/api/admin/icon-library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: em, type: "emoji", emoji: em }),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setLibrary(prev => [...prev, saved]);
+      }
+    } catch {}
+    onChange(em);
+    setEmojiInput("");
+    setOpen(false);
+  }
+
   async function handleDelete(id: number) {
     setDeleting(id);
     try {
@@ -108,15 +118,13 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
     } finally { setDeleting(null); }
   }
 
-  function selectEmoji() {
-    onChange(emojiInput);
+  function selectIcon(icon: LibraryIcon) {
+    onChange(icon.type === "emoji" ? (icon.value ?? "") : (icon.value ?? ""));
     setOpen(false);
   }
 
-  function selectLibrary(icon: LibraryIcon) {
-    onChange(icon.objectPath);
-    setOpen(false);
-  }
+  const emojiIcons = library.filter(i => i.type === "emoji");
+  const imageIcons = library.filter(i => i.type === "image");
 
   return (
     <div>
@@ -129,7 +137,7 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
           <ImagePlus className="w-3.5 h-3.5 mr-1" /> Kies icoon
         </Button>
         {value && (
-          <Button type="button" size="sm" variant="ghost" onClick={() => onChange("")} className="text-muted-foreground">
+          <Button type="button" size="sm" variant="ghost" onClick={() => onChange("")} className="text-muted-foreground px-2">
             <X className="w-3.5 h-3.5" />
           </Button>
         )}
@@ -137,31 +145,60 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h3 className="font-bold text-lg">Icoon kiezen</h3>
               <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
 
             <div className="overflow-y-auto flex-1 p-6 space-y-6">
-              {/* Emoji input */}
-              <div>
-                <p className="text-sm font-semibold mb-2">Emoji icoon</p>
+
+              {/* Emoji library */}
+              {emojiIcons.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold mb-3">Emoji iconen ({emojiIcons.length})</p>
+                  <div className="grid grid-cols-8 gap-2">
+                    {emojiIcons.map(icon => (
+                      <div key={icon.id} className="group relative">
+                        <button
+                          onClick={() => selectIcon(icon)}
+                          className={`w-full aspect-square border-2 rounded-xl flex items-center justify-center text-2xl hover:border-primary transition-colors bg-muted/10 ${value === icon.value ? "border-primary bg-primary/10" : "border-transparent"}`}
+                          title={icon.name}
+                        >
+                          {icon.value}
+                        </button>
+                        <p className="text-[9px] text-center text-muted-foreground mt-0.5 truncate">{icon.name}</p>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDelete(icon.id); }}
+                          disabled={deleting === icon.id}
+                          className="absolute -top-1 -right-1 p-0.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4 flex items-center justify-center"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add custom emoji */}
+              <div className={emojiIcons.length > 0 ? "border-t pt-5" : ""}>
+                <p className="text-sm font-semibold mb-2">Andere emoji gebruiken</p>
                 <div className="flex gap-2">
                   <Input
                     value={emojiInput}
                     onChange={e => setEmojiInput(e.target.value)}
                     placeholder="🛒"
-                    className="w-24 text-2xl text-center"
+                    className="w-20 text-2xl text-center"
                     maxLength={4}
                   />
-                  <Button size="sm" onClick={selectEmoji} disabled={!emojiInput}>
-                    <Check className="w-3.5 h-3.5 mr-1" /> Gebruik emoji
+                  <Button size="sm" onClick={addEmoji} disabled={!emojiInput.trim()}>
+                    <Check className="w-3.5 h-3.5 mr-1" /> Gebruik & bewaar
                   </Button>
                 </div>
               </div>
 
-              {/* Upload new image */}
+              {/* Image upload */}
               <div className="border-t pt-5">
                 <p className="text-sm font-semibold mb-3 flex items-center gap-2">
                   <Upload className="w-4 h-4" /> Afbeelding uploaden
@@ -185,25 +222,23 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
                 </div>
               </div>
 
-              {/* Library */}
-              <div className="border-t pt-5">
-                <p className="text-sm font-semibold mb-3">Bibliotheek ({library.length} afbeeldingen)</p>
-                {library.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nog geen afbeeldingen in de bibliotheek.</p>
-                ) : (
+              {/* Image library */}
+              {imageIcons.length > 0 && (
+                <div className="border-t pt-5">
+                  <p className="text-sm font-semibold mb-3">Afbeeldingen bibliotheek ({imageIcons.length})</p>
                   <div className="grid grid-cols-5 gap-3">
-                    {library.map(icon => (
+                    {imageIcons.map(icon => (
                       <div key={icon.id} className="group relative">
                         <button
-                          onClick={() => selectLibrary(icon)}
-                          className="w-full aspect-square border-2 rounded-xl overflow-hidden hover:border-primary transition-colors bg-muted/20 flex items-center justify-center p-1"
+                          onClick={() => selectIcon(icon)}
+                          className={`w-full aspect-square border-2 rounded-xl overflow-hidden flex items-center justify-center p-1 transition-colors bg-muted/20 ${value === icon.value ? "border-primary" : "border-transparent hover:border-primary/50"}`}
                           title={icon.name}
                         >
-                          <img src={icon.url} alt={icon.name} className="max-w-full max-h-full object-contain" />
+                          <img src={icon.url!} alt={icon.name} className="max-w-full max-h-full object-contain" />
                         </button>
                         <p className="text-[10px] text-center text-muted-foreground mt-1 truncate">{icon.name}</p>
                         <button
-                          onClick={() => handleDelete(icon.id)}
+                          onClick={e => { e.stopPropagation(); handleDelete(icon.id); }}
                           disabled={deleting === icon.id}
                           className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
                         >
@@ -212,8 +247,8 @@ export function IconPicker({ value, onChange, label = "Icoon" }: IconPickerProps
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

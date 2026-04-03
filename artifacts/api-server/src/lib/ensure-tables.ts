@@ -201,11 +201,27 @@ export async function ensureTables(): Promise<void> {
     // Icon library table
     await client.query(`
       CREATE TABLE IF NOT EXISTS icon_library (
-        id         SERIAL PRIMARY KEY,
-        name       TEXT NOT NULL,
-        object_path TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        id          SERIAL PRIMARY KEY,
+        name        TEXT NOT NULL,
+        type        TEXT NOT NULL DEFAULT 'image',
+        emoji       TEXT,
+        object_path TEXT,
+        created_at  TIMESTAMP NOT NULL DEFAULT NOW()
       );
+    `);
+    // Add columns if they don't exist (for migration)
+    await client.query(`ALTER TABLE icon_library ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'image'`).catch(() => {});
+    await client.query(`ALTER TABLE icon_library ALTER COLUMN object_path DROP NOT NULL`).catch(() => {});
+    await client.query(`ALTER TABLE icon_library ADD COLUMN IF NOT EXISTS emoji TEXT`).catch(() => {});
+
+    // Seed emoji from active categories into the library if not already present
+    await client.query(`
+      INSERT INTO icon_library (name, type, emoji, object_path)
+      SELECT c.name, 'emoji', c.icon, NULL FROM categories c
+      WHERE c.icon IS NOT NULL AND c.icon != ''
+      AND NOT EXISTS (
+        SELECT 1 FROM icon_library il WHERE il.type = 'emoji' AND il.emoji = c.icon
+      )
     `);
 
     // Seed 400 test requests if table is empty
