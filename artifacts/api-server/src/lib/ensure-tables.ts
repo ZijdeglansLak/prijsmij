@@ -198,6 +198,34 @@ export async function ensureTables(): Promise<void> {
       ON CONFLICT (slug, lang) DO NOTHING;
     `);
 
+    // v2.0 migrations
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE`);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS kennisbank (
+        id         SERIAL PRIMARY KEY,
+        title      TEXT NOT NULL,
+        content    TEXT NOT NULL,
+        tags       TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS conversations (
+        id         SERIAL PRIMARY KEY,
+        user_id    INTEGER NOT NULL REFERENCES user_accounts(id) ON DELETE CASCADE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS messages (
+        id              SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        role            TEXT NOT NULL CHECK (role IN ('user','assistant')),
+        content         TEXT NOT NULL,
+        created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+
     // Icon library table
     await client.query(`
       CREATE TABLE IF NOT EXISTS icon_library (
