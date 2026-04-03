@@ -132,6 +132,7 @@ function ConsumerDashboard({ email }: { email: string }) {
 function SellerDashboard({ token }: { token: string }) {
   const [categoryReqs, setCategoryReqs] = useState<SupplierRequest[]>([]);
   const [interestedBids, setInterestedBids] = useState<InterestedBid[]>([]);
+  const [watchedCategoryCount, setWatchedCategoryCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -139,9 +140,11 @@ function SellerDashboard({ token }: { token: string }) {
     Promise.all([
       fetch(`${API}/supplier/category-requests`, { headers }).then((r) => r.json()),
       fetch(`${API}/supplier/interested-bids`, { headers }).then((r) => r.json()),
-    ]).then(([reqs, bids]) => {
+      fetch(`${API}/supplier/notification-preferences`, { headers }).then((r) => r.json()),
+    ]).then(([reqs, bids, notifData]) => {
       setCategoryReqs(Array.isArray(reqs) ? reqs : []);
       setInterestedBids(Array.isArray(bids) ? bids : []);
+      setWatchedCategoryCount((notifData?.categoryIds ?? []).length);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [token]);
@@ -183,8 +186,17 @@ function SellerDashboard({ token }: { token: string }) {
         </div>
         {categoryReqs.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
-            Geen actieve uitvragen in jouw categorieën.{" "}
-            <Link href="/winkel/instellingen" className="text-primary font-semibold underline">Stel je categorieën in</Link>
+            {watchedCategoryCount === 0 ? (
+              <>
+                Je hebt nog geen categorieën ingesteld.{" "}
+                <Link href="/supplier/dashboard" className="text-primary font-semibold underline">Stel je categorieën in</Link>
+              </>
+            ) : (
+              <>
+                Geen actieve uitvragen op dit moment in jouw {watchedCategoryCount} categorie{watchedCategoryCount === 1 ? "" : "ën"}.{" "}
+                <Link href="/requests" className="text-primary font-semibold underline">Bekijk alle uitvragen</Link>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
