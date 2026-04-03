@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, categoriesTable, creditBundlesTable, siteSettingsTable } from "@workspace/db";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, requireSeller } from "./auth";
+import { writeLog } from "../lib/db-log";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -135,7 +136,12 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
       .returning({ credits: userAccountsTable.credits });
 
     res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, creditsUsed: 1, remainingCredits: fresh.credits });
-  } catch (err) { req.log.error({ err }, "Failed to create connection"); res.status(500).json({ error: "Internal server error" }); }
+  } catch (err: any) {
+    req.log.error({ err }, "Failed to create connection");
+    const uid = (req as any).userId as number | undefined;
+    writeLog({ category: "ERROR", message: `Fout bij aanmaken connectie voor bod #${req.params.bidId}: ${err?.message ?? "onbekend"}`, userId: uid, errorCode: "CONNECT-500" }).catch(() => {});
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // GET /supplier/category-requests — active requests in seller's notification categories

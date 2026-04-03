@@ -14,6 +14,7 @@ import adminCategoryGroupsRouter from "./admin-category-groups";
 import adminIconLibraryRouter from "./admin-icon-library";
 import storageRouter from "./storage";
 import adminKennisbankRouter from "./admin-kennisbank";
+import adminLogsRouter from "./admin-logs";
 import chatbotRouter from "./chatbot";
 import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
@@ -35,6 +36,7 @@ router.use(adminCategoryGroupsRouter);
 router.use(adminIconLibraryRouter);
 router.use(storageRouter);
 router.use(adminKennisbankRouter);
+router.use(adminLogsRouter);
 router.use(chatbotRouter);
 
 router.get("/site-status", async (_req, res) => {

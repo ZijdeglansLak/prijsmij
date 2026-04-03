@@ -4,14 +4,14 @@ import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText, BookOpen } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText, BookOpen, ScrollText, ChevronsUpDown } from "lucide-react";
 import { useI18n, type Language } from "@/contexts/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
 import { IconPicker, IconDisplay } from "@/components/icon-picker";
 
-type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank";
+type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs";
 
 interface UserRecord {
   id: number;
@@ -108,6 +108,12 @@ function AdminDashboard() {
           >
             <FileText className="w-4 h-4" /> Pagina's
           </button>
+          <button
+            onClick={() => setTab("logs")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "logs" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <ScrollText className="w-4 h-4" /> Logboek
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
@@ -117,6 +123,7 @@ function AdminDashboard() {
         {tab === "bundles" && <BundelsTab />}
         {tab === "kennisbank" && <KennisbankTab />}
         {tab === "pages" && <PaginasTab />}
+        {tab === "logs" && <LogboekTab />}
       </div>
     </Layout>
   );
@@ -2435,6 +2442,200 @@ function PaginasTab() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Logboek Tab ────────────────────────────────────────────────────────────
+
+interface LogEntry {
+  id: number;
+  category: "LOGIN" | "LOGOUT" | "ERROR";
+  message: string;
+  user_id: number | null;
+  user_email: string | null;
+  error_code: string | null;
+  log_date: string;
+  log_time: string;
+  created_at: string;
+}
+
+type LogSort = "created_at" | "user_email" | "message" | "category";
+type LogDir  = "asc" | "desc";
+
+const CAT_COLORS: Record<string, string> = {
+  LOGIN:  "bg-green-100 text-green-800 border-green-200",
+  LOGOUT: "bg-blue-100 text-blue-800 border-blue-200",
+  ERROR:  "bg-red-100 text-red-800 border-red-200",
+};
+
+function LogboekTab() {
+  const { token } = useUserAuth();
+  const [logs, setLogs]         = useState<LogEntry[]>([]);
+  const [total, setTotal]       = useState(0);
+  const [loading, setLoading]   = useState(false);
+  const [category, setCategory] = useState<string>("");
+  const [sort, setSort]         = useState<LogSort>("created_at");
+  const [dir, setDir]           = useState<LogDir>("desc");
+  const [page, setPage]         = useState(1);
+  const limit = 50;
+
+  const fetchLogs = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        sort,
+        dir,
+      });
+      if (category) params.set("category", category);
+      const r = await fetch(`/api/admin/logs?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error("Fout bij ophalen logboek");
+      const data = await r.json();
+      setLogs(data.logs);
+      setTotal(data.total);
+    } catch {
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, category, sort, dir, page]);
+
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  function toggleSort(col: LogSort) {
+    if (sort === col) {
+      setDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSort(col);
+      setDir(col === "created_at" ? "desc" : "asc");
+    }
+    setPage(1);
+  }
+
+  function SortIcon({ col }: { col: LogSort }) {
+    if (sort !== col) return <ChevronsUpDown className="w-3 h-3 ml-1 opacity-40" />;
+    return dir === "asc"
+      ? <ChevronUp className="w-3 h-3 ml-1 text-primary" />
+      : <ChevronDown className="w-3 h-3 ml-1 text-primary" />;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <ScrollText className="w-5 h-5 text-primary" /> Logboek
+          <span className="text-sm font-normal text-muted-foreground ml-2">{total} regel{total !== 1 ? "s" : ""} (max 60 dagen bewaard)</span>
+        </h2>
+        <Button variant="outline" size="sm" onClick={fetchLogs} className="flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5" /> Vernieuwen
+        </Button>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(["", "LOGIN", "LOGOUT", "ERROR"] as const).map(cat => (
+          <button
+            key={cat || "all"}
+            onClick={() => { setCategory(cat); setPage(1); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+              category === cat
+                ? cat === "LOGIN"  ? "bg-green-600 text-white border-green-600"
+                : cat === "LOGOUT" ? "bg-blue-600 text-white border-blue-600"
+                : cat === "ERROR"  ? "bg-red-600 text-white border-red-600"
+                : "bg-primary text-white border-primary"
+                : "bg-white text-muted-foreground border-border hover:border-primary hover:text-primary"
+            }`}
+          >
+            {cat || "Alle categorieën"}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-border overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/50 border-b border-border">
+              <th
+                className="px-4 py-3 text-left font-semibold text-muted-foreground cursor-pointer hover:text-secondary whitespace-nowrap"
+                onClick={() => toggleSort("created_at")}
+              >
+                <span className="flex items-center">Datum <SortIcon col="created_at" /></span>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">Tijd</th>
+              <th
+                className="px-4 py-3 text-left font-semibold text-muted-foreground cursor-pointer hover:text-secondary whitespace-nowrap"
+                onClick={() => toggleSort("category")}
+              >
+                <span className="flex items-center">Categorie <SortIcon col="category" /></span>
+              </th>
+              <th
+                className="px-4 py-3 text-left font-semibold text-muted-foreground cursor-pointer hover:text-secondary whitespace-nowrap"
+                onClick={() => toggleSort("user_email")}
+              >
+                <span className="flex items-center">Gebruiker <SortIcon col="user_email" /></span>
+              </th>
+              <th
+                className="px-4 py-3 text-left font-semibold text-muted-foreground cursor-pointer hover:text-secondary"
+                onClick={() => toggleSort("message")}
+              >
+                <span className="flex items-center">Melding <SortIcon col="message" /></span>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">Foutnummer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="py-12 text-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto" />
+                </td>
+              </tr>
+            ) : logs.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                  Geen logregels gevonden
+                </td>
+              </tr>
+            ) : (
+              logs.map((log, i) => (
+                <tr key={log.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-muted/20"}`}>
+                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{log.log_date}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{log.log_time}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold border ${CAT_COLORS[log.category] ?? "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                      {log.category}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[180px] truncate" title={log.user_email ?? ""}>
+                    {log.user_email ?? <span className="italic text-muted-foreground/50">—</span>}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs max-w-[320px]">{log.message}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                    {log.error_code ?? <span className="italic opacity-40">—</span>}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-sm text-muted-foreground">Pagina {page} van {totalPages}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Vorige</Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Volgende</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

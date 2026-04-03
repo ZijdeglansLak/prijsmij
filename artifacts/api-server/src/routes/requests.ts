@@ -11,6 +11,7 @@ import {
 import { eq, sql, and, desc, asc } from "drizzle-orm";
 import { z } from "zod/v4";
 import { sendNewRequestNotification, sendNewBidNotification, sendBuyerInterestNotification } from "../services/email";
+import { writeLog } from "../lib/db-log";
 
 const router: IRouter = Router();
 
@@ -390,8 +391,9 @@ router.post("/requests/:id/bids", async (req, res) => {
       visibility: bid.visibility ?? "public",
       createdAt: bid.createdAt,
     });
-  } catch (err) {
+  } catch (err: any) {
     req.log.error({ err }, "Failed to create bid");
+    writeLog({ category: "ERROR", message: `Fout bij plaatsen bod op uitvraag #${req.params.id}: ${err?.message ?? "onbekend"}`, errorCode: "BID-500" }).catch(() => {});
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -442,8 +444,9 @@ router.post("/requests/:id/interest", async (req, res) => {
       message: `Geweldig! ${bid.supplierStore} wordt op de hoogte gebracht van jouw interesse. Ze nemen snel contact met je op.`,
       contactEmail: bid.supplierEmail,
     });
-  } catch (err) {
+  } catch (err: any) {
     req.log.error({ err }, "Failed to express interest");
+    writeLog({ category: "ERROR", message: `Fout bij tonen interesse op uitvraag #${req.params.id}: ${err?.message ?? "onbekend"}`, errorCode: "INTEREST-500" }).catch(() => {});
     res.status(500).json({ error: "Internal server error" });
   }
 });

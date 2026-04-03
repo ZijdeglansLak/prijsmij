@@ -252,6 +252,24 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE icon_library ALTER COLUMN object_path DROP NOT NULL`).catch(() => {});
     await client.query(`ALTER TABLE icon_library ADD COLUMN IF NOT EXISTS emoji TEXT`).catch(() => {});
 
+    // system_logs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS system_logs (
+        id         SERIAL PRIMARY KEY,
+        category   TEXT NOT NULL CHECK (category IN ('LOGIN','LOGOUT','ERROR')),
+        message    TEXT NOT NULL,
+        user_id    INTEGER REFERENCES user_accounts(id) ON DELETE SET NULL,
+        user_email TEXT,
+        error_code TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await client.query(`CREATE INDEX IF NOT EXISTS system_logs_created_at_idx ON system_logs (created_at DESC)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS system_logs_category_idx  ON system_logs (category)`);
+
+    // Auto-purge logs older than 60 days
+    await client.query(`DELETE FROM system_logs WHERE created_at < NOW() - INTERVAL '60 days'`);
+
     // Seed emoji from active categories into the library if not already present
     await client.query(`
       INSERT INTO icon_library (name, type, emoji, object_path)

@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
+import { writeLog } from "../lib/db-log";
 
 const router: IRouter = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "prijsmij-secret-change-in-prod";
@@ -142,16 +143,24 @@ router.post("/auth/login", async (req, res) => {
       .where(or(eq(userAccountsTable.email, emailOrUsername), eq(userAccountsTable.username, emailOrUsername)))
       .then(rows => rows[0]);
 
-    if (!user) { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
+    if (!user) {
+      await writeLog({ category: "LOGIN", message: `Mislukte inlogpoging: onbekend account '${emailOrUsername}'`, errorCode: "LOGIN-UNKNOWN" });
+      res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return;
+    }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
+    if (!valid) {
+      await writeLog({ category: "LOGIN", message: `Mislukte inlogpoging: onjuist wachtwoord`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-WRONG-PW" });
+      res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return;
+    }
 
     if ((user as any).isSuspended) {
+      await writeLog({ category: "LOGIN", message: `Inlogpoging geblokkeerd account`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-SUSPENDED" });
       res.status(403).json({ error: "Je account is geblokkeerd. Neem contact op met de beheerder." });
       return;
     }
 
+    await writeLog({ category: "LOGIN", message: `Ingelogd`, userId: user.id, userEmail: user.email });
     res.json({ token: makeToken(user), user: userResponse(user) });
   } catch (err) { req.log.error({ err }, "Login failed"); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -270,6 +279,14 @@ router.put("/auth/profile", requireAuth, async (req, res) => {
     const [updated] = await db.update(userAccountsTable).set(updates).where(eq(userAccountsTable.id, userId)).returning();
     res.json(userResponse(updated));
   } catch (err) { req.log.error({ err }, "Update profile failed"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /auth/logout — registers logout event (JWT is stateless, client clears token)
+router.post("/auth/logout", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as number;
+  const userEmail = (req as any).userEmail as string;
+  await writeLog({ category: "LOGOUT", message: "Uitgelogd", userId, userEmail });
+  res.json({ success: true });
 });
 
 // GET /auth/seller-count — active seller accounts (public)
