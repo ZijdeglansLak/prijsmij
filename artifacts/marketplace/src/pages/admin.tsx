@@ -2565,9 +2565,8 @@ function LogboekTab() {
                 className="px-4 py-3 text-left font-semibold text-muted-foreground cursor-pointer hover:text-secondary whitespace-nowrap"
                 onClick={() => toggleSort("created_at")}
               >
-                <span className="flex items-center">Datum <SortIcon col="created_at" /></span>
+                <span className="flex items-center">Datum & tijd <SortIcon col="created_at" /></span>
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground whitespace-nowrap">Tijd</th>
               <th
                 className="px-4 py-3 text-left font-semibold text-muted-foreground cursor-pointer hover:text-secondary whitespace-nowrap"
                 onClick={() => toggleSort("category")}
@@ -2592,21 +2591,20 @@ function LogboekTab() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center">
+                <td colSpan={5} className="py-12 text-center">
                   <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto" />
                 </td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                <td colSpan={5} className="py-12 text-center text-muted-foreground">
                   Geen logregels gevonden
                 </td>
               </tr>
             ) : (
               logs.map((log, i) => (
                 <tr key={log.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-muted/20"}`}>
-                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{log.log_date}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{log.log_time}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{log.log_date} {log.log_time}</td>
                   <td className="px-4 py-2.5">
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold border ${CAT_COLORS[log.category] ?? "bg-gray-100 text-gray-700 border-gray-200"}`}>
                       {log.category}
