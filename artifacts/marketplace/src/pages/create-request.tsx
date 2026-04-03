@@ -128,7 +128,7 @@ export default function CreateRequest() {
     <Layout>
       <div className="bg-secondary text-white py-12">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h1 className="text-3xl font-extrabold mb-4">{t.create.title}</h1>
+          <h1 className="text-3xl font-extrabold mb-4 text-white">{t.create.title}</h1>
           <div className="flex justify-center items-center gap-4 mt-8">
             {[1, 2, 3].map(i => (
               <div key={i} className="flex items-center gap-4">

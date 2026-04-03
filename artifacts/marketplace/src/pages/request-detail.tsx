@@ -118,7 +118,7 @@ export default function RequestDetail() {
               <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 rounded-full px-3 py-1 text-sm font-medium mb-4">
                 <Tag className="w-4 h-4" /> {request.category?.name}
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-3">{request.title}</h1>
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-white">{request.title}</h1>
               <p className="text-white/70 text-lg mb-4">{request.description}</p>
               {request.budget && (
                 <div className="inline-flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2">
