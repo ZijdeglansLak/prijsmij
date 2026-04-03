@@ -6,7 +6,7 @@ import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { useCountdown } from "@/hooks/use-countdown";
 import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ export default function RequestDetail() {
   const [connectieBidId, setConnectieBidId] = useState<number | null>(null);
   const [connectieResult, setConnectieResult] = useState<{ consumerName: string; consumerEmail: string } | null>(null);
   const [connectieLoading, setConnectieLoading] = useState(false);
+  const [purchasedBidIds, setPurchasedBidIds] = useState<Set<number>>(new Set());
 
   const { data: request, isLoading } = useGetRequestById(requestId);
   const { user, isSeller } = useUserAuth();
@@ -35,6 +36,18 @@ export default function RequestDetail() {
   const expressInterestMutation = useExpressInterest();
   const { toast } = useToast();
   const { supplier, token, isLoggedIn, updateCredits } = useSupplierAuth();
+
+  // Load which bids this seller has already purchased
+  useEffect(() => {
+    if (!isLoggedIn || !token) return;
+    fetch("/api/supplier/me/connections", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.ok ? r.json() : [])
+      .then((conns: { bidId: number; requestId: number }[]) => {
+        const ids = new Set(conns.filter((c) => c.requestId === requestId).map((c) => c.bidId));
+        setPurchasedBidIds(ids);
+      })
+      .catch(() => {});
+  }, [isLoggedIn, token, requestId]);
 
   const handleInterest = async (bidId?: number) => {
     const targetBidId = bidId ?? interestBidId;
@@ -88,6 +101,9 @@ export default function RequestDetail() {
       }
       if (typeof data.remainingCredits === "number") {
         updateCredits(data.remainingCredits);
+      }
+      if (!data.alreadyConnected && connectieBidId) {
+        setPurchasedBidIds((prev) => new Set([...prev, connectieBidId]));
       }
       setConnectieResult({ consumerName: data.consumerName, consumerEmail: data.consumerEmail });
     } catch {
@@ -310,7 +326,7 @@ export default function RequestDetail() {
                               {expressInterestMutation.isPending ? "..." : "Toon Interesse"}
                             </Button>
                           )}
-                          {isLoggedIn && (bid as any).hasInterest && !(request as any).isClosed && (
+                          {isLoggedIn && (bid as any).hasInterest && !purchasedBidIds.has(bid.id) && !(request as any).isClosed && (
                             <Button
                               variant="outline"
                               className="w-full sm:w-auto h-11 border-primary text-primary hover:bg-primary/5"
@@ -320,7 +336,12 @@ export default function RequestDetail() {
                               Connectie (1 credit)
                             </Button>
                           )}
-                          {isLoggedIn && (bid as any).hasInterest && (request as any).isClosed && (
+                          {isLoggedIn && (bid as any).hasInterest && purchasedBidIds.has(bid.id) && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Lead al aangekocht
+                            </span>
+                          )}
+                          {isLoggedIn && (bid as any).hasInterest && !purchasedBidIds.has(bid.id) && (request as any).isClosed && (
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                               <XCircle className="w-3.5 h-3.5" /> Lead al verkocht
                             </span>
