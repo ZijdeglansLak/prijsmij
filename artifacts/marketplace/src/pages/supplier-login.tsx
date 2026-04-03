@@ -36,7 +36,6 @@ export default function SupplierLogin() {
         return;
       }
       login(data.token, data.supplier);
-      toast({ title: `Welkom terug, ${data.supplier.storeName}!` });
       setLocation("/supplier/dashboard");
     } catch {
       toast({ title: "Verbindingsfout", variant: "destructive" });

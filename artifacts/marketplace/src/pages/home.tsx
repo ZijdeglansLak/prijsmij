@@ -354,7 +354,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-secondary">Welkom terug, {user.contactName.split(" ")[0]}!</h2>
+                <h2 className="text-2xl font-bold text-secondary">Jouw uitvragen</h2>
                 <p className="text-muted-foreground mt-1">Jouw actieve uitvragen en binnengekomen biedingen</p>
               </div>
               <Link href="/request/new">

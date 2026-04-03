@@ -33,7 +33,6 @@ export default function AuthLogin() {
         return;
       }
       login(data.token, data.user);
-      toast({ title: t.auth.welcomeBack });
       if (data.user.isAdmin) {
         setLocation("/admin");
       } else if (data.user.role === "seller") {
