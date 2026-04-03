@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Store, TrendingDown, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe, ShieldCheck, User } from "lucide-react";
+import { Store, TrendingDown, PlusCircle, Search, Menu, X, LogIn, Coins, LogOut, Globe, ShieldCheck, User, Bell } from "lucide-react";
 import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n, FLAG_URL, LABEL, type Language } from "@/contexts/i18n";
 import { Badge } from "@/components/ui/badge";
+import { useNotifications } from "@/hooks/use-notifications";
 
 const LANGUAGES: Language[] = ["nl", "en", "de", "fr"];
 
@@ -17,6 +18,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const searchRef = useRef<HTMLInputElement>(null);
   const { user, isLoggedIn, isSeller, isBuyer, isAdmin, logout } = useUserAuth();
   const { t, lang, setLang } = useI18n();
+  const { count: notifCount } = useNotifications();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -138,7 +140,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         href="/supplier/dashboard"
                         className={cn(
                           "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
-                          location.startsWith("/supplier") && !location.startsWith("/supplier/credits") ? "text-primary" : "text-muted-foreground"
+                          location.startsWith("/supplier") && !location.startsWith("/supplier/credits") && !location.startsWith("/supplier/leads") ? "text-primary" : "text-muted-foreground"
                         )}
                       >
                         <Store className="w-4 h-4" />
@@ -151,6 +153,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       >
                         <Coins className="w-3.5 h-3.5" />
                         {user.credits}
+                      </Link>
+                      {/* Notification bell for sellers */}
+                      <Link href="/supplier/leads" className="relative flex items-center text-muted-foreground hover:text-primary transition-colors" title="Geïnteresseerde kopers">
+                        <Bell className="w-5 h-5" />
+                        {notifCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                            {notifCount > 99 ? "99+" : notifCount}
+                          </span>
+                        )}
                       </Link>
                     </>
                   )}
@@ -168,16 +179,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                   )}
                   {isBuyer && !isAdmin && (
-                    <Link
-                      href="/profile"
-                      className={cn(
-                        "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
-                        location === "/profile" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    >
-                      <User className="w-4 h-4" />
-                      <span>{user.contactName}</span>
-                    </Link>
+                    <>
+                      <Link
+                        href="/profile"
+                        className={cn(
+                          "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                          location === "/profile" ? "text-primary" : "text-muted-foreground"
+                        )}
+                      >
+                        <User className="w-4 h-4" />
+                        <span>{user.contactName}</span>
+                      </Link>
+                      {/* Notification bell for buyers */}
+                      <Link href="/my-requests" className="relative flex items-center text-muted-foreground hover:text-primary transition-colors" title="Biedingen op jouw uitvragen">
+                        <Bell className="w-5 h-5" />
+                        {notifCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                            {notifCount > 99 ? "99+" : notifCount}
+                          </span>
+                        )}
+                      </Link>
+                    </>
                   )}
                   <button
                     onClick={() => logout()}
@@ -211,6 +233,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-3">
+              {/* Notification bell mobile */}
+              {isLoggedIn && (isSeller || isBuyer) && !isAdmin && (
+                <Link
+                  href={isSeller ? "/supplier/leads" : "/my-requests"}
+                  className="relative flex items-center text-muted-foreground hover:text-primary"
+                >
+                  <Bell className="w-5 h-5" />
+                  {notifCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                      {notifCount > 99 ? "99+" : notifCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               <button
                 onClick={() => {
                   const idx = LANGUAGES.indexOf(lang);
