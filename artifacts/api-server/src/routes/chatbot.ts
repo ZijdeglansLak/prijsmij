@@ -93,9 +93,10 @@ router.post("/chatbot/message", requireAuth, async (req: any, res: any) => {
   const isAdmin = req.userIsAdmin as boolean;
   const isSeller = userRole === "seller" || isAdmin;
 
-  const { message, history } = req.body as {
+  const { message, history, lang } = req.body as {
     message: string;
     history?: Array<{ role: "user" | "assistant"; content: string }>;
+    lang?: string;
   };
 
   if (!message?.trim()) {
@@ -171,7 +172,26 @@ router.post("/chatbot/message", requireAuth, async (req: any, res: any) => {
     }
   }
 
+  const langNames: Record<string, string> = {
+    nl: "Nederlands",
+    en: "English",
+    de: "Deutsch",
+    fr: "Français",
+  };
+  const siteLang = lang && langNames[lang] ? langNames[lang] : "Nederlands";
+  const siteLangCode = lang && langNames[lang] ? lang : "nl";
+
   const systemPrompt = `Je bent Quootje, de vriendelijke en behulpzame chatbot van het PrijsMij platform. PrijsMij is een online marktplaats waar kopers (particulieren en bedrijven) uitvragen kunnen plaatsen en winkeliers/leveranciers hierop kunnen bieden.
+
+## Taalinstellingen (VERPLICHT):
+- De standaardtaal van de website is momenteel: **${siteLang}** (code: ${siteLangCode})
+- Antwoord ALTIJD in de taal die de gebruiker gebruikt in zijn/haar laatste bericht.
+- Als de gebruiker in het Nederlands schrijft, antwoord dan in het Nederlands.
+- Als de gebruiker in het Engels schrijft, antwoord dan in het Engels.
+- Als de gebruiker in het Duits schrijft, antwoord dan in het Duits.
+- Als de gebruiker in het Frans schrijft, antwoord dan in het Frans.
+- Als je de taal van de gebruiker niet kunt bepalen, gebruik dan ${siteLang}.
+- Schakel automatisch mee met de taal van de gebruiker zonder dit te benoemen.
 
 ## Jouw regels (volg deze ALTIJD zonder uitzondering):
 

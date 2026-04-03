@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n } from "@/contexts/i18n";
 import { MessageCircle, X, Send, Loader2, Bot, User } from "lucide-react";
 
 interface Message {
@@ -9,6 +10,7 @@ interface Message {
 
 export function QuootjeChatbot() {
   const { isLoggedIn, token } = useUserAuth();
+  const { lang } = useI18n();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -51,7 +53,7 @@ export function QuootjeChatbot() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: userMessage, history }),
+        body: JSON.stringify({ message: userMessage, history, lang }),
       });
 
       if (!response.ok || !response.body) {
