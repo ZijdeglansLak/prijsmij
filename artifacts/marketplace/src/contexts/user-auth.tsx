@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 export type UserRole = "buyer" | "seller";
 
@@ -67,6 +67,31 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(USER_KEY, JSON.stringify(updated));
     setUser(updated);
   }
+
+  // Refresh user data from the server on mount to pick up changes
+  // (e.g. email verification done on another device)
+  useEffect(() => {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    if (!storedToken) return;
+    fetch("/api/auth/me", { headers: { Authorization: `Bearer ${storedToken}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        const refreshed: AuthUser = {
+          id: data.id,
+          role: data.role,
+          storeName: data.storeName,
+          contactName: data.contactName,
+          email: data.email,
+          credits: data.credits,
+          isAdmin: data.isAdmin,
+          emailVerified: data.emailVerified,
+        };
+        localStorage.setItem(USER_KEY, JSON.stringify(refreshed));
+        setUser(refreshed);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <UserAuthContext.Provider value={{
