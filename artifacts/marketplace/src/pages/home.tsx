@@ -94,7 +94,7 @@ function ConsumerDashboard({ email }: { email: string }) {
             <h3 className="font-bold text-secondary mb-1 line-clamp-2">{r.title}</h3>
             {r.brand && <p className="text-xs text-muted-foreground mb-3">{r.brand}</p>}
             <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold text-primary">{r.bidCount} bod{r.bidCount === 1 ? "" : "den"}</span>
+              <span className="font-semibold text-primary">{r.bidCount} {r.bidCount === 1 ? "bieding" : "biedingen"}</span>
               {r.lowestBidPrice !== null && (
                 <span className="flex items-center gap-1 text-green-600 font-bold">
                   <TrendingDown className="w-3 h-3" />€{r.lowestBidPrice.toFixed(2)}
@@ -210,7 +210,7 @@ function SellerDashboard({ token }: { token: string }) {
                   <h4 className="font-bold text-secondary mb-1 line-clamp-2">{r.title}</h4>
                   {r.brand && <p className="text-xs text-muted-foreground mb-3">{r.brand}</p>}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-primary">{r.bidCount} bod{r.bidCount === 1 ? "" : "den"}</span>
+                    <span className="font-semibold text-primary">{r.bidCount} {r.bidCount === 1 ? "bieding" : "biedingen"}</span>
                     {r.lowestBidPrice !== null && (
                       <span className="flex items-center gap-1 text-green-600 font-bold text-xs">
                         <TrendingDown className="w-3 h-3" />€{r.lowestBidPrice.toFixed(2)}
