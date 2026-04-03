@@ -108,6 +108,7 @@ export function QuootjeChatbot() {
       }]);
     } finally {
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
   }
 
