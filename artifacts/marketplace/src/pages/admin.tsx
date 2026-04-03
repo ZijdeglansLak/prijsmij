@@ -124,6 +124,15 @@ interface CategoryField {
   options?: string[];
 }
 
+interface CategoryGroup {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 interface CategoryRecord {
   id: number;
   name: string;
@@ -132,6 +141,7 @@ interface CategoryRecord {
   description: string;
   isActive: boolean;
   activeRequestCount: number;
+  groupId?: number | null;
   fields: CategoryField[];
 }
 
@@ -142,6 +152,8 @@ function CategoriesTab() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState<number | null>(null);
+  const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const [showGroupManager, setShowGroupManager] = useState(false);
 
   // New category form
   const [name, setName] = useState("");
@@ -150,11 +162,19 @@ function CategoriesTab() {
   const [description, setDescription] = useState("");
   const [adding, setAdding] = useState(false);
 
+  function loadGroups() {
+    fetch("/api/category-groups")
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setGroups(d); })
+      .catch(() => {});
+  }
+
   useEffect(() => {
     fetch("/api/admin/categories", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => setCategories(d))
       .catch(() => toast({ title: "Fout bij laden categorieën", variant: "destructive" }));
+    loadGroups();
   }, [token]);
 
   async function handleUpdate(id: number, updates: Partial<CategoryRecord>) {
@@ -223,11 +243,28 @@ function CategoriesTab() {
         </div>
       )}
 
+      {/* Category Groups Manager */}
+      <div className="mb-8 border border-border rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setShowGroupManager(!showGroupManager)}
+          className="w-full flex justify-between items-center px-5 py-4 bg-muted/40 hover:bg-muted/70 transition-colors text-left"
+        >
+          <span className="font-semibold text-sm flex items-center gap-2">
+            <span>📁</span> Categorie-groepen beheren ({groups.length} groepen)
+          </span>
+          <span className="text-muted-foreground text-xs">{showGroupManager ? "▲" : "▼"}</span>
+        </button>
+        {showGroupManager && (
+          <CategoryGroupManager token={token} groups={groups} onGroupsChange={(g) => { setGroups(g); loadGroups(); }} />
+        )}
+      </div>
+
       <div className={`grid gap-4 ${editingId !== null ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"}`}>
         {categories.map(cat => (
           <CategoryCard
             key={cat.id}
             cat={cat}
+            groups={groups}
             isEditing={editingId === cat.id}
             isSaving={saving === cat.id}
             onEdit={() => setEditingId(editingId === cat.id ? null : cat.id)}
@@ -241,8 +278,123 @@ function CategoriesTab() {
   );
 }
 
-function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onToggleActive }: {
+function CategoryGroupManager({ token, groups, onGroupsChange }: {
+  token: string | null;
+  groups: CategoryGroup[];
+  onGroupsChange: (g: CategoryGroup[]) => void;
+}) {
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newSlug, setNewSlug] = useState("");
+  const [newIcon, setNewIcon] = useState("");
+  const [newSortOrder, setNewSortOrder] = useState("0");
+  const [editData, setEditData] = useState<Partial<CategoryGroup>>({});
+
+  async function handleCreate() {
+    if (!newName || !newSlug) { toast({ title: "Naam en slug zijn verplicht", variant: "destructive" }); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/category-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newName, slug: newSlug, icon: newIcon, sortOrder: parseInt(newSortOrder) || 0, isActive: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error ?? "Fout", variant: "destructive" }); return; }
+      onGroupsChange([...groups, data]);
+      toast({ title: "Groep aangemaakt" });
+      setIsAdding(false); setNewName(""); setNewSlug(""); setNewIcon(""); setNewSortOrder("0");
+    } catch { toast({ title: "Fout", variant: "destructive" }); }
+    finally { setSaving(false); }
+  }
+
+  async function handleUpdate(id: number) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/category-groups/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editData),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error ?? "Fout", variant: "destructive" }); return; }
+      onGroupsChange(groups.map(g => g.id === id ? data : g));
+      toast({ title: "Groep bijgewerkt" });
+      setEditingId(null);
+    } catch { toast({ title: "Fout", variant: "destructive" }); }
+    finally { setSaving(false); }
+  }
+
+  async function handleDelete(id: number) {
+    if (!confirm("Groep verwijderen? Categorieën worden niet verwijderd, alleen losgekoppeld.")) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/category-groups/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { toast({ title: "Fout", variant: "destructive" }); return; }
+      onGroupsChange(groups.filter(g => g.id !== id));
+      toast({ title: "Groep verwijderd" });
+    } catch { toast({ title: "Fout", variant: "destructive" }); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="p-5 space-y-3">
+      {groups.length === 0 && !isAdding && (
+        <p className="text-sm text-muted-foreground">Nog geen groepen aangemaakt.</p>
+      )}
+      {groups.map(g => (
+        <div key={g.id} className="flex items-center gap-3 bg-muted/30 rounded-xl px-4 py-3">
+          {editingId === g.id ? (
+            <>
+              <Input className="w-12 text-center" value={editData.icon ?? ""} onChange={e => setEditData(p => ({ ...p, icon: e.target.value }))} placeholder="📁" />
+              <Input className="flex-1" value={editData.name ?? ""} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} />
+              <Input className="w-20" value={editData.slug ?? ""} onChange={e => setEditData(p => ({ ...p, slug: e.target.value }))} />
+              <Input className="w-16" type="number" value={editData.sortOrder ?? 0} onChange={e => setEditData(p => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} />
+              <Button size="sm" disabled={saving} onClick={() => handleUpdate(g.id)}>
+                <Check className="w-3 h-3" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setEditingId(null)}><X className="w-3 h-3" /></Button>
+            </>
+          ) : (
+            <>
+              <span className="text-xl">{g.icon}</span>
+              <span className="font-semibold text-sm flex-1">{g.name}</span>
+              <span className="text-xs text-muted-foreground">{g.slug}</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded">#{g.sortOrder}</span>
+              <button onClick={() => { setEditingId(g.id); setEditData({ name: g.name, slug: g.slug, icon: g.icon, sortOrder: g.sortOrder }); }}
+                className="p-1.5 text-muted-foreground hover:bg-muted rounded-lg">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => handleDelete(g.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+      ))}
+      {isAdding && (
+        <div className="flex gap-2 bg-primary/5 rounded-xl px-4 py-3 flex-wrap">
+          <Input className="w-12 text-center" value={newIcon} onChange={e => setNewIcon(e.target.value)} placeholder="📁" />
+          <Input className="flex-1 min-w-[120px]" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Naam" />
+          <Input className="w-32" value={newSlug} onChange={e => setNewSlug(e.target.value)} placeholder="slug" />
+          <Input className="w-16" type="number" value={newSortOrder} onChange={e => setNewSortOrder(e.target.value)} placeholder="0" />
+          <Button size="sm" disabled={saving} onClick={handleCreate}>{saving ? "..." : "Aanmaken"}</Button>
+          <Button size="sm" variant="outline" onClick={() => setIsAdding(false)}>Annuleren</Button>
+        </div>
+      )}
+      <Button size="sm" variant="outline" onClick={() => setIsAdding(true)}>
+        <Plus className="w-3 h-3 mr-1" /> Nieuwe groep
+      </Button>
+    </div>
+  );
+}
+
+function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCancel, onToggleActive }: {
   cat: CategoryRecord;
+  groups: CategoryGroup[];
   isEditing: boolean;
   isSaving: boolean;
   onEdit: () => void;
@@ -253,10 +405,12 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
   const [name, setName] = useState(cat.name);
   const [icon, setIcon] = useState(cat.icon);
   const [description, setDescription] = useState(cat.description);
+  const [groupId, setGroupId] = useState<number | null>(cat.groupId ?? null);
   const [fields, setFields] = useState<CategoryField[]>(cat.fields ?? []);
 
   useEffect(() => {
     setName(cat.name); setIcon(cat.icon); setDescription(cat.description);
+    setGroupId(cat.groupId ?? null);
     setFields(cat.fields ?? []);
   }, [cat]);
 
@@ -273,6 +427,21 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
                 <Input value={name} onChange={e => setName(e.target.value)} className="flex-1 font-bold" />
               </div>
               <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving..." />
+              {groups.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Groep</p>
+                  <select
+                    className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+                    value={groupId ?? ""}
+                    onChange={e => setGroupId(e.target.value === "" ? null : parseInt(e.target.value))}
+                  >
+                    <option value="">— Geen groep —</option>
+                    {groups.map(g => (
+                      <option key={g.id} value={g.id}>{g.icon} {g.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Formuliervelden */}
@@ -282,7 +451,7 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
             </div>
 
             <div className="flex gap-2 pt-1 border-t border-border">
-              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description, fields })}>
+              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description, groupId, fields })}>
                 <Check className="w-3 h-3 mr-1" /> {isSaving ? "Opslaan..." : "Opslaan"}
               </Button>
               <Button size="sm" variant="outline" onClick={onCancel}><X className="w-3 h-3 mr-1" /> Annuleren</Button>
@@ -315,6 +484,11 @@ function CategoryCard({ cat, isEditing, isSaving, onEdit, onSave, onCancel, onTo
               <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
                 {(cat.fields ?? []).length} velden
               </span>
+              {cat.groupId && groups.find(g => g.id === cat.groupId) && (
+                <span className="text-xs bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-medium">
+                  {groups.find(g => g.id === cat.groupId)!.icon} {groups.find(g => g.id === cat.groupId)!.name}
+                </span>
+              )}
               {!cat.isActive && (
                 <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">Inactief</span>
               )}

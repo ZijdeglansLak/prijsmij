@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, SlidersHorizontal, Store, LogIn } from "lucide-react";
 import { useListRequests, useListCategories } from "@workspace/api-client-react";
+import { useCategoryGroups } from "@/hooks/use-category-groups";
 import type { ListRequestsOfferType } from "@workspace/api-client-react";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
@@ -32,6 +33,7 @@ export default function RequestsPage() {
   } as any);
 
   const { data: categories } = useListCategories();
+  const { groups: categoryGroups } = useCategoryGroups();
 
   // Non-logged-in and non-seller users see category overview
   if (!canSeeRequests) {
@@ -130,23 +132,53 @@ export default function RequestsPage() {
               {/* Categories */}
               <div className="mb-8">
                 <label className="block text-sm font-semibold mb-3">Categorie</label>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <button
                     onClick={() => setCategoryId(undefined)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${categoryId === undefined ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}
                   >
                     {t.requests.allCategories}
                   </button>
-                  {categories?.map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCategoryId(cat.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}
-                    >
-                      <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
-                      <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
-                    </button>
-                  ))}
+                  {(() => {
+                    if (!categories) return null;
+                    const hasGroups = categoryGroups.length > 0;
+                    if (!hasGroups) {
+                      return categories.map(cat => (
+                        <button key={cat.id} onClick={() => setCategoryId(cat.id)}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}>
+                          <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
+                          <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
+                        </button>
+                      ));
+                    }
+                    const grouped = categoryGroups.map(g => ({ group: g, cats: categories.filter(c => c.groupId === g.id) })).filter(g => g.cats.length > 0);
+                    const ungrouped = categories.filter(c => !c.groupId || !categoryGroups.find(g => g.id === c.groupId));
+                    return (
+                      <>
+                        {grouped.map(({ group, cats }) => (
+                          <div key={group.id}>
+                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-3 pt-3 pb-1 flex items-center gap-1">
+                              <span>{group.icon}</span> {group.name}
+                            </p>
+                            {cats.map(cat => (
+                              <button key={cat.id} onClick={() => setCategoryId(cat.id)}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}>
+                                <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
+                                <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                        {ungrouped.map(cat => (
+                          <button key={cat.id} onClick={() => setCategoryId(cat.id)}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}>
+                            <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
+                            <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
+                          </button>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 

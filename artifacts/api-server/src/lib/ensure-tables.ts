@@ -152,6 +152,18 @@ export async function ensureTables(): Promise<void> {
         ('enterprise', 'Enterprise', 250, 55000, 75000, NULL,           4)
       ON CONFLICT (bundle_key) DO NOTHING;
 
+      CREATE TABLE IF NOT EXISTS category_groups (
+        id         SERIAL PRIMARY KEY,
+        name       TEXT NOT NULL,
+        slug       TEXT NOT NULL UNIQUE,
+        icon       TEXT NOT NULL DEFAULT '📦',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_active  BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      ALTER TABLE categories ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES category_groups(id);
+
       CREATE TABLE IF NOT EXISTS static_pages (
         id         SERIAL PRIMARY KEY,
         slug       TEXT NOT NULL,

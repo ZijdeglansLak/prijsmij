@@ -10,6 +10,7 @@ import { useI18n } from "@/contexts/i18n";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useSupplierAuth } from "@/contexts/supplier-auth";
 import { useEffect, useState } from "react";
+import { useCategoryGroups } from "@/hooks/use-category-groups";
 const API = import.meta.env.BASE_URL.replace(/\/$/, "").replace("/marketplace", "/api");
 
 interface ConsumerRequest {
@@ -222,6 +223,7 @@ function SellerDashboard({ token }: { token: string }) {
 export default function Home() {
   const { data: stats } = useGetStats();
   const { data: categories } = useListCategories();
+  const { groups: categoryGroups } = useCategoryGroups();
   const { data: recentRequests } = useListRequests();
   const { t } = useI18n();
   const { user, isBuyer, isSeller, isLoggedIn } = useUserAuth();
@@ -383,8 +385,15 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {categories?.map((cat, i) => (
+          {(() => {
+            if (!categories) return null;
+            const grouped = categoryGroups.map(g => ({
+              group: g,
+              cats: categories.filter(c => c.groupId === g.id),
+            })).filter(g => g.cats.length > 0);
+            const ungrouped = categories.filter(c => !c.groupId || !categoryGroups.find(g => g.id === c.groupId));
+
+            const CategoryCard = ({ cat, i }: { cat: typeof categories[0]; i: number }) => (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -402,8 +411,44 @@ export default function Home() {
                   </div>
                 </Link>
               </motion.div>
-            ))}
-          </div>
+            );
+
+            if (grouped.length === 0) {
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  {categories.map((cat, i) => <CategoryCard key={cat.id} cat={cat} i={i} />)}
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-10">
+                {grouped.map(({ group, cats }) => (
+                  <div key={group.id}>
+                    <div className="flex items-center gap-3 mb-5">
+                      <span className="text-2xl">{group.icon}</span>
+                      <h3 className="text-xl font-bold text-secondary">{group.name}</h3>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                      {cats.map((cat, i) => <CategoryCard key={cat.id} cat={cat} i={i} />)}
+                    </div>
+                  </div>
+                ))}
+                {ungrouped.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 mb-5">
+                      <h3 className="text-xl font-bold text-secondary">Overig</h3>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                      {ungrouped.map((cat, i) => <CategoryCard key={cat.id} cat={cat} i={i} />)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </section>
 

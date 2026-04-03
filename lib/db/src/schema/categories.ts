@@ -1,6 +1,18 @@
-import { pgTable, serial, text, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, jsonb, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+export const categoryGroupsTable = pgTable("category_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  icon: text("icon").notNull().default("📦"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CategoryGroup = typeof categoryGroupsTable.$inferSelect;
 
 export const categoriesTable = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -10,6 +22,7 @@ export const categoriesTable = pgTable("categories", {
   description: text("description").notNull(),
   fields: jsonb("fields").notNull().default([]),
   isActive: boolean("is_active").notNull().default(true),
+  groupId: integer("group_id").references(() => categoryGroupsTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -13,6 +13,15 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface CategoryGroup {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -20,6 +29,7 @@ export interface Category {
   icon: string;
   description: string;
   activeRequestCount: number;
+  groupId?: number | null;
 }
 
 export type TemplateFieldType =
