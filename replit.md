@@ -19,6 +19,18 @@ Ze zijn opgeslagen als **Unicode escape-codes** (`\uD83C\uDDF3` etc.) om te voor
 - De Unicode escapes zijn equivalent: `"\uD83C\uDDF3\uD83C\uDDF1"` = 🇳🇱
 - Als de vlag verdwijnt: controleer of `FLAG` nog correct is in `i18n.tsx`
 
+## Recente Features (v2.0)
+
+### Kennisbank & Quootje Chatbot
+- **Kennisbank tab** in het beheerscherm: CRUD-beheer van kennisbank-items (titel + inhoud), alleen zichtbaar voor admins; opgeslagen in `kennisbank` DB tabel
+- **Quootje chatbot**: knop rechtsonder op alle pagina's, alleen zichtbaar voor ingelogde gebruikers
+- Chatbot gebruikt OpenAI (gpt-5.2) via Replit AI Integrations (SSE streaming)
+- Systeemprompt bevat strikte regels: geen internet, geen DB-wijzigingen, geen technische info, winkeliers zien uitvragen, kopers niet
+- Hackdetectie blokkeert gebruiker en stuurt admin e-mail
+- Nieuwe DB tabellen: `kennisbank`, `conversations`, `messages`
+- Nieuwe API routes: `GET/POST/PUT/DELETE /api/admin/kennisbank`, `POST /api/chatbot/message`
+- Lib: `@workspace/integrations-openai-ai-server` toegevoegd
+
 ## Recente Features (v1.8)
 
 ### Categorie-groepen

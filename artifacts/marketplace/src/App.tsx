@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserAuthProvider, useUserAuth } from "@/contexts/user-auth";
 import { I18nProvider } from "@/contexts/i18n";
 import { useEffect, useState } from "react";
+import { QuootjeChatbot } from "@/components/quootje-chatbot";
 
 // Pages
 import Home from "@/pages/home";
@@ -101,6 +102,7 @@ function App() {
               </SiteGate>
             </WouterRouter>
             <Toaster />
+            <QuootjeChatbot />
           </UserAuthProvider>
         </I18nProvider>
       </TooltipProvider>

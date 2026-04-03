@@ -4,14 +4,14 @@ import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText, BookOpen } from "lucide-react";
 import { useI18n, type Language } from "@/contexts/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
 import { IconPicker, IconDisplay } from "@/components/icon-picker";
 
-type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages";
+type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank";
 
 interface UserRecord {
   id: number;
@@ -96,6 +96,12 @@ function AdminDashboard() {
             <Coins className="w-4 h-4" /> Bundels
           </button>
           <button
+            onClick={() => setTab("kennisbank")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "kennisbank" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <BookOpen className="w-4 h-4" /> Kennisbank
+          </button>
+          <button
             onClick={() => setTab("pages")}
             className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "pages" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
           >
@@ -108,6 +114,7 @@ function AdminDashboard() {
         {tab === "settings" && <SettingsTab />}
         {tab === "payments" && <PaymentsTab />}
         {tab === "bundles" && <BundelsTab />}
+        {tab === "kennisbank" && <KennisbankTab />}
         {tab === "pages" && <PaginasTab />}
       </div>
     </Layout>
@@ -1964,6 +1971,230 @@ const PAGE_LANGS: Language[] = ["nl", "en", "de", "fr"];
 const LANG_LABELS: Record<Language, string> = { nl: "🇳🇱 NL", en: "🇬🇧 EN", de: "🇩🇪 DE", fr: "🇫🇷 FR" };
 
 interface PageRecord { slug: string; lang: string; title: string; content: string; }
+
+interface KennisbankEntry {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function KennisbankTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+  const [entries, setEntries] = useState<KennisbankEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+
+  useEffect(() => { loadEntries(); }, []);
+
+  async function loadEntries() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/kennisbank", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setEntries(data);
+    } catch {
+      toast({ title: "Fout", description: "Kon kennisbank niet laden", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function addEntry() {
+    if (!newTitle.trim() || !newContent.trim()) {
+      toast({ title: "Vul titel en inhoud in", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/kennisbank", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: newTitle, content: newContent }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Toegevoegd" });
+      setNewTitle("");
+      setNewContent("");
+      setIsAdding(false);
+      await loadEntries();
+    } catch {
+      toast({ title: "Fout", description: "Opslaan mislukt", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveEdit(id: number) {
+    if (!editTitle.trim() || !editContent.trim()) {
+      toast({ title: "Vul titel en inhoud in", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/kennisbank/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: editTitle, content: editContent }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Opgeslagen" });
+      setEditingId(null);
+      await loadEntries();
+    } catch {
+      toast({ title: "Fout", description: "Opslaan mislukt", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteEntry(id: number) {
+    if (!confirm("Weet je zeker dat je dit item wilt verwijderen?")) return;
+    try {
+      const res = await fetch(`/api/admin/kennisbank/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Verwijderd" });
+      await loadEntries();
+    } catch {
+      toast({ title: "Fout", description: "Verwijderen mislukt", variant: "destructive" });
+    }
+  }
+
+  function startEdit(entry: KennisbankEntry) {
+    setEditingId(entry.id);
+    setEditTitle(entry.title);
+    setEditContent(entry.content);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-secondary">Kennisbank</h2>
+          <p className="text-sm text-muted-foreground mt-1">Beheer de kennisbank die door Quootje (de chatbot) wordt gebruikt om vragen te beantwoorden.</p>
+        </div>
+        {!isAdding && (
+          <Button onClick={() => setIsAdding(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nieuw item
+          </Button>
+        )}
+      </div>
+
+      {isAdding && (
+        <div className="bg-white border border-border rounded-xl p-6 mb-6">
+          <h3 className="font-semibold text-secondary mb-4">Nieuw kennisbank-item</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-secondary mb-1">Titel</label>
+              <Input
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                placeholder="Bijv. Veelgestelde vragen over betalingen"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-secondary mb-1">Inhoud</label>
+              <textarea
+                value={newContent}
+                onChange={e => setNewContent(e.target.value)}
+                placeholder="Schrijf hier de kennisbank-tekst. Gebruik Markdown voor opmaak."
+                rows={8}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={addEntry} disabled={saving}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Opslaan
+              </Button>
+              <Button variant="outline" onClick={() => { setIsAdding(false); setNewTitle(""); setNewContent(""); }}>
+                <X className="w-4 h-4" /> Annuleren
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+      ) : entries.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <p className="font-medium">Nog geen kennisbank-items</p>
+          <p className="text-sm mt-1">Voeg je eerste item toe met de knop hierboven.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {entries.map(entry => (
+            <div key={entry.id} className="bg-white border border-border rounded-xl overflow-hidden">
+              {editingId === entry.id ? (
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1">Titel</label>
+                    <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-1">Inhoud</label>
+                    <textarea
+                      value={editContent}
+                      onChange={e => setEditContent(e.target.value)}
+                      rows={8}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => saveEdit(entry.id)} disabled={saving}>
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      Opslaan
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditingId(null)}>
+                      <X className="w-4 h-4" /> Annuleren
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-secondary">{entry.title}</h3>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-3 whitespace-pre-line">{entry.content}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Bijgewerkt: {new Date(entry.updated_at).toLocaleDateString("nl-NL")}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button variant="outline" size="sm" onClick={() => startEdit(entry)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => deleteEntry(entry.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800">
+        <strong>Tip:</strong> De inhoud van de kennisbank wordt gebruikt door Quootje om vragen van gebruikers te beantwoorden. Gebruik duidelijke en volledige teksten voor de beste resultaten.
+      </div>
+    </div>
+  );
+}
 
 function PaginasTab() {
   const { token } = useUserAuth();
