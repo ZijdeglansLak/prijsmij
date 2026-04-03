@@ -133,17 +133,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {isLoggedIn && user ? (
                 <>
                   {isSeller && !isAdmin && (
-                    <Link
-                      href="/supplier/dashboard"
-                      className={cn(
-                        "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
-                        location.startsWith("/supplier") ? "text-primary" : "text-muted-foreground"
-                      )}
-                    >
-                      <Coins className="w-4 h-4" />
-                      <span>{user.storeName ?? user.contactName}</span>
-                      <Badge variant="secondary" className="ml-1">{user.credits}</Badge>
-                    </Link>
+                    <>
+                      <Link
+                        href="/supplier/dashboard"
+                        className={cn(
+                          "flex items-center gap-2 text-sm font-semibold transition-colors hover:text-primary",
+                          location.startsWith("/supplier") && !location.startsWith("/supplier/credits") ? "text-primary" : "text-muted-foreground"
+                        )}
+                      >
+                        <Store className="w-4 h-4" />
+                        <span>{user.storeName ?? user.contactName}</span>
+                      </Link>
+                      <Link
+                        href="/supplier/credits"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-colors"
+                        title="Credits kopen"
+                      >
+                        <Coins className="w-3.5 h-3.5" />
+                        {user.credits}
+                      </Link>
+                    </>
                   )}
                   {isAdmin && (
                     <Link
@@ -284,14 +293,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {isLoggedIn && user ? (
                 <>
                   {isSeller && !isAdmin && (
-                    <Link
-                      href="/supplier/dashboard"
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <Coins className="w-5 h-5 text-primary" />
-                      {user.storeName ?? user.contactName} ({user.credits} credits)
-                    </Link>
+                    <>
+                      <Link
+                        href="/supplier/dashboard"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Store className="w-5 h-5 text-primary" />
+                        {user.storeName ?? user.contactName}
+                      </Link>
+                      <Link
+                        href="/supplier/credits"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium hover:bg-muted"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Coins className="w-5 h-5 text-primary" />
+                        <span className="text-primary font-bold">{user.credits} credits</span>
+                        <span className="text-xs text-muted-foreground ml-auto">Kopen →</span>
+                      </Link>
+                    </>
                   )}
                   <Link
                     href="/profile"
