@@ -9,7 +9,15 @@ PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gra
 - Versienummer zichtbaar in `artifacts/marketplace/src/App.tsx` (onderaan elke pagina)
 - **Regel: bij élke git push naar GitHub het versienummer met 0.1 ophogen**
 - Commit als: `release: vX.X - omschrijving`
-- Huidige versie: **v1.8** (categorie-groepen + iconen-bibliotheek + 400 seed-uitvragen)
+- Huidige versie: **v1.9** (seller dashboard fixes, API URL fix, bodden→biedingen, vlag-fix)
+
+## BELANGRIJK: Taalselectie vlaggen
+
+De vlaggen bij de taalselectie (🇳🇱 🇬🇧 🇩🇪 🇫🇷) staan in `artifacts/marketplace/src/contexts/i18n.tsx`.
+Ze zijn opgeslagen als **Unicode escape-codes** (`\uD83C\uDDF3` etc.) om te voorkomen dat ze beschadigd raken bij bestandsbewerkingen.
+- **Wijzig NOOIT** de `FLAG` constante naar emoji-literals (bijv. `"🇳🇱"`)
+- De Unicode escapes zijn equivalent: `"\uD83C\uDDF3\uD83C\uDDF1"` = 🇳🇱
+- Als de vlag verdwijnt: controleer of `FLAG` nog correct is in `i18n.tsx`
 
 ## Recente Features (v1.8)
 
