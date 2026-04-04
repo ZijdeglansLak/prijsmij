@@ -138,13 +138,13 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
     // Close the request so no other seller can buy it
     await db.update(requestsTable).set({ isClosed: true } as any).where(eq(requestsTable.id, request.id));
 
-    const [fresh] = await db
+    const newCredits = user.credits - 1;
+    await db
       .update(userAccountsTable)
-      .set({ credits: sql`${userAccountsTable.credits} - 1` })
-      .where(eq(userAccountsTable.id, userId))
-      .returning({ credits: userAccountsTable.credits });
+      .set({ credits: newCredits })
+      .where(eq(userAccountsTable.id, userId));
 
-    res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, creditsUsed: 1, remainingCredits: fresh.credits });
+    res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, creditsUsed: 1, remainingCredits: newCredits });
   } catch (err: any) {
     req.log.error({ err }, "Failed to create connection");
     const uid = (req as any).userId as number | undefined;
