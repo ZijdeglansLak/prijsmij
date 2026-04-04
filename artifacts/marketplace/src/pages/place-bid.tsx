@@ -81,8 +81,9 @@ export default function PlaceBid() {
       await queryClient.invalidateQueries({ queryKey: getListRequestsQueryKey() });
       toast({ title: "Bod geplaatst!", description: "Je bod is succesvol toegevoegd aan de uitvraag." });
       setLocation(`/requests/${requestId}`);
-    } catch (e) {
-      toast({ title: "Fout", description: "Controleer of alle velden correct zijn ingevuld.", variant: "destructive" });
+    } catch (e: any) {
+      const msg: string = e?.message ?? "Controleer of alle velden correct zijn ingevuld.";
+      toast({ title: "Bod kon niet worden geplaatst", description: msg, variant: "destructive" });
     }
   };
 

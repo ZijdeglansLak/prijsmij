@@ -404,7 +404,24 @@ router.post("/requests/:id/bids", async (req, res) => {
 
     const parsed = createBidBodySchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
+      const fieldLabels: Record<string, string> = {
+        supplierStore: "Winkelnaam",
+        supplierName: "Naam",
+        supplierEmail: "E-mailadres",
+        modelName: "Modelnaam",
+        price: "Prijs",
+        offerType: "Staat van product",
+        warrantyMonths: "Garantiemaanden",
+        deliveryDays: "Levertijd",
+        visibility: "Zichtbaarheid",
+      };
+      const firstIssue = parsed.error.issues[0];
+      const fieldKey = String(firstIssue?.path?.[0] ?? "");
+      const label = fieldLabels[fieldKey] ?? fieldKey;
+      const humanMsg = label
+        ? `Veld "${label}" is niet correct ingevuld`
+        : "Niet alle verplichte velden zijn ingevuld";
+      res.status(400).json({ error: humanMsg });
       return;
     }
 
