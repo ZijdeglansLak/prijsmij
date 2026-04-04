@@ -100,7 +100,7 @@ router.get("/supplier/me/connections", requireSeller, async (req, res) => {
       .where(eq(connectionsTable.userId, userId))
       .orderBy(connectionsTable.createdAt);
 
-    res.json(connections.map((c) => ({ id: c.id, requestId: c.requestId, bidId: c.bidId, consumerName: c.consumerName, consumerEmail: c.consumerEmail, createdAt: c.createdAt })));
+    res.json(connections.map((c) => ({ id: c.id, requestId: c.requestId, bidId: c.bidId, consumerName: c.consumerName, consumerEmail: c.consumerEmail, consumerPhone: c.consumerPhone ?? null, createdAt: c.createdAt })));
   } catch (err) { req.log.error({ err }, "Failed to get connections"); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -133,7 +133,8 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
       return;
     }
 
-    await db.insert(connectionsTable).values({ userId, requestId: request.id, bidId, consumerName: request.consumerName, consumerEmail: request.consumerEmail });
+    const consumerPhone = bid.buyerInterestPhone ?? null;
+    await db.insert(connectionsTable).values({ userId, requestId: request.id, bidId, consumerName: request.consumerName, consumerEmail: request.consumerEmail, consumerPhone });
 
     // Close the request so no other seller can buy it
     await db.update(requestsTable).set({ isClosed: true } as any).where(eq(requestsTable.id, request.id));
@@ -144,7 +145,7 @@ router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
       .set({ credits: newCredits })
       .where(eq(userAccountsTable.id, userId));
 
-    res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, creditsUsed: 1, remainingCredits: newCredits });
+    res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, consumerPhone, creditsUsed: 1, remainingCredits: newCredits });
   } catch (err: any) {
     req.log.error({ err }, "Failed to create connection");
     const uid = (req as any).userId as number | undefined;
@@ -250,6 +251,7 @@ router.get("/supplier/interested-bids", requireSeller, async (req, res) => {
         modelName: b.modelName,
         buyerName: b.buyerInterestName ?? b.buyerInterestEmail ?? "",
         buyerEmail: b.buyerInterestEmail ?? "",
+        buyerPhone: b.buyerInterestPhone ?? null,
         interestAt: b.buyerInterestAt,
         alreadyConnected: connectedBidIds.has(b.id),
       };

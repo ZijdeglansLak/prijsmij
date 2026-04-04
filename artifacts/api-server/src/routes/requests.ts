@@ -5,6 +5,7 @@ import {
   bidsTable,
   categoriesTable,
   userAccountsTable,
+  connectionsTable,
   createRequestBodySchema,
   createBidBodySchema,
 } from "@workspace/db";
@@ -316,10 +317,20 @@ router.get("/requests/:id/bids", async (req, res) => {
       .map((b) => b.id);
     if (expiredIds.length > 0) {
       db.update(bidsTable)
-        .set({ buyerInterestEmail: null, buyerInterestName: null, buyerInterestAt: null })
+        .set({ buyerInterestEmail: null, buyerInterestName: null, buyerInterestPhone: null, buyerInterestAt: null })
         .where(sql`${bidsTable.id} = ANY(ARRAY[${sql.raw(expiredIds.join(","))}])`)
         .execute()
         .catch(() => {});
+    }
+
+    // Check which bid ids have been purchased (a connection exists)
+    const bidIds = bids.map((b) => b.id);
+    let purchasedBidIds = new Set<number>();
+    if (bidIds.length > 0) {
+      const conns = await db.select({ bidId: connectionsTable.bidId })
+        .from(connectionsTable)
+        .where(sql`${connectionsTable.bidId} = ANY(ARRAY[${sql.raw(bidIds.join(","))}])`);
+      purchasedBidIds = new Set(conns.map((c) => c.bidId));
     }
 
     res.json(
@@ -348,6 +359,7 @@ router.get("/requests/:id/bids", async (req, res) => {
           isMyInterest,
           interestActive,
           interestExpiresAt,
+          isPurchased: purchasedBidIds.has(b.id),
           createdAt: b.createdAt,
         };
       })
@@ -456,7 +468,7 @@ router.post("/requests/:id/interest", async (req, res) => {
       return;
     }
 
-    const { bidId, consumerEmail, consumerName } = req.body;
+    const { bidId, consumerEmail, consumerName, consumerPhone } = req.body;
     if (!bidId || !consumerEmail) {
       res.status(400).json({ error: "bidId and consumerEmail are required" });
       return;
@@ -483,6 +495,7 @@ router.post("/requests/:id/interest", async (req, res) => {
     await db.update(bidsTable).set({
       buyerInterestEmail: consumerEmail.toLowerCase().trim(),
       buyerInterestName: consumerName ?? consumerEmail,
+      buyerInterestPhone: consumerPhone ?? null,
       buyerInterestAt: new Date(),
     }).where(eq(bidsTable.id, bidId));
 
@@ -566,6 +579,59 @@ router.get("/consumer/requests", async (req, res) => {
     }));
   } catch (err) {
     req.log.error({ err }, "Failed to get consumer requests");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /consumer/my-bids — bids where this buyer expressed interest, with connection status
+router.get("/consumer/my-bids", async (req, res) => {
+  try {
+    const email = (req.query.email as string | undefined)?.toLowerCase().trim();
+    if (!email) {
+      res.status(400).json({ error: "email query parameter required" });
+      return;
+    }
+
+    // All bids where this buyer showed interest
+    const bids = await db.select().from(bidsTable)
+      .where(eq(bidsTable.buyerInterestEmail, email))
+      .orderBy(desc(bidsTable.buyerInterestAt));
+
+    if (bids.length === 0) { res.json([]); return; }
+
+    const requestIds = [...new Set(bids.map((b) => b.requestId))];
+    const requests = await db.select().from(requestsTable).where(
+      sql`${requestsTable.id} = ANY(ARRAY[${sql.raw(requestIds.join(","))}])`
+    );
+    const reqMap = new Map(requests.map((r) => [r.id, r]));
+
+    // Check connections per bid (whether seller has purchased this lead)
+    const bidIds = bids.map((b) => b.id);
+    const connections = await db.select().from(connectionsTable).where(
+      sql`${connectionsTable.bidId} = ANY(ARRAY[${sql.raw(bidIds.join(","))}])`
+    );
+    const connMap = new Map(connections.map((c) => [c.bidId, c]));
+
+    res.json(bids.map((b) => {
+      const r = reqMap.get(b.requestId);
+      const conn = connMap.get(b.id);
+      return {
+        bidId: b.id,
+        requestId: b.requestId,
+        requestTitle: r?.title ?? "",
+        requestBrand: r?.brand ?? "",
+        supplierStore: b.supplierStore,
+        supplierName: b.supplierName,
+        supplierEmail: conn ? b.supplierEmail : null,
+        price: parseFloat(String(b.price)),
+        modelName: b.modelName,
+        interestAt: b.buyerInterestAt,
+        isPurchased: !!conn,
+        isExpired: r ? r.expiresAt < new Date() : false,
+      };
+    }));
+  } catch (err) {
+    req.log.error({ err }, "Failed to get consumer bids");
     res.status(500).json({ error: "Internal server error" });
   }
 });

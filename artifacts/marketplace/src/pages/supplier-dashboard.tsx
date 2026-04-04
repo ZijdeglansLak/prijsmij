@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
-import { Coins, Link2, ShoppingCart, LogOut, RefreshCw, Bell, CheckCircle2 } from "lucide-react";
+import { Coins, Link2, ShoppingCart, LogOut, RefreshCw, Bell, CheckCircle2, Phone, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Connection {
@@ -15,6 +15,7 @@ interface Connection {
   bidId: number;
   consumerName: string;
   consumerEmail: string;
+  consumerPhone: string | null;
   createdAt: string;
 }
 
@@ -216,19 +217,30 @@ export default function SupplierDashboard() {
               ) : (
                 <div className="divide-y">
                   {connections.map((c) => (
-                    <div key={c.id} className="py-4 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{c.consumerName}</p>
-                        <p className="text-sm text-primary font-mono">{c.consumerEmail}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(c.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}
+                    <div key={c.id} className="py-4 flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-secondary">{c.consumerName}</p>
+                        <div className="mt-1.5 space-y-1">
+                          <a href={`mailto:${c.consumerEmail}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
+                            <Mail className="w-3.5 h-3.5 shrink-0" /> {c.consumerEmail}
+                          </a>
+                          {c.consumerPhone ? (
+                            <a href={`tel:${c.consumerPhone}`} className="flex items-center gap-1.5 text-sm text-green-700 font-medium hover:underline">
+                              <Phone className="w-3.5 h-3.5 shrink-0" /> {c.consumerPhone}
+                            </a>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-sm text-muted-foreground italic">
+                              <Phone className="w-3.5 h-3.5 shrink-0" /> Geen telefoonnummer opgegeven
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Aangekocht op {new Date(c.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Link href={`/requests/${c.requestId}`}>
-                          <Button variant="outline" size="sm">{t.dashboard.viewRequest}</Button>
-                        </Link>
-                      </div>
+                      <Link href={`/requests/${c.requestId}`}>
+                        <Button variant="outline" size="sm">{t.dashboard.viewRequest}</Button>
+                      </Link>
                     </div>
                   ))}
                 </div>

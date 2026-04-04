@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useUserAuth } from "@/contexts/user-auth";
-import { Bell, ShoppingCart, ArrowRight, RefreshCw, Loader2, User, Mail, Calendar, Euro, Package } from "lucide-react";
+import { Bell, ShoppingCart, ArrowRight, RefreshCw, Loader2, User, Mail, Calendar, Euro, Package, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface LeadBid {
@@ -13,6 +13,7 @@ interface LeadBid {
   modelName: string;
   buyerName: string;
   buyerEmail: string;
+  buyerPhone: string | null;
   interestAt: string;
   alreadyConnected: boolean;
 }
@@ -95,12 +96,23 @@ export default function SupplierLeads() {
                         <span className="font-medium text-secondary">{lead.buyerName}</span>
                       </span>
                       {lead.alreadyConnected ? (
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <Mail className="w-3.5 h-3.5" /> {lead.buyerEmail}
-                        </span>
+                        <>
+                          <a href={`mailto:${lead.buyerEmail}`} className="flex items-center gap-1.5 text-primary hover:underline">
+                            <Mail className="w-3.5 h-3.5 shrink-0" /> {lead.buyerEmail}
+                          </a>
+                          {lead.buyerPhone ? (
+                            <a href={`tel:${lead.buyerPhone}`} className="flex items-center gap-1.5 text-green-700 font-medium hover:underline">
+                              <Phone className="w-3.5 h-3.5 shrink-0" /> {lead.buyerPhone}
+                            </a>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-muted-foreground italic text-xs">
+                              <Phone className="w-3.5 h-3.5" /> Geen telefoonnummer
+                            </span>
+                          )}
+                        </>
                       ) : (
                         <span className="flex items-center gap-1.5 text-muted-foreground italic text-xs">
-                          <Mail className="w-3.5 h-3.5" /> E-mailadres zichtbaar na kopen
+                          <Mail className="w-3.5 h-3.5" /> Contactgegevens zichtbaar na kopen
                         </span>
                       )}
                       <span className="flex items-center gap-1.5 text-muted-foreground">

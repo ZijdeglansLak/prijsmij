@@ -21,6 +21,7 @@ export default function RequestDetail() {
   const [interestBidId, setInterestBidId] = useState<number | null>(null);
   const [consumerEmail, setConsumerEmail] = useState("");
   const [consumerName, setConsumerName] = useState("");
+  const [consumerPhone, setConsumerPhone] = useState("");
   const [connectieBidId, setConnectieBidId] = useState<number | null>(null);
   const [connectieResult, setConnectieResult] = useState<{ consumerName: string; consumerEmail: string } | null>(null);
   const [connectieLoading, setConnectieLoading] = useState(false);
@@ -66,7 +67,7 @@ export default function RequestDetail() {
     try {
       await expressInterestMutation.mutateAsync({
         id: requestId,
-        data: { bidId: targetBidId, consumerEmail: email, consumerName: name }
+        data: { bidId: targetBidId, consumerEmail: email, consumerName: name, consumerPhone: consumerPhone || null }
       } as any);
       
       setMyInterestBidId(targetBidId);
@@ -77,6 +78,7 @@ export default function RequestDetail() {
       setInterestBidId(null);
       setConsumerEmail("");
       setConsumerName("");
+      setConsumerPhone("");
     } catch (e: any) {
       const msg = e?.data?.error ?? e?.message ?? "Er is iets misgegaan. Probeer het opnieuw.";
       toast({
@@ -285,7 +287,7 @@ export default function RequestDetail() {
                   <p className="text-muted-foreground">Ben jij de eerste die een bod plaatst?</p>
                 </div>
               ) : (
-                bids?.map((bid, index) => (
+                bids?.filter((bid) => !(bid as any).isPurchased || purchasedBidIds.has(bid.id)).map((bid, index) => (
                   <div key={bid.id} className={`bg-card rounded-2xl p-6 border transition-all hover:shadow-md ${index === 0 && filterType === 'all' ? 'border-primary/50 shadow-sm ring-1 ring-primary/10' : 'border-border'}`}>
                     {index === 0 && filterType === 'all' && (
                       <div className="absolute -translate-y-9 translate-x-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
@@ -373,7 +375,7 @@ export default function RequestDetail() {
       </div>
 
       {/* Interest Dialog */}
-      <Dialog open={!!interestBidId} onOpenChange={(o) => { if (!o) { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); } }}>
+      <Dialog open={!!interestBidId} onOpenChange={(o) => { if (!o) { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Interesse in dit bod?</DialogTitle>
@@ -402,9 +404,19 @@ export default function RequestDetail() {
                 className="h-12 text-base"
               />
             </div>
+            <div>
+              <label className="block text-sm font-bold text-secondary mb-2">Jouw telefoonnummer</label>
+              <Input 
+                type="tel" 
+                placeholder="06 12345678" 
+                value={consumerPhone}
+                onChange={(e) => setConsumerPhone(e.target.value)}
+                className="h-12 text-base"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); }}>Annuleren</Button>
+            <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>Annuleren</Button>
             <Button 
               onClick={handleInterest} 
               disabled={!consumerEmail || expressInterestMutation.isPending}

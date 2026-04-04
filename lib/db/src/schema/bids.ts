@@ -20,6 +20,7 @@ export const bidsTable = pgTable("bids", {
   visibility: text("visibility").notNull().default("public"),
   buyerInterestEmail: text("buyer_interest_email"),
   buyerInterestName: text("buyer_interest_name"),
+  buyerInterestPhone: text("buyer_interest_phone"),
   buyerInterestAt: timestamp("buyer_interest_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

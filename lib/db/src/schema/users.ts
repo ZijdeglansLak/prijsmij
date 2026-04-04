@@ -36,6 +36,7 @@ export const connectionsTable = pgTable("connections", {
   bidId: integer("bid_id").notNull(),
   consumerName: text("consumer_name").notNull(),
   consumerEmail: text("consumer_email").notNull(),
+  consumerPhone: text("consumer_phone"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
