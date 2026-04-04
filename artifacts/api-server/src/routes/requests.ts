@@ -15,6 +15,23 @@ import { writeLog } from "../lib/db-log";
 
 const router: IRouter = Router();
 
+// --- Working-days helpers for interest expiry ---
+function addBusinessDays(start: Date, days: number): Date {
+  const result = new Date(start);
+  let added = 0;
+  while (added < days) {
+    result.setDate(result.getDate() + 1);
+    const day = result.getDay(); // 0=Sun, 6=Sat
+    if (day !== 0 && day !== 6) added++;
+  }
+  return result;
+}
+
+function isInterestExpired(interestAt: Date | null | undefined): boolean {
+  if (!interestAt) return true;
+  return new Date() > addBusinessDays(new Date(interestAt), 3);
+}
+
 router.get("/requests", async (req, res) => {
   try {
     const categoryId = req.query.categoryId
@@ -293,24 +310,47 @@ router.get("/requests/:id/bids", async (req, res) => {
       .where(and(...conditions))
       .orderBy(asc(bidsTable.price));
 
+    // Expire stale interests in the background
+    const expiredIds = bids
+      .filter((b) => b.buyerInterestEmail && isInterestExpired(b.buyerInterestAt))
+      .map((b) => b.id);
+    if (expiredIds.length > 0) {
+      db.update(bidsTable)
+        .set({ buyerInterestEmail: null, buyerInterestName: null, buyerInterestAt: null })
+        .where(sql`${bidsTable.id} = ANY(ARRAY[${sql.raw(expiredIds.join(","))}])`)
+        .execute()
+        .catch(() => {});
+    }
+
     res.json(
-      bids.map((b) => ({
-        id: b.id,
-        requestId: b.requestId,
-        supplierName: b.supplierName,
-        supplierStore: b.supplierStore,
-        price: parseFloat(String(b.price)),
-        offerType: b.offerType,
-        modelName: b.modelName,
-        description: b.description,
-        warrantyMonths: b.warrantyMonths,
-        deliveryDays: b.deliveryDays,
-        imageUrl: b.imageUrl,
-        isSimilarModel: b.isSimilarModel,
-        visibility: b.visibility ?? "public",
-        hasInterest: !!b.buyerInterestEmail,
-        createdAt: b.createdAt,
-      }))
+      bids.map((b) => {
+        const expired = isInterestExpired(b.buyerInterestAt);
+        const interestActive = !!b.buyerInterestEmail && !expired;
+        const isMyInterest = interestActive && !!viewerEmail && b.buyerInterestEmail?.toLowerCase() === viewerEmail;
+        const interestExpiresAt = interestActive && b.buyerInterestAt
+          ? addBusinessDays(new Date(b.buyerInterestAt), 3).toISOString()
+          : null;
+        return {
+          id: b.id,
+          requestId: b.requestId,
+          supplierName: b.supplierName,
+          supplierStore: b.supplierStore,
+          price: parseFloat(String(b.price)),
+          offerType: b.offerType,
+          modelName: b.modelName,
+          description: b.description,
+          warrantyMonths: b.warrantyMonths,
+          deliveryDays: b.deliveryDays,
+          imageUrl: b.imageUrl,
+          isSimilarModel: b.isSimilarModel,
+          visibility: b.visibility ?? "public",
+          hasInterest: interestActive,
+          isMyInterest,
+          interestActive,
+          interestExpiresAt,
+          createdAt: b.createdAt,
+        };
+      })
     );
   } catch (err) {
     req.log.error({ err }, "Failed to list bids");
@@ -338,6 +378,15 @@ router.post("/requests/:id/bids", async (req, res) => {
 
     if (request.expiresAt < new Date()) {
       res.status(400).json({ error: "This request has expired" });
+      return;
+    }
+
+    // Block new bids if any existing bid has active (non-expired) buyer interest
+    const activeBids = await db.select({ id: bidsTable.id, buyerInterestAt: bidsTable.buyerInterestAt, buyerInterestEmail: bidsTable.buyerInterestEmail })
+      .from(bidsTable).where(eq(bidsTable.requestId, requestId));
+    const hasActiveLock = activeBids.some((b) => b.buyerInterestEmail && !isInterestExpired(b.buyerInterestAt));
+    if (hasActiveLock) {
+      res.status(423).json({ error: "Er is al een koper die interesse heeft getoond. Wacht op uitkomst of probeer het later opnieuw." });
       return;
     }
 
@@ -420,6 +469,12 @@ router.post("/requests/:id/interest", async (req, res) => {
 
     if (!bid) {
       res.status(404).json({ error: "Bid not found" });
+      return;
+    }
+
+    // Block if this bid already has active (non-expired) interest
+    if (bid.buyerInterestEmail && !isInterestExpired(bid.buyerInterestAt)) {
+      res.status(409).json({ error: "Er is al interesse getoond voor dit bod. Wacht op reactie van de leverancier." });
       return;
     }
 

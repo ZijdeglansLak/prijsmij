@@ -25,6 +25,7 @@ export default function RequestDetail() {
   const [connectieResult, setConnectieResult] = useState<{ consumerName: string; consumerEmail: string } | null>(null);
   const [connectieLoading, setConnectieLoading] = useState(false);
   const [purchasedBidIds, setPurchasedBidIds] = useState<Set<number>>(new Set());
+  const [myInterestBidId, setMyInterestBidId] = useState<number | null>(null);
 
   const { data: request, isLoading } = useGetRequestById(requestId);
   const { user, isSeller } = useUserAuth();
@@ -49,6 +50,13 @@ export default function RequestDetail() {
       .catch(() => {});
   }, [isLoggedIn, token, requestId]);
 
+  // Sync myInterestBidId from loaded bids (persists across page reloads)
+  useEffect(() => {
+    if (!bids) return;
+    const mine = (bids as any[]).find((b) => b.isMyInterest);
+    if (mine) setMyInterestBidId(mine.id);
+  }, [bids]);
+
   const handleInterest = async (bidId?: number) => {
     const targetBidId = bidId ?? interestBidId;
     const email = user?.email ?? consumerEmail;
@@ -56,11 +64,12 @@ export default function RequestDetail() {
     if (!targetBidId || !email) return;
     
     try {
-      const result = await expressInterestMutation.mutateAsync({
+      await expressInterestMutation.mutateAsync({
         id: requestId,
         data: { bidId: targetBidId, consumerEmail: email, consumerName: name }
       } as any);
       
+      setMyInterestBidId(targetBidId);
       toast({
         title: "Interesse bevestigd!",
         description: `De verkoper is op de hoogte gebracht en neemt snel contact met je op.`,
@@ -317,10 +326,16 @@ export default function RequestDetail() {
                           {formatCurrency(bid.price)}
                         </div>
                         <div className="flex flex-col gap-2 w-full sm:w-auto">
-                          {!isSeller && (
+                          {!isSeller && myInterestBidId === bid.id && (
+                            <div className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 w-full sm:w-auto justify-center">
+                              <Clock className="w-4 h-4 shrink-0" />
+                              Wacht op reactie van de leverancier
+                            </div>
+                          )}
+                          {!isSeller && myInterestBidId !== bid.id && (
                             <Button 
                               onClick={() => user ? handleInterest(bid.id) : setInterestBidId(bid.id)}
-                              disabled={expressInterestMutation.isPending}
+                              disabled={expressInterestMutation.isPending || myInterestBidId !== null}
                               className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
                             >
                               {expressInterestMutation.isPending ? "..." : "Toon Interesse"}
