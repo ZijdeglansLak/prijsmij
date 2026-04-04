@@ -441,7 +441,7 @@ export default function Home() {
                 {grouped.map(({ group, cats }) => (
                   <div key={group.id}>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-5 h-5 flex-shrink-0 opacity-70"><IconDisplay value={group.icon} size="sm" /></div>
+                      <div className="flex-shrink-0 opacity-70"><IconDisplay value={group.icon} size="sm" /></div>
                       <h3 className="text-sm font-bold text-secondary uppercase tracking-wide">{group.name}</h3>
                       <div className="flex-1 h-px bg-border" />
                     </div>
