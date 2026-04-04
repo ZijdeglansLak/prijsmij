@@ -48,3 +48,9 @@ id = "cwxxRTBDpN1I4OpFWPJkS"
 uri = "file://artifacts/marketplace/public/images/hero-bg-original.png"
 type = "image"
 title = "hero-bg-original.png"
+
+[[outputs]]
+id = "N-pCNjSGTlU-ONTkAFHbG"
+uri = "file://artifacts/marketplace/public/prijsmij-logo.svg"
+type = "image"
+title = "PrijsMij logo (SVG)"
