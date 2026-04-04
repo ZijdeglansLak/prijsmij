@@ -388,13 +388,13 @@ export default function Home() {
         </section>
       )}
 
-      {/* Categories Section */}
-      <section className="py-20 bg-white">
+      {/* Categories Section — v2.3 compact layout */}
+      <section className="py-14 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
+          <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-3xl font-bold mb-4">{t.home.what}</h2>
-              <p className="text-muted-foreground">{t.home.whatSub}</p>
+              <h2 className="text-2xl font-bold mb-1">{t.home.what}</h2>
+              <p className="text-sm text-muted-foreground">{t.home.whatSub}</p>
             </div>
           </div>
 
@@ -408,19 +408,21 @@ export default function Home() {
 
             const CategoryCard = ({ cat, i }: { cat: typeof categories[0]; i: number }) => (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 4 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ delay: Math.min(i * 0.03, 0.25) }}
                 key={cat.id}
               >
                 <Link href={`/requests?categoryId=${cat.id}`} className="group block h-full">
-                  <div className="bg-muted/30 rounded-2xl p-6 h-full border border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 text-center">
-                    <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-sm flex items-center justify-center p-2 mb-4 group-hover:scale-110 group-hover:shadow-md transition-all overflow-hidden">
-                      <IconDisplay value={cat.icon} size="lg" />
+                  <div className="flex items-center gap-2.5 bg-muted/40 rounded-xl px-3 py-2.5 h-full border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-all duration-200">
+                    <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform overflow-hidden">
+                      <IconDisplay value={cat.icon} size="sm" />
                     </div>
-                    <h3 className="font-bold text-lg text-secondary mb-1">{cat.name}</h3>
-                    <p className="text-xs font-semibold text-primary">{cat.activeRequestCount} {t.home.active}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-secondary leading-tight truncate">{cat.name}</p>
+                      <p className="text-[11px] text-primary font-medium leading-tight">{cat.activeRequestCount} {t.home.active}</p>
+                    </div>
                   </div>
                 </Link>
               </motion.div>
@@ -428,33 +430,33 @@ export default function Home() {
 
             if (grouped.length === 0) {
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
                   {categories.map((cat, i) => <CategoryCard key={cat.id} cat={cat} i={i} />)}
                 </div>
               );
             }
 
             return (
-              <div className="space-y-10">
+              <div className="space-y-7">
                 {grouped.map(({ group, cats }) => (
                   <div key={group.id}>
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-8 h-8 flex-shrink-0"><IconDisplay value={group.icon} size="sm" /></div>
-                      <h3 className="text-xl font-bold text-secondary">{group.name}</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-5 h-5 flex-shrink-0 opacity-70"><IconDisplay value={group.icon} size="sm" /></div>
+                      <h3 className="text-sm font-bold text-secondary uppercase tracking-wide">{group.name}</h3>
                       <div className="flex-1 h-px bg-border" />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
                       {cats.map((cat, i) => <CategoryCard key={cat.id} cat={cat} i={i} />)}
                     </div>
                   </div>
                 ))}
                 {ungrouped.length > 0 && (
                   <div>
-                    <div className="flex items-center gap-3 mb-5">
-                      <h3 className="text-xl font-bold text-secondary">Overig</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-sm font-bold text-secondary uppercase tracking-wide">Overig</h3>
                       <div className="flex-1 h-px bg-border" />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
                       {ungrouped.map((cat, i) => <CategoryCard key={cat.id} cat={cat} i={i} />)}
                     </div>
                   </div>
