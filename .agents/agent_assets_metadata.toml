@@ -54,3 +54,9 @@ id = "N-pCNjSGTlU-ONTkAFHbG"
 uri = "file://artifacts/marketplace/public/prijsmij-logo.svg"
 type = "image"
 title = "PrijsMij logo (SVG)"
+
+[[outputs]]
+id = "0DP7HLf5VdBrDoaJ2F9hi"
+uri = "file://artifacts/marketplace/public/prijsmij-logo.png"
+type = "image"
+title = "PrijsMij logo — hoge resolutie PNG (1136×480 px)"
