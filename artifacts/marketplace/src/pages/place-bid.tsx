@@ -82,7 +82,10 @@ export default function PlaceBid() {
       toast({ title: "Bod geplaatst!", description: "Je bod is succesvol toegevoegd aan de uitvraag." });
       setLocation(`/requests/${requestId}`);
     } catch (e: any) {
-      const msg: string = e?.message ?? "Controleer of alle velden correct zijn ingevuld.";
+      const msg: string =
+        (e?.data as any)?.error ??
+        (e?.message as string | undefined)?.replace(/^HTTP \d+ \w+:\s*/i, "") ??
+        "Controleer of alle velden correct zijn ingevuld.";
       toast({ title: "Bod kon niet worden geplaatst", description: msg, variant: "destructive" });
     }
   };
