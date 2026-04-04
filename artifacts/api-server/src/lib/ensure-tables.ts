@@ -255,6 +255,15 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE icon_library ALTER COLUMN object_path DROP NOT NULL`).catch(() => {});
     await client.query(`ALTER TABLE icon_library ADD COLUMN IF NOT EXISTS emoji TEXT`).catch(() => {});
 
+    // Schema migrations — add columns that may be missing in older production databases
+    await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'public'`).catch(() => {});
+    await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS buyer_interest_email TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS buyer_interest_name TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS buyer_interest_phone TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS buyer_interest_at TIMESTAMP`).catch(() => {});
+    await client.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS is_closed BOOLEAN NOT NULL DEFAULT FALSE`).catch(() => {});
+    await client.query(`ALTER TABLE connections ADD COLUMN IF NOT EXISTS consumer_phone TEXT`).catch(() => {});
+
     // system_logs table
     await client.query(`
       CREATE TABLE IF NOT EXISTS system_logs (
