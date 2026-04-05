@@ -456,26 +456,34 @@ export default function RequestDetail() {
           <div className="py-4 space-y-4">
             {!isRequester && (
               <>
-                <div>
-                  <label className="block text-sm font-bold text-secondary mb-2">Jouw naam</label>
-                  <Input 
-                    type="text"
-                    placeholder="Jan Jansen" 
-                    value={consumerName}
-                    onChange={(e) => setConsumerName(e.target.value)}
-                    className="h-12 text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
-                  <Input 
-                    type="email" 
-                    placeholder="naam@voorbeeld.nl" 
-                    value={consumerEmail}
-                    onChange={(e) => setConsumerEmail(e.target.value)}
-                    className="h-12 text-base"
-                  />
-                </div>
+                {user ? (
+                  <div className="bg-muted/40 rounded-lg px-4 py-3 text-sm text-muted-foreground">
+                    <span className="font-medium text-secondary">{user.contactName}</span> &middot; {user.email}
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-bold text-secondary mb-2">Jouw naam</label>
+                      <Input 
+                        type="text"
+                        placeholder="Jan Jansen" 
+                        value={consumerName}
+                        onChange={(e) => setConsumerName(e.target.value)}
+                        className="h-12 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
+                      <Input 
+                        type="email" 
+                        placeholder="naam@voorbeeld.nl" 
+                        value={consumerEmail}
+                        onChange={(e) => setConsumerEmail(e.target.value)}
+                        className="h-12 text-base"
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
             {isRequester && (
@@ -501,7 +509,7 @@ export default function RequestDetail() {
             <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>Annuleren</Button>
             <Button 
               onClick={() => handleInterest()}
-              disabled={!consumerEmail || expressInterestMutation.isPending || (isRequester && !consumerPhone)}
+              disabled={!(user?.email ?? consumerEmail) || expressInterestMutation.isPending || (isRequester && !consumerPhone)}
               className="bg-primary hover:bg-primary/90 text-white"
             >
               {expressInterestMutation.isPending ? "Verwerken..." : isRequester ? "Bevestig acceptatie" : "Interesse bevestigen"}

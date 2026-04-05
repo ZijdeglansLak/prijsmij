@@ -5,11 +5,15 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!process.env.ADMIN_PASSWORD) {
+  console.warn("[SECURITY] ADMIN_PASSWORD env var is not set — admin routes are disabled!");
+}
 
 const requireAdmin: RequestHandler = (req, res, next) => {
-  const auth = req.headers["x-admin-password"] || req.query.adminPassword;
-  if (auth !== ADMIN_PASSWORD) {
+  if (!ADMIN_PASSWORD) { res.status(503).json({ error: "Admin niet geconfigureerd" }); return; }
+  const auth = req.headers["x-admin-password"];
+  if (!auth || auth !== ADMIN_PASSWORD) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

@@ -117,15 +117,11 @@ export async function sendNewRequestNotification(to: string, storeName: string, 
   }
 }
 
-export async function sendAccountLockedEmail(to: string, name: string, attemptedPasswords: string[]) {
+export async function sendAccountLockedEmail(to: string, name: string, attempts: number) {
   const subject = "Je account is tijdelijk geblokkeerd — PrijsMij";
-  const passwordList = attemptedPasswords.map((p, i) => `  ${i + 1}. ${p}`).join("\n");
   const text = `Hoi ${name},
 
-Je account is tijdelijk geblokkeerd voor 15 minuten omdat er 3 keer achter elkaar een verkeerd wachtwoord is ingevoerd.
-
-De volgende wachtwoorden werden geprobeerd:
-${passwordList}
+Je account is tijdelijk geblokkeerd voor 15 minuten omdat er ${attempts} keer achter elkaar een verkeerd wachtwoord is ingevoerd.
 
 Als jij dit bent geweest en je wachtwoord bent vergeten, kun je het opnieuw instellen via de "Wachtwoord vergeten" optie op de inlogpagina.
 

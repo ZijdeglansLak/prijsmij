@@ -487,9 +487,10 @@ router.post("/requests/:id/interest", requireVerifiedEmail, async (req, res) => 
       return;
     }
 
-    const { bidId, consumerEmail, consumerName, consumerPhone } = req.body;
+    const { bidId, consumerName, consumerPhone } = req.body;
+    const consumerEmail = (req as any).userEmail as string;
     if (!bidId || !consumerEmail) {
-      res.status(400).json({ error: "bidId and consumerEmail are required" });
+      res.status(400).json({ error: "bidId is required" });
       return;
     }
 

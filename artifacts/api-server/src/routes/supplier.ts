@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, categoriesTable, creditBundlesTable, siteSettingsTable } from "@workspace/db";
+import { userAccountsTable, connectionsTable, requestsTable, bidsTable, categoriesTable, creditBundlesTable, siteSettingsTable } from "@workspace/db";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, requireSeller, requireVerifiedEmail } from "./auth";
 import { writeLog } from "../lib/db-log";
@@ -41,20 +41,18 @@ router.post("/supplier/login", async (req, res) => {
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      const prevPasswords: string[] = JSON.parse((user as any).failedPasswords ?? "[]");
-      const updatedPasswords = [...prevPasswords, password];
       const newAttempts = ((user as any).failedLoginAttempts ?? 0) + 1;
 
       if (newAttempts >= LOGIN_MAX_ATTEMPTS) {
         const lockExpires = new Date(Date.now() + LOGIN_LOCKOUT_MINUTES * 60 * 1000);
         await db.update(userAccountsTable)
-          .set({ failedLoginAttempts: newAttempts, lockedUntil: lockExpires, failedPasswords: JSON.stringify(updatedPasswords) } as any)
+          .set({ failedLoginAttempts: newAttempts, lockedUntil: lockExpires } as any)
           .where(eq(userAccountsTable.id, user.id));
-        sendAccountLockedEmail(user.email, user.contactName, updatedPasswords).catch(() => {});
+        sendAccountLockedEmail(user.email, user.contactName, newAttempts).catch(() => {});
         res.status(429).json({ error: `Je account is tijdelijk geblokkeerd voor ${LOGIN_LOCKOUT_MINUTES} minuten vanwege te veel mislukte pogingen. We hebben je een e-mail gestuurd.` });
       } else {
         await db.update(userAccountsTable)
-          .set({ failedLoginAttempts: newAttempts, failedPasswords: JSON.stringify(updatedPasswords) } as any)
+          .set({ failedLoginAttempts: newAttempts } as any)
           .where(eq(userAccountsTable.id, user.id));
         const left = LOGIN_MAX_ATTEMPTS - newAttempts;
         res.status(401).json({ error: `Onjuist wachtwoord. Nog ${left} poging${left === 1 ? "" : "en"} voor je account tijdelijk wordt geblokkeerd.` });
@@ -64,7 +62,7 @@ router.post("/supplier/login", async (req, res) => {
 
     // Successful login — reset counters
     await db.update(userAccountsTable)
-      .set({ failedLoginAttempts: 0, lockedUntil: null, failedPasswords: "[]" } as any)
+      .set({ failedLoginAttempts: 0, lockedUntil: null } as any)
       .where(eq(userAccountsTable.id, user.id));
 
     res.json({ token: makeSupplierToken(user), supplier: toSupplierResponse(user) });
@@ -106,26 +104,6 @@ router.get("/supplier/bundles", async (_req, res) => {
   }
 });
 
-// POST /supplier/credits/purchase — sellers only
-router.post("/supplier/credits/purchase", requireSeller, async (req, res) => {
-  try {
-    const userId = (req as any).userId as number;
-    const { bundleId } = req.body;
-
-    const [bundle] = await db.select().from(creditBundlesTable).where(eq(creditBundlesTable.bundleKey, String(bundleId))).limit(1);
-    if (!bundle || !bundle.isActive) { res.status(400).json({ error: "Onbekende bundel" }); return; }
-
-    await db.insert(creditPurchasesTable).values({ userId, bundleName: bundle.name, creditsAmount: bundle.credits, amountPaidCents: bundle.priceCents });
-
-    const [fresh] = await db
-      .update(userAccountsTable)
-      .set({ credits: sql`${userAccountsTable.credits} + ${bundle.credits}` })
-      .where(eq(userAccountsTable.id, userId))
-      .returning({ credits: userAccountsTable.credits });
-
-    res.json({ success: true, creditsAdded: bundle.credits, newBalance: fresh.credits, bundleName: bundle.name });
-  } catch (err) { req.log.error({ err }, "Failed to purchase credits"); res.status(500).json({ error: "Internal server error" }); }
-});
 
 // GET /supplier/me/connections — sellers only
 router.get("/supplier/me/connections", requireSeller, async (req, res) => {
@@ -171,16 +149,13 @@ router.post("/bids/:bidId/connect", requireSeller, requireVerifiedEmail, async (
     }
 
     const consumerPhone = bid.buyerInterestPhone ?? null;
-    await db.insert(connectionsTable).values({ userId, requestId: request.id, bidId, consumerName: request.consumerName, consumerEmail: request.consumerEmail, consumerPhone });
-
-    // Close the request so no other seller can buy it
-    await db.update(requestsTable).set({ isClosed: true } as any).where(eq(requestsTable.id, request.id));
-
     const newCredits = user.credits - 1;
-    await db
-      .update(userAccountsTable)
-      .set({ credits: newCredits })
-      .where(eq(userAccountsTable.id, userId));
+
+    await db.transaction(async (tx) => {
+      await tx.insert(connectionsTable).values({ userId, requestId: request.id, bidId, consumerName: request.consumerName, consumerEmail: request.consumerEmail, consumerPhone });
+      await tx.update(requestsTable).set({ isClosed: true } as any).where(eq(requestsTable.id, request.id));
+      await tx.update(userAccountsTable).set({ credits: newCredits }).where(eq(userAccountsTable.id, userId));
+    });
 
     res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, consumerPhone, creditsUsed: 1, remainingCredits: newCredits });
   } catch (err: any) {

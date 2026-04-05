@@ -10,6 +10,9 @@ import { writeLog } from "../lib/db-log";
 
 const router: IRouter = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "prijsmij-secret-change-in-prod";
+if (!process.env.JWT_SECRET) {
+  console.warn("[SECURITY] JWT_SECRET env var is not set — using insecure fallback. Set JWT_SECRET in production!");
+}
 
 type Lang = "nl" | "en" | "de" | "fr";
 
@@ -186,30 +189,19 @@ router.post("/auth/login", async (req, res) => {
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      // Track failed attempt
-      const prevPasswords: string[] = JSON.parse((user as any).failedPasswords ?? "[]");
-      const updatedPasswords = [...prevPasswords, password];
       const newAttempts = ((user as any).failedLoginAttempts ?? 0) + 1;
 
       if (newAttempts >= LOGIN_MAX_ATTEMPTS) {
-        // Lock the account
         const lockExpires = new Date(Date.now() + LOGIN_LOCKOUT_MINUTES * 60 * 1000);
         await db.update(userAccountsTable)
-          .set({
-            failedLoginAttempts: newAttempts,
-            lockedUntil: lockExpires,
-            failedPasswords: JSON.stringify(updatedPasswords),
-          } as any)
+          .set({ failedLoginAttempts: newAttempts, lockedUntil: lockExpires } as any)
           .where(eq(userAccountsTable.id, user.id));
         await writeLog({ category: "LOGIN", message: `Account vergrendeld na ${LOGIN_MAX_ATTEMPTS} mislukte pogingen`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-LOCKED" });
-        sendAccountLockedEmail(user.email, user.contactName, updatedPasswords).catch(() => {});
+        sendAccountLockedEmail(user.email, user.contactName, newAttempts).catch(() => {});
         res.status(429).json({ error: `Je account is tijdelijk geblokkeerd voor ${LOGIN_LOCKOUT_MINUTES} minuten vanwege te veel mislukte pogingen. We hebben je een e-mail gestuurd.` });
       } else {
         await db.update(userAccountsTable)
-          .set({
-            failedLoginAttempts: newAttempts,
-            failedPasswords: JSON.stringify(updatedPasswords),
-          } as any)
+          .set({ failedLoginAttempts: newAttempts } as any)
           .where(eq(userAccountsTable.id, user.id));
         await writeLog({ category: "LOGIN", message: `Mislukte inlogpoging ${newAttempts}/${LOGIN_MAX_ATTEMPTS}`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-WRONG-PW" });
         const left = LOGIN_MAX_ATTEMPTS - newAttempts;
