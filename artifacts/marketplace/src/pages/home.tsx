@@ -12,6 +12,7 @@ import { useSupplierAuth } from "@/contexts/supplier-auth";
 import { useEffect, useState } from "react";
 import { useCategoryGroups } from "@/hooks/use-category-groups";
 import { IconDisplay } from "@/components/icon-picker";
+import { PromoBanner } from "@/components/promo-banner";
 const API = "/api";
 
 interface ConsumerRequest {
@@ -247,6 +248,7 @@ export default function Home() {
 
   return (
     <Layout>
+      <PromoBanner />
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
