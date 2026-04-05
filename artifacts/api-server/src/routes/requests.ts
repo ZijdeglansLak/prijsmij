@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireVerifiedEmail, requireSeller } from "./auth";
 import { db } from "@workspace/db";
 import {
   requestsTable,
@@ -123,7 +124,7 @@ router.get("/requests", async (req, res) => {
   }
 });
 
-router.post("/requests", async (req, res) => {
+router.post("/requests", requireVerifiedEmail, async (req, res) => {
   try {
     const parsed = createRequestBodySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -371,7 +372,7 @@ router.get("/requests/:id/bids", async (req, res) => {
   }
 });
 
-router.post("/requests/:id/bids", async (req, res) => {
+router.post("/requests/:id/bids", requireSeller, requireVerifiedEmail, async (req, res) => {
   try {
     const requestId = parseInt(req.params.id);
     if (isNaN(requestId)) {
@@ -478,7 +479,7 @@ router.post("/requests/:id/bids", async (req, res) => {
   }
 });
 
-router.post("/requests/:id/interest", async (req, res) => {
+router.post("/requests/:id/interest", requireVerifiedEmail, async (req, res) => {
   try {
     const requestId = parseInt(req.params.id);
     if (isNaN(requestId)) {

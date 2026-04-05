@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTable, bidsTable, categoriesTable, creditBundlesTable, siteSettingsTable } from "@workspace/db";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
-import { requireAuth, requireSeller } from "./auth";
+import { requireAuth, requireSeller, requireVerifiedEmail } from "./auth";
 import { writeLog } from "../lib/db-log";
 import { sendAccountLockedEmail } from "../services/email";
 import bcrypt from "bcryptjs";
@@ -142,7 +142,7 @@ router.get("/supplier/me/connections", requireSeller, async (req, res) => {
 });
 
 // POST /bids/:bidId/connect — use 1 credit to reveal consumer contact (sellers only)
-router.post("/bids/:bidId/connect", requireSeller, async (req, res) => {
+router.post("/bids/:bidId/connect", requireSeller, requireVerifiedEmail, async (req, res) => {
   try {
     const userId = (req as any).userId as number;
     const bidId = parseInt(req.params.bidId);

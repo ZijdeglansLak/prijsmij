@@ -60,6 +60,24 @@ export function requireAdmin(req: any, res: any, next: any) {
   });
 }
 
+export function requireVerifiedEmail(req: any, res: any, next: any) {
+  requireAuth(req, res, async () => {
+    try {
+      const [user] = await db
+        .select({ emailVerified: userAccountsTable.emailVerified })
+        .from(userAccountsTable)
+        .where(eq(userAccountsTable.id, req.userId));
+      if (!user?.emailVerified) {
+        res.status(403).json({ error: "Bevestig eerst je e-mailadres voordat je deze actie kunt uitvoeren.", code: "EMAIL_NOT_VERIFIED" });
+        return;
+      }
+      next();
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+}
+
 function makeToken(user: { id: number; email: string; role: string; isAdmin: boolean }) {
   return jwt.sign({ userId: user.id, email: user.email, role: user.role, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: "30d" });
 }

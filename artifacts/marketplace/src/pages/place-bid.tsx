@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowLeft, Gavel, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useSupplierAuth } from "@/contexts/supplier-auth";
+import { useUserAuth } from "@/contexts/user-auth";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
 
 export default function PlaceBid() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,7 @@ export default function PlaceBid() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { supplier, isLoggedIn } = useSupplierAuth();
+  const { user } = useUserAuth();
 
   const queryClient = useQueryClient();
   const { data: request, isLoading } = useGetRequestById(requestId);
@@ -91,6 +94,10 @@ export default function PlaceBid() {
   };
 
   if (isLoading || !request) return <Layout><div className="p-20 text-center">Laden...</div></Layout>;
+
+  if (user && !user.emailVerified) {
+    return <Layout><EmailVerificationBanner /></Layout>;
+  }
 
   return (
     <Layout>

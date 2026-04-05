@@ -10,6 +10,7 @@ import { useI18n } from "@/contexts/i18n";
 import { useUserAuth } from "@/contexts/user-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ChevronLeft, Check, Sparkles, LogIn } from "lucide-react";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { Link } from "wouter";
 
 export default function CreateRequest() {
@@ -107,6 +108,10 @@ export default function CreateRequest() {
         </div>
       </Layout>
     );
+  }
+
+  if (user && !user.emailVerified) {
+    return <Layout><EmailVerificationBanner /></Layout>;
   }
 
   if (isSeller) {
