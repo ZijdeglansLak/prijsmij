@@ -117,6 +117,32 @@ export async function sendNewRequestNotification(to: string, storeName: string, 
   }
 }
 
+export async function sendAccountLockedEmail(to: string, name: string, attemptedPasswords: string[]) {
+  const subject = "Je account is tijdelijk geblokkeerd — PrijsMij";
+  const passwordList = attemptedPasswords.map((p, i) => `  ${i + 1}. ${p}`).join("\n");
+  const text = `Hoi ${name},
+
+Je account is tijdelijk geblokkeerd voor 15 minuten omdat er 3 keer achter elkaar een verkeerd wachtwoord is ingevoerd.
+
+De volgende wachtwoorden werden geprobeerd:
+${passwordList}
+
+Als jij dit bent geweest en je wachtwoord bent vergeten, kun je het opnieuw instellen via de "Wachtwoord vergeten" optie op de inlogpagina.
+
+Als jij dit NIET bent geweest, raden we aan je wachtwoord zo snel mogelijk te wijzigen zodra de blokkering is opgeheven (na 15 minuten).
+
+Met vriendelijke groet,
+Het PrijsMij-team`;
+
+  const transporter = getTransporter();
+  if (transporter) {
+    await transporter.sendMail({ from: FROM, to, subject, text });
+    console.log(`[EMAIL] Account locked notification sent to ${to}`);
+  } else {
+    console.log(`[EMAIL-DEV] Account locked notification for ${to}:\n${text}`);
+  }
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, token: string, lang: Lang = "nl") {
   const baseUrl = process.env.APP_URL ?? "https://prijsmij.nl";
   const link = `${baseUrl}/auth/reset-password?token=${token}`;

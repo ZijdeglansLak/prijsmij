@@ -4,6 +4,7 @@ import { userAccountsTable, creditPurchasesTable, connectionsTable, requestsTabl
 import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, requireSeller } from "./auth";
 import { writeLog } from "../lib/db-log";
+import { sendAccountLockedEmail } from "../services/email";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -18,6 +19,9 @@ function toSupplierResponse(user: typeof userAccountsTable.$inferSelect) {
   return { id: user.id, storeName: user.storeName ?? user.contactName, contactName: user.contactName, email: user.email, credits: user.credits };
 }
 
+const LOGIN_MAX_ATTEMPTS = 3;
+const LOGIN_LOCKOUT_MINUTES = 15;
+
 // POST /supplier/login — public
 router.post("/supplier/login", async (req, res) => {
   try {
@@ -27,8 +31,41 @@ router.post("/supplier/login", async (req, res) => {
     const [user] = await db.select().from(userAccountsTable).where(eq(userAccountsTable.email, email.toLowerCase().trim()));
     if (!user || user.role !== "seller") { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
 
+    // Check lockout
+    const lockedUntil = (user as any).lockedUntil as Date | null;
+    if (lockedUntil && lockedUntil > new Date()) {
+      const remaining = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
+      res.status(429).json({ error: `Je account is tijdelijk geblokkeerd vanwege te veel mislukte pogingen. Probeer het over ${remaining} minuut${remaining === 1 ? "" : "en"} opnieuw.` });
+      return;
+    }
+
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) { res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return; }
+    if (!valid) {
+      const prevPasswords: string[] = JSON.parse((user as any).failedPasswords ?? "[]");
+      const updatedPasswords = [...prevPasswords, password];
+      const newAttempts = ((user as any).failedLoginAttempts ?? 0) + 1;
+
+      if (newAttempts >= LOGIN_MAX_ATTEMPTS) {
+        const lockExpires = new Date(Date.now() + LOGIN_LOCKOUT_MINUTES * 60 * 1000);
+        await db.update(userAccountsTable)
+          .set({ failedLoginAttempts: newAttempts, lockedUntil: lockExpires, failedPasswords: JSON.stringify(updatedPasswords) } as any)
+          .where(eq(userAccountsTable.id, user.id));
+        sendAccountLockedEmail(user.email, user.contactName, updatedPasswords).catch(() => {});
+        res.status(429).json({ error: `Je account is tijdelijk geblokkeerd voor ${LOGIN_LOCKOUT_MINUTES} minuten vanwege te veel mislukte pogingen. We hebben je een e-mail gestuurd.` });
+      } else {
+        await db.update(userAccountsTable)
+          .set({ failedLoginAttempts: newAttempts, failedPasswords: JSON.stringify(updatedPasswords) } as any)
+          .where(eq(userAccountsTable.id, user.id));
+        const left = LOGIN_MAX_ATTEMPTS - newAttempts;
+        res.status(401).json({ error: `Onjuist wachtwoord. Nog ${left} poging${left === 1 ? "" : "en"} voor je account tijdelijk wordt geblokkeerd.` });
+      }
+      return;
+    }
+
+    // Successful login — reset counters
+    await db.update(userAccountsTable)
+      .set({ failedLoginAttempts: 0, lockedUntil: null, failedPasswords: "[]" } as any)
+      .where(eq(userAccountsTable.id, user.id));
 
     res.json({ token: makeSupplierToken(user), supplier: toSupplierResponse(user) });
   } catch (err) { req.log.error({ err }, "Supplier login failed"); res.status(500).json({ error: "Internal server error" }); }

@@ -5,7 +5,7 @@ import { eq, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../services/email";
+import { sendVerificationEmail, sendPasswordResetEmail, sendAccountLockedEmail } from "../services/email";
 import { writeLog } from "../lib/db-log";
 
 const router: IRouter = Router();
@@ -132,6 +132,9 @@ router.post("/auth/register", async (req, res) => {
   } catch (err) { req.log.error({ err }, "Register failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
+const LOGIN_MAX_ATTEMPTS = 3;
+const LOGIN_LOCKOUT_MINUTES = 15;
+
 // POST /auth/login — accepts email OR username
 router.post("/auth/login", async (req, res) => {
   try {
@@ -148,10 +151,47 @@ router.post("/auth/login", async (req, res) => {
       res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return;
     }
 
+    // Check lockout
+    const lockedUntil = (user as any).lockedUntil as Date | null;
+    if (lockedUntil && lockedUntil > new Date()) {
+      const remaining = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
+      await writeLog({ category: "LOGIN", message: `Inlogpoging op vergrendeld account`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-LOCKED" });
+      res.status(429).json({ error: `Je account is tijdelijk geblokkeerd vanwege te veel mislukte pogingen. Probeer het over ${remaining} minuut${remaining === 1 ? "" : "en"} opnieuw.` });
+      return;
+    }
+
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      await writeLog({ category: "LOGIN", message: `Mislukte inlogpoging: onjuist wachtwoord`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-WRONG-PW" });
-      res.status(401).json({ error: "Onbekend e-mailadres of onjuist wachtwoord" }); return;
+      // Track failed attempt
+      const prevPasswords: string[] = JSON.parse((user as any).failedPasswords ?? "[]");
+      const updatedPasswords = [...prevPasswords, password];
+      const newAttempts = ((user as any).failedLoginAttempts ?? 0) + 1;
+
+      if (newAttempts >= LOGIN_MAX_ATTEMPTS) {
+        // Lock the account
+        const lockExpires = new Date(Date.now() + LOGIN_LOCKOUT_MINUTES * 60 * 1000);
+        await db.update(userAccountsTable)
+          .set({
+            failedLoginAttempts: newAttempts,
+            lockedUntil: lockExpires,
+            failedPasswords: JSON.stringify(updatedPasswords),
+          } as any)
+          .where(eq(userAccountsTable.id, user.id));
+        await writeLog({ category: "LOGIN", message: `Account vergrendeld na ${LOGIN_MAX_ATTEMPTS} mislukte pogingen`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-LOCKED" });
+        sendAccountLockedEmail(user.email, user.contactName, updatedPasswords).catch(() => {});
+        res.status(429).json({ error: `Je account is tijdelijk geblokkeerd voor ${LOGIN_LOCKOUT_MINUTES} minuten vanwege te veel mislukte pogingen. We hebben je een e-mail gestuurd.` });
+      } else {
+        await db.update(userAccountsTable)
+          .set({
+            failedLoginAttempts: newAttempts,
+            failedPasswords: JSON.stringify(updatedPasswords),
+          } as any)
+          .where(eq(userAccountsTable.id, user.id));
+        await writeLog({ category: "LOGIN", message: `Mislukte inlogpoging ${newAttempts}/${LOGIN_MAX_ATTEMPTS}`, userId: user.id, userEmail: user.email, errorCode: "LOGIN-WRONG-PW" });
+        const left = LOGIN_MAX_ATTEMPTS - newAttempts;
+        res.status(401).json({ error: `Onjuist wachtwoord. Nog ${left} poging${left === 1 ? "" : "en"} voor je account tijdelijk wordt geblokkeerd.` });
+      }
+      return;
     }
 
     if ((user as any).isSuspended) {
@@ -159,6 +199,11 @@ router.post("/auth/login", async (req, res) => {
       res.status(403).json({ error: "Je account is geblokkeerd. Neem contact op met de beheerder." });
       return;
     }
+
+    // Successful login — reset failed attempt counters
+    await db.update(userAccountsTable)
+      .set({ failedLoginAttempts: 0, lockedUntil: null, failedPasswords: "[]" } as any)
+      .where(eq(userAccountsTable.id, user.id));
 
     await writeLog({ category: "LOGIN", message: `Ingelogd`, userId: user.id, userEmail: user.email });
     res.json({ token: makeToken(user), user: userResponse(user) });

@@ -17,6 +17,9 @@ export const userAccountsTable = pgTable("user_accounts", {
   username: text("username").unique(),
   notificationCategoryIds: text("notification_category_ids").notNull().default("[]"),
   isSuspended: boolean("is_suspended").notNull().default(false),
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until"),
+  failedPasswords: text("failed_passwords").notNull().default("[]"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

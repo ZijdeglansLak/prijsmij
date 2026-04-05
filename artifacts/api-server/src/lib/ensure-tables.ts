@@ -263,6 +263,9 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS buyer_interest_at TIMESTAMP`).catch(() => {});
     await client.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS is_closed BOOLEAN NOT NULL DEFAULT FALSE`).catch(() => {});
     await client.query(`ALTER TABLE connections ADD COLUMN IF NOT EXISTS consumer_phone TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS failed_passwords TEXT NOT NULL DEFAULT '[]'`).catch(() => {});
 
     // system_logs table
     await client.query(`
