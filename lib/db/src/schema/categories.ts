@@ -21,6 +21,8 @@ export const categoriesTable = pgTable("categories", {
   icon: text("icon").notNull(),
   description: text("description").notNull(),
   fields: jsonb("fields").notNull().default([]),
+  nameI18n: jsonb("name_i18n").default({}),
+  descriptionI18n: jsonb("description_i18n").default({}),
   isActive: boolean("is_active").notNull().default(true),
   groupId: integer("group_id").references(() => categoryGroupsTable.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),

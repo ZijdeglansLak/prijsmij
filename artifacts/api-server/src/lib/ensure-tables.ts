@@ -294,6 +294,10 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_ads_conversion_id TEXT`).catch(() => {});
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_ads_conversion_label TEXT`).catch(() => {});
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_analytics_id TEXT`).catch(() => {});
+
+    // Category i18n for name/description (v4.4)
+    await client.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS name_i18n JSONB NOT NULL DEFAULT '{}'`).catch(() => {});
+    await client.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS description_i18n JSONB NOT NULL DEFAULT '{}'`).catch(() => {});
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS company_name TEXT`).catch(() => {});
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_number TEXT`).catch(() => {});
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS billing_address TEXT`).catch(() => {});

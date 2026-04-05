@@ -113,7 +113,7 @@ function App() {
         </I18nProvider>
       </TooltipProvider>
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-400/50 select-none pointer-events-none z-50">
-        v4.3
+        v4.4
       </div>
     </QueryClientProvider>
   );

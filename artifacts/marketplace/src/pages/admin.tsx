@@ -147,6 +147,7 @@ function AdminDashboard() {
 type CategoryFieldType = "text" | "number" | "select" | "textarea" | "boolean";
 
 type FieldLang = "nl" | "en" | "de" | "fr";
+const LANG_FLAGS: Record<FieldLang, string> = { nl: "\uD83C\uDDF3\uD83C\uDDF1", en: "\uD83C\uDDEC\uD83C\uDDE7", de: "\uD83C\uDDE9\uD83C\uDDEA", fr: "\uD83C\uDDEB\uD83C\uDDF7" };
 
 interface CategoryField {
   key: string;
@@ -175,6 +176,8 @@ interface CategoryRecord {
   slug: string;
   icon: string;
   description: string;
+  nameI18n?: Partial<Record<FieldLang, string>>;
+  descriptionI18n?: Partial<Record<FieldLang, string>>;
   isActive: boolean;
   activeRequestCount: number;
   groupId?: number | null;
@@ -190,6 +193,7 @@ function CategoriesTab() {
   const [saving, setSaving] = useState<number | null>(null);
   const [groups, setGroups] = useState<CategoryGroup[]>([]);
   const [showGroupManager, setShowGroupManager] = useState(false);
+  const [translatingAll, setTranslatingAll] = useState(false);
 
   // New category form
   const [name, setName] = useState("");
@@ -252,14 +256,67 @@ function CategoriesTab() {
     } finally { setAdding(false); }
   }
 
+  async function handleTranslateAll() {
+    if (!categories || categories.length === 0) return;
+    setTranslatingAll(true);
+    try {
+      const res = await fetch("/api/admin/translate-all-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ categories }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error ?? "Fout bij vertalen", variant: "destructive" }); return; }
+      if (data.translated === 0) { toast({ title: "Alle vertalingen waren al ingevuld" }); return; }
+
+      // Auto-save each category that has changes
+      const updatedCats: CategoryRecord[] = data.categories;
+      let saved = 0;
+      for (const cat of updatedCats) {
+        await fetch(`/api/admin/categories/${cat.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ name: cat.name, icon: cat.icon, description: cat.description, fields: cat.fields, groupId: cat.groupId, nameI18n: cat.nameI18n, descriptionI18n: cat.descriptionI18n }),
+        }).catch(() => {});
+        saved++;
+      }
+      setCategories(updatedCats);
+      toast({ title: `${data.translated} vertalingen ingevuld en ${saved} categorieën opgeslagen` });
+    } catch {
+      toast({ title: "Vertaling mislukt", variant: "destructive" });
+    } finally {
+      setTranslatingAll(false);
+    }
+  }
+
   if (!categories) return <p className="text-muted-foreground py-8 text-center">Laden...</p>;
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Categorieën ({categories.length})</h2>
         <Button onClick={() => setIsAdding(!isAdding)}>
           <Plus className="w-4 h-4 mr-2" /> Nieuwe categorie
+        </Button>
+      </div>
+
+      {/* Global translate banner */}
+      <div className="bg-gradient-to-r from-primary/8 to-accent/8 border border-primary/20 rounded-xl px-5 py-3 mb-6 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-secondary">🌐 Automatisch vertalen</p>
+          <p className="text-xs text-muted-foreground">Vult alle lege vertalingen in van alle categorienamen, omschrijvingen, veldnamen en keuzeopties in EN, DE en FR.</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTranslateAll}
+          disabled={translatingAll || !categories?.length}
+          className="shrink-0 border-primary/40 text-primary hover:bg-primary/5 gap-1.5"
+        >
+          {translatingAll
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Vertalen...</>
+            : <><span>🌐</span> Vertaal alles</>
+          }
         </Button>
       </div>
 
@@ -451,29 +508,28 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
   const [name, setName] = useState(cat.name);
   const [icon, setIcon] = useState(cat.icon);
   const [description, setDescription] = useState(cat.description);
+  const [nameI18n, setNameI18n] = useState<Partial<Record<FieldLang, string>>>(cat.nameI18n ?? {});
+  const [descriptionI18n, setDescriptionI18n] = useState<Partial<Record<FieldLang, string>>>(cat.descriptionI18n ?? {});
+  const [basicsLang, setBasicsLang] = useState<FieldLang>("nl");
   const [groupId, setGroupId] = useState<number | null>(cat.groupId ?? null);
   const [fields, setFields] = useState<CategoryField[]>(cat.fields ?? []);
   const [translating, setTranslating] = useState(false);
 
   async function handleAutoTranslate() {
-    if (fields.length === 0) {
-      toast({ title: "Geen velden om te vertalen" }); return;
-    }
     setTranslating(true);
     try {
-      const res = await fetch("/api/admin/translate-fields", {
+      const res = await fetch("/api/admin/translate-all-categories", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ fields }),
+        body: JSON.stringify({ categories: [{ ...cat, name, description, nameI18n, descriptionI18n, fields }] }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        toast({ title: data.error ?? "Fout bij vertalen", variant: "destructive" }); return;
-      }
-      if (data.translated === 0) {
-        toast({ title: "Alle vertalingen waren al ingevuld" }); return;
-      }
-      setFields(data.fields);
+      if (!res.ok) { toast({ title: data.error ?? "Fout bij vertalen", variant: "destructive" }); return; }
+      if (data.translated === 0) { toast({ title: "Alle vertalingen waren al ingevuld" }); return; }
+      const c = data.categories[0];
+      setNameI18n(c.nameI18n ?? {});
+      setDescriptionI18n(c.descriptionI18n ?? {});
+      setFields(c.fields);
       toast({ title: `${data.translated} vertalingen automatisch ingevuld` });
     } catch {
       toast({ title: "Vertaaldienst niet bereikbaar", variant: "destructive" });
@@ -484,6 +540,7 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
 
   useEffect(() => {
     setName(cat.name); setIcon(cat.icon); setDescription(cat.description);
+    setNameI18n(cat.nameI18n ?? {}); setDescriptionI18n(cat.descriptionI18n ?? {});
     setGroupId(cat.groupId ?? null);
     setFields(cat.fields ?? []);
   }, [cat]);
@@ -493,11 +550,50 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
       <div className="p-5">
         {isEditing ? (
           <div className="space-y-5">
-            {/* Basisgegevens */}
+            {/* Basisgegevens met taalbladen */}
             <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Basisgegevens</p>
-              <Input value={name} onChange={e => setName(e.target.value)} className="font-bold" placeholder="Naam categorie" />
-              <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving..." />
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Basisgegevens</p>
+                <div className="flex rounded-md border border-border overflow-hidden text-xs">
+                  {(["nl", "en", "de", "fr"] as FieldLang[]).map(l => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setBasicsLang(l)}
+                      className={`px-2 py-0.5 font-medium transition-colors ${basicsLang === l ? "bg-primary text-white" : "hover:bg-muted"}`}
+                    >
+                      {LANG_FLAGS[l]} {l.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {basicsLang === "nl" ? (
+                <>
+                  <Input value={name} onChange={e => setName(e.target.value)} className="font-bold" placeholder="Naam categorie (NL)" />
+                  <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Beschrijving... (NL)" />
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">Naam ({basicsLang.toUpperCase()}) — NL: {name}</p>
+                    <Input
+                      value={nameI18n[basicsLang] ?? ""}
+                      onChange={e => setNameI18n(prev => ({ ...prev, [basicsLang]: e.target.value }))}
+                      placeholder={`Naam in ${basicsLang.toUpperCase()}`}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-1">Beschrijving ({basicsLang.toUpperCase()}) — NL: {description}</p>
+                    <Input
+                      value={descriptionI18n[basicsLang] ?? ""}
+                      onChange={e => setDescriptionI18n(prev => ({ ...prev, [basicsLang]: e.target.value }))}
+                      placeholder={`Beschrijving in ${basicsLang.toUpperCase()}`}
+                    />
+                  </div>
+                </>
+              )}
+
               <IconPicker value={icon} onChange={setIcon} label="Icoon" />
               {groups.length > 0 && (
                 <div>
@@ -520,27 +616,25 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
             <div className="border-t border-border pt-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Formuliervelden</p>
-                {fields.length > 0 && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
-                    onClick={handleAutoTranslate}
-                    disabled={translating}
-                  >
-                    {translating
-                      ? <><Loader2 className="w-3 h-3 animate-spin" /> Vertalen...</>
-                      : <><span>🌐</span> Vertaal alles automatisch</>
-                    }
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
+                  onClick={handleAutoTranslate}
+                  disabled={translating}
+                >
+                  {translating
+                    ? <><Loader2 className="w-3 h-3 animate-spin" /> Vertalen...</>
+                    : <><span>🌐</span> Vertaal alles</>
+                  }
+                </Button>
               </div>
               <CategoryFieldEditor fields={fields} onChange={setFields} />
             </div>
 
             <div className="flex gap-2 pt-1 border-t border-border">
-              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description, groupId, fields })}>
+              <Button size="sm" disabled={isSaving} onClick={() => onSave({ name, icon, description, groupId, fields, nameI18n, descriptionI18n })}>
                 <Check className="w-3 h-3 mr-1" /> {isSaving ? "Opslaan..." : "Opslaan"}
               </Button>
               <Button size="sm" variant="outline" onClick={onCancel}><X className="w-3 h-3 mr-1" /> Annuleren</Button>
