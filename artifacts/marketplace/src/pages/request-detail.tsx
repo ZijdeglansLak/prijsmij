@@ -30,6 +30,7 @@ export default function RequestDetail() {
 
   const { data: request, isLoading } = useGetRequestById(requestId);
   const { user, isSeller } = useUserAuth();
+  const isRequester = !!user && !!request && user.email.toLowerCase() === (request as any).consumerEmail?.toLowerCase();
   const { data: bids } = useListBidsForRequest(requestId, { 
     offerType: filterType === "all" ? undefined : filterType,
     viewerEmail: user?.email ?? undefined,
@@ -381,19 +382,19 @@ export default function RequestDetail() {
                           {formatCurrency(bid.price)}
                         </div>
                         <div className="flex flex-col gap-2 w-full sm:w-auto">
-                          {!isSeller && myInterestBidId === bid.id && (
+                          {isRequester && myInterestBidId === bid.id && (
                             <div className="inline-flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 w-full sm:w-auto justify-center">
                               <Clock className="w-4 h-4 shrink-0" />
                               Wacht op reactie van de leverancier
                             </div>
                           )}
-                          {!isSeller && myInterestBidId !== bid.id && (
+                          {isRequester && myInterestBidId !== bid.id && (
                             <Button 
-                              onClick={() => user ? handleInterest(bid.id) : setInterestBidId(bid.id)}
+                              onClick={() => handleInterest(bid.id)}
                               disabled={expressInterestMutation.isPending || myInterestBidId !== null}
                               className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
                             >
-                              {expressInterestMutation.isPending ? "..." : "Toon Interesse"}
+                              {expressInterestMutation.isPending ? "..." : "Bod Accepteren"}
                             </Button>
                           )}
                           {isLoggedIn && (bid as any).hasInterest && !purchasedBidIds.has(bid.id) && !(request as any).isClosed && (

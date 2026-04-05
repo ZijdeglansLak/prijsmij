@@ -33,7 +33,7 @@ export default function PlaceBid() {
   const [warrantyMonths, setWarrantyMonths] = useState("24");
   const [deliveryDays, setDeliveryDays] = useState("1");
   const [isSimilarModel, setIsSimilarModel] = useState(false);
-  const visibility = "private" as const;
+  const visibility = "public" as const;
   const [priceError, setPriceError] = useState("");
 
   // Once request loads: pre-fill modelName and clamp offerType to allowed values
