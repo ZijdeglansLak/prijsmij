@@ -630,7 +630,7 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
                   }
                 </Button>
               </div>
-              <CategoryFieldEditor fields={fields} onChange={setFields} />
+              <CategoryFieldEditor fields={fields} onChange={setFields} lang={basicsLang} />
             </div>
 
             <div className="flex gap-2 pt-1 border-t border-border">
@@ -690,10 +690,9 @@ const FIELD_LANGS: { code: FieldLang; label: string }[] = [
   { code: "fr", label: "FR" },
 ];
 
-function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; onChange: (f: CategoryField[]) => void }) {
+function CategoryFieldEditor({ fields, onChange, lang: fieldLang }: { fields: CategoryField[]; onChange: (f: CategoryField[]) => void; lang: FieldLang }) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [newOptionText, setNewOptionText] = useState<Record<number, string>>({});
-  const [fieldLang, setFieldLang] = useState<FieldLang>("nl");
 
   const typeLabel: Record<CategoryFieldType, string> = { text: "Tekst", number: "Getal", select: "Keuzelijst", textarea: "Tekstvak", boolean: "Ja/Nee" };
   const typeColor: Record<CategoryFieldType, string> = {
@@ -764,23 +763,6 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
 
           {expandedIdx === idx && (
             <div className="p-4 border-t border-border bg-muted/20 space-y-4">
-              {/* Language tab switcher */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-muted-foreground">Taal:</span>
-                <div className="flex rounded-lg border border-border overflow-hidden text-xs">
-                  {FIELD_LANGS.map(l => (
-                    <button
-                      key={l.code}
-                      type="button"
-                      onClick={() => setFieldLang(l.code)}
-                      className={`px-2.5 py-1 font-semibold transition-colors ${fieldLang === l.code ? "bg-primary text-white" : "bg-white text-muted-foreground hover:bg-muted"}`}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold mb-1 block">
