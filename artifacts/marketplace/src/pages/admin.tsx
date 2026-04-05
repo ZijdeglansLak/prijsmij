@@ -1391,10 +1391,10 @@ function SettingsTab() {
               onChange={e => setInvoiceTemplate(e.target.value)}
               rows={10}
               className="w-full border border-input rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/40"
-              placeholder="HTML template voor factuur-e-mails..."
+              placeholder="Leeg = ingebouwde standaard wordt gebruikt. Vul hier je eigen HTML in om de standaard te overschrijven."
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Beschikbare velden: <code className="bg-muted px-1 rounded">[klantnaam]</code> <code className="bg-muted px-1 rounded">[factuurnummer]</code> <code className="bg-muted px-1 rounded">[datum]</code> <code className="bg-muted px-1 rounded">[omschrijving]</code> <code className="bg-muted px-1 rounded">[bedragExclBtw]</code> <code className="bg-muted px-1 rounded">[btwPercent]</code> <code className="bg-muted px-1 rounded">[btwBedrag]</code> <code className="bg-muted px-1 rounded">[totaalbedrag]</code>
+              Laat leeg om de ingebouwde standaard te gebruiken. Vul eigen HTML in om te overschrijven. Beschikbare velden: <code className="bg-muted px-1 rounded">[klantnaam]</code> <code className="bg-muted px-1 rounded">[factuurnummer]</code> <code className="bg-muted px-1 rounded">[datum]</code> <code className="bg-muted px-1 rounded">[omschrijving]</code> <code className="bg-muted px-1 rounded">[bedragExclBtw]</code> <code className="bg-muted px-1 rounded">[btwPercent]</code> <code className="bg-muted px-1 rounded">[btwBedrag]</code> <code className="bg-muted px-1 rounded">[totaalbedrag]</code>
             </p>
           </div>
           <Button type="submit" disabled={savingInvoice}>

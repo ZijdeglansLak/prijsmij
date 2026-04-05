@@ -3,7 +3,6 @@ import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "./auth";
-import { DEFAULT_INVOICE_TEMPLATE } from "../services/invoice-pdf";
 
 const router: IRouter = Router();
 
@@ -33,7 +32,7 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       openaiConfigured: !!(settings.openaiApiKey),
       invoiceNumberPrefix: (settings as any).invoiceNumberPrefix ?? "F",
       invoiceNextNumber: (settings as any).invoiceNextNumber ?? 1001,
-      invoiceTemplate: (settings as any).invoiceTemplate ?? DEFAULT_INVOICE_TEMPLATE,
+      invoiceTemplate: (settings as any).invoiceTemplate ?? "",
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -74,7 +73,7 @@ router.put("/settings", requireAdmin, async (req, res) => {
     if (typeof invoiceNextNumber === "number" && invoiceNextNumber >= 1) {
       (updates as any).invoiceNextNumber = Math.floor(invoiceNextNumber);
     }
-    if (typeof invoiceTemplate === "string") {
+    if (typeof invoiceTemplate === "string" && invoiceTemplate.trim()) {
       (updates as any).invoiceTemplate = invoiceTemplate;
     }
 
@@ -95,7 +94,7 @@ router.put("/settings", requireAdmin, async (req, res) => {
       openaiConfigured: !!(s.openaiApiKey),
       invoiceNumberPrefix: (s as any).invoiceNumberPrefix ?? "F",
       invoiceNextNumber: (s as any).invoiceNextNumber ?? 1001,
-      invoiceTemplate: (s as any).invoiceTemplate ?? DEFAULT_INVOICE_TEMPLATE,
+      invoiceTemplate: (s as any).invoiceTemplate ?? "",
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });
