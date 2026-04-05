@@ -500,7 +500,7 @@ export default function RequestDetail() {
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>Annuleren</Button>
             <Button 
-              onClick={handleInterest} 
+              onClick={() => handleInterest()}
               disabled={!consumerEmail || expressInterestMutation.isPending || (isRequester && !consumerPhone)}
               className="bg-primary hover:bg-primary/90 text-white"
             >
