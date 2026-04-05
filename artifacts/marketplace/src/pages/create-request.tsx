@@ -211,7 +211,10 @@ export default function CreateRequest() {
                             onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
                           >
                             <option value="">{t.create.chooseOption}</option>
-                            {field.options?.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                            {field.options?.map((opt: string, oi: number) => {
+                              const translated = field.optionsI18n?.[lang]?.[oi];
+                              return <option key={opt} value={opt}>{translated || opt}</option>;
+                            })}
                           </select>
                         ) : field.type === 'textarea' ? (
                           <textarea

@@ -157,6 +157,7 @@ interface CategoryField {
   placeholder?: string;
   placeholderI18n?: Partial<Record<FieldLang, string>>;
   options?: string[];
+  optionsI18n?: Partial<Record<FieldLang, string[]>>;
 }
 
 interface CategoryGroup {
@@ -699,35 +700,84 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
 
               {field.type === "select" && (
                 <div>
-                  <label className="text-xs font-bold mb-2 block">Keuze-opties</label>
-                  {(field.options ?? []).length === 0 && (
-                    <p className="text-xs text-muted-foreground mb-2 italic">Nog geen opties toegevoegd</p>
-                  )}
-                  <div className="space-y-1 mb-2">
-                    {(field.options ?? []).map((opt, oi) => (
-                      <div key={oi} className="flex items-center gap-2">
-                        <span className="flex-1 text-sm bg-white border border-border rounded-lg px-3 py-1.5">{opt}</span>
-                        <button
-                          onClick={() => updateField(idx, { options: (field.options ?? []).filter((_, i) => i !== oi) })}
-                          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                  <label className="text-xs font-bold mb-2 block">
+                    Keuze-opties {fieldLang === "nl" ? "(beheer)" : `— vertalingen ${fieldLang.toUpperCase()}`}
+                  </label>
+
+                  {fieldLang === "nl" ? (
+                    <>
+                      {(field.options ?? []).length === 0 && (
+                        <p className="text-xs text-muted-foreground mb-2 italic">Nog geen opties toegevoegd</p>
+                      )}
+                      <div className="space-y-1 mb-2">
+                        {(field.options ?? []).map((opt, oi) => (
+                          <div key={oi} className="flex items-center gap-2">
+                            <span className="flex-1 text-sm bg-white border border-border rounded-lg px-3 py-1.5">{opt}</span>
+                            <button
+                              onClick={() => {
+                                const newOpts = (field.options ?? []).filter((_, i) => i !== oi);
+                                const newI18n = { ...(field.optionsI18n ?? {}) } as Partial<Record<FieldLang, string[]>>;
+                                for (const l of ["en", "de", "fr"] as FieldLang[]) {
+                                  if (newI18n[l]) newI18n[l] = newI18n[l]!.filter((_, i) => i !== oi);
+                                }
+                                updateField(idx, { options: newOpts, optionsI18n: newI18n });
+                              }}
+                              className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newOptionText[idx] ?? ""}
-                      onChange={e => setNewOptionText(p => ({ ...p, [idx]: e.target.value }))}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addOption(idx); } }}
-                      placeholder="Optie toevoegen + Enter"
-                      className="h-8 text-sm flex-1"
-                    />
-                    <Button size="sm" variant="outline" onClick={() => addOption(idx)} className="h-8 px-3">
-                      <Plus className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                      <div className="flex gap-2">
+                        <Input
+                          value={newOptionText[idx] ?? ""}
+                          onChange={e => setNewOptionText(p => ({ ...p, [idx]: e.target.value }))}
+                          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addOption(idx); } }}
+                          placeholder="Optie toevoegen + Enter"
+                          className="h-8 text-sm flex-1"
+                        />
+                        <Button size="sm" variant="outline" onClick={() => addOption(idx)} className="h-8 px-3">
+                          <Plus className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {(field.options ?? []).length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">Voeg eerst NL-opties toe via het NL-tabblad</p>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-muted-foreground px-1">
+                            <span>🇳🇱 Nederlands (bron)</span>
+                            <span>{fieldLang === "en" ? "🇬🇧" : fieldLang === "de" ? "🇩🇪" : "🇫🇷"} {fieldLang.toUpperCase()} vertaling</span>
+                          </div>
+                          {(field.options ?? []).map((nlOpt, oi) => {
+                            const translation = field.optionsI18n?.[fieldLang]?.[oi] ?? "";
+                            return (
+                              <div key={oi} className="grid grid-cols-2 gap-2 items-center">
+                                <span className="text-sm bg-muted/50 border border-border rounded-lg px-3 py-1.5 truncate" title={nlOpt}>
+                                  {nlOpt}
+                                </span>
+                                <Input
+                                  value={translation}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    const arr = [...(field.optionsI18n?.[fieldLang] ?? [])];
+                                    while (arr.length <= oi) arr.push("");
+                                    arr[oi] = val;
+                                    updateField(idx, { optionsI18n: { ...(field.optionsI18n ?? {}), [fieldLang]: arr } });
+                                  }}
+                                  placeholder={`Vertaling ${fieldLang.toUpperCase()}...`}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
