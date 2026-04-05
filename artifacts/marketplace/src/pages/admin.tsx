@@ -446,11 +446,41 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
   onCancel: () => void;
   onToggleActive: () => void;
 }) {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
   const [name, setName] = useState(cat.name);
   const [icon, setIcon] = useState(cat.icon);
   const [description, setDescription] = useState(cat.description);
   const [groupId, setGroupId] = useState<number | null>(cat.groupId ?? null);
   const [fields, setFields] = useState<CategoryField[]>(cat.fields ?? []);
+  const [translating, setTranslating] = useState(false);
+
+  async function handleAutoTranslate() {
+    if (fields.length === 0) {
+      toast({ title: "Geen velden om te vertalen" }); return;
+    }
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/admin/translate-fields", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fields }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: data.error ?? "Fout bij vertalen", variant: "destructive" }); return;
+      }
+      if (data.translated === 0) {
+        toast({ title: "Alle vertalingen waren al ingevuld" }); return;
+      }
+      setFields(data.fields);
+      toast({ title: `${data.translated} vertalingen automatisch ingevuld` });
+    } catch {
+      toast({ title: "Vertaaldienst niet bereikbaar", variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
+  }
 
   useEffect(() => {
     setName(cat.name); setIcon(cat.icon); setDescription(cat.description);
@@ -488,7 +518,24 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
 
             {/* Formuliervelden */}
             <div className="border-t border-border pt-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Formuliervelden</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Formuliervelden</p>
+                {fields.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
+                    onClick={handleAutoTranslate}
+                    disabled={translating}
+                  >
+                    {translating
+                      ? <><Loader2 className="w-3 h-3 animate-spin" /> Vertalen...</>
+                      : <><span>🌐</span> Vertaal alles automatisch</>
+                    }
+                  </Button>
+                )}
+              </div>
               <CategoryFieldEditor fields={fields} onChange={setFields} />
             </div>
 

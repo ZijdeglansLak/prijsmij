@@ -18,6 +18,7 @@ import adminLogsRouter from "./admin-logs";
 import notificationsRouter from "./notifications";
 import chatbotRouter from "./chatbot";
 import invoicesRouter from "./invoices";
+import adminTranslateRouter from "./admin-translate";
 import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
 
@@ -42,6 +43,7 @@ router.use(adminLogsRouter);
 router.use(notificationsRouter);
 router.use(chatbotRouter);
 router.use(invoicesRouter);
+router.use(adminTranslateRouter);
 
 router.get("/site-status", async (_req, res) => {
   try {
