@@ -53,4 +53,18 @@ router.get("/site-status", async (_req, res) => {
   }
 });
 
+router.get("/tracking-config", async (_req, res) => {
+  try {
+    const rows = await db.select().from(siteSettingsTable).limit(1);
+    const s = rows[0] ?? {};
+    res.json({
+      googleAdsConversionId: (s as any).googleAdsConversionId ?? null,
+      googleAdsConversionLabel: (s as any).googleAdsConversionLabel ?? null,
+      googleAnalyticsId: (s as any).googleAnalyticsId ?? null,
+    });
+  } catch {
+    res.json({ googleAdsConversionId: null, googleAdsConversionLabel: null, googleAnalyticsId: null });
+  }
+});
+
 export default router;

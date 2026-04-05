@@ -33,6 +33,9 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       invoiceNumberPrefix: (settings as any).invoiceNumberPrefix ?? "F",
       invoiceNextNumber: (settings as any).invoiceNextNumber ?? 1001,
       invoiceTemplate: (settings as any).invoiceTemplate ?? "",
+      googleAdsConversionId: (settings as any).googleAdsConversionId ?? "",
+      googleAdsConversionLabel: (settings as any).googleAdsConversionLabel ?? "",
+      googleAnalyticsId: (settings as any).googleAnalyticsId ?? "",
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -42,7 +45,8 @@ router.get("/settings", requireAdmin, async (_req, res) => {
 router.put("/settings", requireAdmin, async (req, res) => {
   try {
     const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits, openaiApiKey,
-      invoiceNumberPrefix, invoiceNextNumber, invoiceTemplate } = req.body as {
+      invoiceNumberPrefix, invoiceNextNumber, invoiceTemplate,
+      googleAdsConversionId, googleAdsConversionLabel, googleAnalyticsId } = req.body as {
       offlineMode?: boolean;
       paynlServiceId?: string;
       paynlToken?: string;
@@ -51,6 +55,9 @@ router.put("/settings", requireAdmin, async (req, res) => {
       invoiceNumberPrefix?: string;
       invoiceNextNumber?: number;
       invoiceTemplate?: string;
+      googleAdsConversionId?: string;
+      googleAdsConversionLabel?: string;
+      googleAnalyticsId?: string;
     };
 
     const settings = await getOrCreateSettings();
@@ -76,6 +83,15 @@ router.put("/settings", requireAdmin, async (req, res) => {
     if (typeof invoiceTemplate === "string" && invoiceTemplate.trim()) {
       (updates as any).invoiceTemplate = invoiceTemplate;
     }
+    if (typeof googleAdsConversionId === "string") {
+      (updates as any).googleAdsConversionId = googleAdsConversionId.trim() || null;
+    }
+    if (typeof googleAdsConversionLabel === "string") {
+      (updates as any).googleAdsConversionLabel = googleAdsConversionLabel.trim() || null;
+    }
+    if (typeof googleAnalyticsId === "string") {
+      (updates as any).googleAnalyticsId = googleAnalyticsId.trim() || null;
+    }
 
     const updated = await db
       .update(siteSettingsTable)
@@ -95,6 +111,9 @@ router.put("/settings", requireAdmin, async (req, res) => {
       invoiceNumberPrefix: (s as any).invoiceNumberPrefix ?? "F",
       invoiceNextNumber: (s as any).invoiceNextNumber ?? 1001,
       invoiceTemplate: (s as any).invoiceTemplate ?? "",
+      googleAdsConversionId: (s as any).googleAdsConversionId ?? "",
+      googleAdsConversionLabel: (s as any).googleAdsConversionLabel ?? "",
+      googleAnalyticsId: (s as any).googleAnalyticsId ?? "",
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });

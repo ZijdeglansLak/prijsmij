@@ -1,28 +1,72 @@
 import { useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { useUserAuth } from "@/contexts/user-auth";
 import { CheckCircle, Coins, ArrowRight } from "lucide-react";
 
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+    dataLayer?: any[];
+  }
+}
+
+function loadGtag(conversionId: string) {
+  if (document.getElementById("gtag-script")) return;
+  const script = document.createElement("script");
+  script.id = "gtag-script";
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${conversionId}`;
+  document.head.appendChild(script);
+
+  window.dataLayer = window.dataLayer ?? [];
+  window.gtag = function (...args: any[]) { window.dataLayer!.push(args); };
+  window.gtag("js", new Date());
+  window.gtag("config", conversionId);
+}
+
 export default function BetalingGeslaagd() {
-  const [location, setLocation] = useLocation();
   const { updateCredits, user } = useUserAuth();
 
   const params = new URLSearchParams(
     typeof window !== "undefined" ? window.location.search : ""
   );
   const credits = parseInt(params.get("credits") ?? "0") || 0;
-  const bundleName = params.get("bundel") ?? "";
 
   useEffect(() => {
     if (credits > 0 && user) {
       updateCredits((user.credits ?? 0) + credits);
     }
-    // Clean up URL without triggering re-render
     if (window.history && window.location.search) {
       window.history.replaceState({}, "", window.location.pathname);
     }
+
+    fetch("/api/tracking-config")
+      .then(r => r.json())
+      .then((cfg: { googleAdsConversionId: string | null; googleAdsConversionLabel: string | null; googleAnalyticsId: string | null }) => {
+        const tagId = cfg.googleAdsConversionId ?? cfg.googleAnalyticsId;
+        if (!tagId) return;
+
+        loadGtag(tagId);
+
+        if (cfg.googleAdsConversionId && cfg.googleAdsConversionLabel) {
+          window.gtag?.("event", "conversion", {
+            send_to: `${cfg.googleAdsConversionId}/${cfg.googleAdsConversionLabel}`,
+          });
+        }
+
+        if (cfg.googleAnalyticsId) {
+          if (cfg.googleAnalyticsId !== tagId) {
+            window.gtag?.("config", cfg.googleAnalyticsId);
+          }
+          window.gtag?.("event", "purchase", {
+            currency: "EUR",
+            value: credits > 0 ? credits : 1,
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -41,7 +85,7 @@ export default function BetalingGeslaagd() {
         {credits > 0 ? (
           <>
             <p className="text-muted-foreground mb-2 text-lg">
-              Je hebt{bundleName ? ` het pakket <strong>${bundleName}</strong>` : ""} succesvol aangekocht.
+              Je aankoop is succesvol verwerkt.
             </p>
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary font-bold text-xl px-6 py-3 rounded-full mb-6">
               <Coins className="w-6 h-6" />

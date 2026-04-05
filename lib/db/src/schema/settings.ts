@@ -10,5 +10,8 @@ export const siteSettingsTable = pgTable("site_settings", {
   invoiceNumberPrefix: text("invoice_number_prefix").notNull().default("F"),
   invoiceNextNumber: integer("invoice_next_number").notNull().default(1001),
   invoiceTemplate: text("invoice_template"),
+  googleAdsConversionId: text("google_ads_conversion_id"),
+  googleAdsConversionLabel: text("google_ads_conversion_label"),
+  googleAnalyticsId: text("google_analytics_id"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

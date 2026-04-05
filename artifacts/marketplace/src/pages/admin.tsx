@@ -4,7 +4,7 @@ import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText, BookOpen, ScrollText, ChevronsUpDown } from "lucide-react";
+import { Plus, Settings, Trash2, Users, ShieldCheck, Store, ShoppingBag, ChevronDown, ChevronUp, Key, User2, WifiOff, Wifi, Pencil, X, Check, Download, Search, Eye, EyeOff, Coins, CreditCard, RefreshCw, CheckCircle, Clock, XCircle, AlertCircle, ChevronRight, Loader2, FileText, BookOpen, ScrollText, ChevronsUpDown, BarChart2 } from "lucide-react";
 import { useI18n, type Language } from "@/contexts/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { IconPicker, IconDisplay } from "@/components/icon-picker";
 import { RichTextEditor } from "@/components/rich-text-editor";
 
-type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs" | "invoices";
+type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs" | "invoices" | "marketing";
 
 interface UserRecord {
   id: number;
@@ -121,6 +121,12 @@ function AdminDashboard() {
           >
             <FileText className="w-4 h-4" /> Facturen
           </button>
+          <button
+            onClick={() => setTab("marketing")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "marketing" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <BarChart2 className="w-4 h-4" /> Marketing
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
@@ -132,6 +138,7 @@ function AdminDashboard() {
         {tab === "pages" && <PaginasTab />}
         {tab === "logs" && <LogboekTab />}
         {tab === "invoices" && <FacturenTab />}
+        {tab === "marketing" && <MarketingTab />}
       </div>
     </Layout>
   );
@@ -2899,6 +2906,116 @@ function FacturenTab() {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function MarketingTab() {
+  const { token } = useUserAuth();
+  const { toast } = useToast();
+
+  const [googleAdsConversionId, setGoogleAdsConversionId] = useState("");
+  const [googleAdsConversionLabel, setGoogleAdsConversionLabel] = useState("");
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        setGoogleAdsConversionId(d.googleAdsConversionId ?? "");
+        setGoogleAdsConversionLabel(d.googleAdsConversionLabel ?? "");
+        setGoogleAnalyticsId(d.googleAnalyticsId ?? "");
+      })
+      .catch(() => {});
+  }, [token]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ googleAdsConversionId, googleAdsConversionLabel, googleAnalyticsId }),
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: "Marketing-instellingen opgeslagen" });
+    } catch {
+      toast({ title: "Fout bij opslaan", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h2 className="text-xl font-bold text-secondary mb-1">Marketing &amp; Tracking</h2>
+        <p className="text-sm text-muted-foreground">
+          Koppel Google Ads en Google Analytics voor conversietracking en advertentieoptimalisatie.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-card border rounded-xl p-5 space-y-4">
+          <h3 className="font-semibold text-secondary flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-primary" /> Google Ads conversietracking
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Wanneer een verkoper een betaling afrondt, verschijnt de pagina <code className="bg-muted px-1 rounded">/betaling-geslaagd</code> — hier wordt automatisch een conversie-event naar Google Ads gestuurd.
+          </p>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium">Conversion ID</label>
+            <Input
+              value={googleAdsConversionId}
+              onChange={e => setGoogleAdsConversionId(e.target.value)}
+              placeholder="AW-123456789"
+            />
+            <p className="text-xs text-muted-foreground">
+              Te vinden in Google Ads &rarr; Doelen &rarr; Conversies &rarr; Conversie selecteren &rarr; Tag-instelling. Begint met <code>AW-</code>.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium">Conversion Label</label>
+            <Input
+              value={googleAdsConversionLabel}
+              onChange={e => setGoogleAdsConversionLabel(e.target.value)}
+              placeholder="AbCdEfGhIj1"
+            />
+            <p className="text-xs text-muted-foreground">
+              Het label van de specifieke conversieactie (bijv. "Aankoop"). Staat onder het Conversion ID in de tag-instelling.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-card border rounded-xl p-5 space-y-4">
+          <h3 className="font-semibold text-secondary flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-primary" /> Google Analytics 4
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Met een GA4 Measurement ID wordt ook een <code className="bg-muted px-1 rounded">purchase</code>-event naar Analytics gestuurd op de bedanktpagina.
+          </p>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium">Measurement ID</label>
+            <Input
+              value={googleAnalyticsId}
+              onChange={e => setGoogleAnalyticsId(e.target.value)}
+              placeholder="G-XXXXXXXXXX"
+            />
+            <p className="text-xs text-muted-foreground">
+              Te vinden in GA4 &rarr; Beheer &rarr; Datastromen &rarr; Stroom selecteren &rarr; Measurement ID. Begint met <code>G-</code>.
+            </p>
+          </div>
+        </div>
+
+        <Button type="submit" disabled={saving}>
+          {saving ? "Opslaan..." : "Instellingen opslaan"}
+        </Button>
+      </form>
     </div>
   );
 }

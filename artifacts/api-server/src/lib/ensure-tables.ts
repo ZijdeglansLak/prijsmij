@@ -289,6 +289,11 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS invoice_number_prefix TEXT NOT NULL DEFAULT 'F'`).catch(() => {});
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS invoice_next_number INTEGER NOT NULL DEFAULT 1001`).catch(() => {});
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS invoice_template TEXT`).catch(() => {});
+
+    // Google Ads / Analytics tracking (v4.3)
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_ads_conversion_id TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_ads_conversion_label TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_analytics_id TEXT`).catch(() => {});
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS company_name TEXT`).catch(() => {});
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_number TEXT`).catch(() => {});
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS billing_address TEXT`).catch(() => {});
