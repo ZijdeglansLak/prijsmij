@@ -17,7 +17,7 @@ export default function CreateRequest() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user, isLoggedIn, isSeller } = useUserAuth();
 
   const { data: categories } = useListCategories();
@@ -179,7 +179,10 @@ export default function CreateRequest() {
                   </div>
                 </div>
 
-                {categoryDetail.fields.map(field => (
+                {categoryDetail.fields.map((field: any) => {
+                  const fieldLabel = field.labelI18n?.[lang] || field.label;
+                  const fieldPlaceholder = field.placeholderI18n?.[lang] || field.placeholder;
+                  return (
                   <div key={field.key}>
                     {field.type === 'boolean' ? (
                       <label className="flex items-center gap-3 cursor-pointer">
@@ -189,12 +192,12 @@ export default function CreateRequest() {
                           checked={specs[field.key] === 'true'}
                           onChange={e => setSpecs({...specs, [field.key]: e.target.checked ? 'true' : 'false'})}
                         />
-                        <span className="text-sm font-bold">{field.label} {field.required && '*'}</span>
+                        <span className="text-sm font-bold">{fieldLabel} {field.required && '*'}</span>
                       </label>
                     ) : (
                       <>
                         <label className="block text-sm font-bold mb-2">
-                          {field.label} {field.required && '*'}
+                          {fieldLabel} {field.required && '*'}
                         </label>
                         {field.type === 'select' ? (
                           <select
@@ -203,18 +206,18 @@ export default function CreateRequest() {
                             onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
                           >
                             <option value="">{t.create.chooseOption}</option>
-                            {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            {field.options?.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
                           </select>
                         ) : field.type === 'textarea' ? (
                           <textarea
                             className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
-                            placeholder={field.placeholder}
+                            placeholder={fieldPlaceholder}
                             value={specs[field.key] || ""}
                             onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
                           />
                         ) : (
                           <Input
-                            placeholder={field.placeholder}
+                            placeholder={fieldPlaceholder}
                             type={field.type === 'number' ? 'number' : 'text'}
                             value={specs[field.key] || ""}
                             onChange={e => setSpecs({...specs, [field.key]: e.target.value})}
@@ -223,7 +226,8 @@ export default function CreateRequest() {
                       </>
                     )}
                   </div>
-                ))}
+                  );
+                })}
 
                 <div>
                   <label className="block text-sm font-bold mb-2">{t.create.extraNotes}</label>

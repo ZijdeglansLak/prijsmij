@@ -132,12 +132,16 @@ function AdminDashboard() {
 
 type CategoryFieldType = "text" | "number" | "select" | "textarea" | "boolean";
 
+type FieldLang = "nl" | "en" | "de" | "fr";
+
 interface CategoryField {
   key: string;
   label: string;
+  labelI18n?: Partial<Record<FieldLang, string>>;
   type: CategoryFieldType;
   required: boolean;
   placeholder?: string;
+  placeholderI18n?: Partial<Record<FieldLang, string>>;
   options?: string[];
 }
 
@@ -523,9 +527,17 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
   );
 }
 
+const FIELD_LANGS: { code: FieldLang; label: string }[] = [
+  { code: "nl", label: "NL" },
+  { code: "en", label: "EN" },
+  { code: "de", label: "DE" },
+  { code: "fr", label: "FR" },
+];
+
 function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; onChange: (f: CategoryField[]) => void }) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [newOptionText, setNewOptionText] = useState<Record<number, string>>({});
+  const [fieldLang, setFieldLang] = useState<FieldLang>("nl");
 
   const typeLabel: Record<CategoryFieldType, string> = { text: "Tekst", number: "Getal", select: "Keuzelijst", textarea: "Tekstvak", boolean: "Ja/Nee" };
   const typeColor: Record<CategoryFieldType, string> = {
@@ -596,14 +608,41 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
 
           {expandedIdx === idx && (
             <div className="p-4 border-t border-border bg-muted/20 space-y-4">
+              {/* Language tab switcher */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-muted-foreground">Taal:</span>
+                <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+                  {FIELD_LANGS.map(l => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      onClick={() => setFieldLang(l.code)}
+                      className={`px-2.5 py-1 font-semibold transition-colors ${fieldLang === l.code ? "bg-primary text-white" : "bg-white text-muted-foreground hover:bg-muted"}`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold mb-1 block">Label *</label>
+                  <label className="text-xs font-bold mb-1 block">
+                    Veldnaam ({fieldLang.toUpperCase()}) {fieldLang === "nl" && "*"}
+                  </label>
                   <Input
-                    value={field.label}
-                    onChange={e => updateField(idx, { label: e.target.value, key: genKey(e.target.value) })}
+                    value={fieldLang === "nl" ? field.label : (field.labelI18n?.[fieldLang] ?? "")}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const newI18n = { ...(field.labelI18n ?? {}), [fieldLang]: val };
+                      if (fieldLang === "nl") {
+                        updateField(idx, { label: val, key: genKey(val), labelI18n: newI18n });
+                      } else {
+                        updateField(idx, { labelI18n: newI18n });
+                      }
+                    }}
                     className="h-8 text-sm"
-                    placeholder="Bijv. Schermgrootte"
+                    placeholder={fieldLang === "nl" ? "Bijv. Schermgrootte" : `Vertaling in ${fieldLang.toUpperCase()}...`}
                   />
                 </div>
                 <div>
@@ -611,13 +650,23 @@ function CategoryFieldEditor({ fields, onChange }: { fields: CategoryField[]; on
                   <Input value={field.key} readOnly className="h-8 text-sm bg-muted/60 text-muted-foreground font-mono" />
                 </div>
                 {field.type !== "boolean" && (
-                  <div>
-                    <label className="text-xs font-bold mb-1 block">Placeholder</label>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold mb-1 block">
+                      Voorbeeldtekst / placeholder ({fieldLang.toUpperCase()})
+                    </label>
                     <Input
-                      value={field.placeholder ?? ""}
-                      onChange={e => updateField(idx, { placeholder: e.target.value })}
+                      value={fieldLang === "nl" ? (field.placeholder ?? "") : (field.placeholderI18n?.[fieldLang] ?? "")}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const newI18n = { ...(field.placeholderI18n ?? {}), [fieldLang]: val };
+                        if (fieldLang === "nl") {
+                          updateField(idx, { placeholder: val, placeholderI18n: newI18n });
+                        } else {
+                          updateField(idx, { placeholderI18n: newI18n });
+                        }
+                      }}
                       className="h-8 text-sm"
-                      placeholder="Bijv. typ hier..."
+                      placeholder={fieldLang === "nl" ? "Bijv. typ hier de waarde..." : `Voorbeeldtekst in ${fieldLang.toUpperCase()}...`}
                     />
                   </div>
                 )}
