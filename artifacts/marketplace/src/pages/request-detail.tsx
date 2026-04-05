@@ -285,6 +285,13 @@ export default function RequestDetail() {
                   }
                   return rows;
                 })()}
+                {/* Opmerkingen */}
+                {(request as any).description && (
+                  <div className="pt-2 border-t border-border mt-1">
+                    <span className="text-muted-foreground block mb-1">Opmerkingen</span>
+                    <span className="font-medium text-sm">{(request as any).description}</span>
+                  </div>
+                )}
               </div>
             </div>
 
