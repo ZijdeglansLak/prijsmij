@@ -20,6 +20,11 @@ export const userAccountsTable = pgTable("user_accounts", {
   failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
   lockedUntil: timestamp("locked_until"),
   failedPasswords: text("failed_passwords").notNull().default("[]"),
+  companyName: text("company_name"),
+  vatNumber: text("vat_number"),
+  billingAddress: text("billing_address"),
+  billingPostcode: text("billing_postcode"),
+  billingCity: text("billing_city"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

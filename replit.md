@@ -9,7 +9,7 @@ PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gra
 - Versienummer zichtbaar in `artifacts/marketplace/src/App.tsx` (onderaan elke pagina)
 - **Regel: bij élke git push naar GitHub het versienummer met 0.1 ophogen**
 - Commit als: `release: vX.X - omschrijving`
-- Huidige versie: **v2.0** (Kennisbank, Quootje chatbot, gebruiker blokkeren/deblokkeren)
+- Huidige versie: **v4.0** (Factuur/invoice feature volledig: PDF-generatie, factuurnummering, admin overzicht, verkoperdashboard billing tab)
 
 ## BELANGRIJK: Taalselectie vlaggen
 

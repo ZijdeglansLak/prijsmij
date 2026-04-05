@@ -17,6 +17,7 @@ import adminKennisbankRouter from "./admin-kennisbank";
 import adminLogsRouter from "./admin-logs";
 import notificationsRouter from "./notifications";
 import chatbotRouter from "./chatbot";
+import invoicesRouter from "./invoices";
 import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
 
@@ -40,6 +41,7 @@ router.use(adminKennisbankRouter);
 router.use(adminLogsRouter);
 router.use(notificationsRouter);
 router.use(chatbotRouter);
+router.use(invoicesRouter);
 
 router.get("/site-status", async (_req, res) => {
   try {

@@ -6,3 +6,4 @@ export * from "./settings";
 export * from "./conversations";
 export * from "./messages";
 export * from "./kennisbank";
+export * from "./invoices";

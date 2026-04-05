@@ -5,6 +5,7 @@ import { eq, and, sql, desc, asc } from "drizzle-orm";
 import { requireAuth, requireSeller, requireVerifiedEmail } from "./auth";
 import { writeLog } from "../lib/db-log";
 import { sendAccountLockedEmail } from "../services/email";
+import { createInvoice } from "../services/invoices";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -158,6 +159,14 @@ router.post("/bids/:bidId/connect", requireSeller, requireVerifiedEmail, async (
     });
 
     res.json({ success: true, alreadyConnected: false, consumerName: request.consumerName, consumerEmail: request.consumerEmail, consumerPhone, creditsUsed: 1, remainingCredits: newCredits });
+
+    createInvoice({
+      userId,
+      type: "lead_purchase",
+      description: `Leadaankoop: ${request.title} (uitvraag #${request.id})`,
+      amountCents: 100,
+      vatPercent: 0,
+    }).catch((err: any) => req.log.error({ err }, "Failed to create lead invoice"));
   } catch (err: any) {
     req.log.error({ err }, "Failed to create connection");
     const uid = (req as any).userId as number | undefined;
@@ -270,6 +279,38 @@ router.get("/supplier/interested-bids", requireSeller, async (req, res) => {
       };
     }));
   } catch (err) { req.log.error({ err }, "Failed to get interested bids"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /supplier/billing — get billing profile (seller)
+router.get("/supplier/billing", requireSeller, async (req, res) => {
+  try {
+    const userId = (req as any).userId as number;
+    const [user] = await db.select({
+      companyName: (userAccountsTable as any).companyName,
+      vatNumber: (userAccountsTable as any).vatNumber,
+      billingAddress: (userAccountsTable as any).billingAddress,
+      billingPostcode: (userAccountsTable as any).billingPostcode,
+      billingCity: (userAccountsTable as any).billingCity,
+    }).from(userAccountsTable).where(eq(userAccountsTable.id, userId));
+    if (!user) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
+    res.json(user);
+  } catch (err) { req.log.error({ err }, "Failed to get billing profile"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// PUT /supplier/billing — update billing profile (seller)
+router.put("/supplier/billing", requireSeller, async (req, res) => {
+  try {
+    const userId = (req as any).userId as number;
+    const { companyName, vatNumber, billingAddress, billingPostcode, billingCity } = req.body as Record<string, string>;
+    const updates: Record<string, string | null> = {};
+    if (typeof companyName === "string") updates.companyName = companyName.trim() || null;
+    if (typeof vatNumber === "string") updates.vatNumber = vatNumber.trim() || null;
+    if (typeof billingAddress === "string") updates.billingAddress = billingAddress.trim() || null;
+    if (typeof billingPostcode === "string") updates.billingPostcode = billingPostcode.trim() || null;
+    if (typeof billingCity === "string") updates.billingCity = billingCity.trim() || null;
+    await db.update(userAccountsTable).set(updates as any).where(eq(userAccountsTable.id, userId));
+    res.json({ success: true });
+  } catch (err) { req.log.error({ err }, "Failed to update billing profile"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // GET /supplier/notification-preferences — sellers only

@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { IconPicker, IconDisplay } from "@/components/icon-picker";
 import { RichTextEditor } from "@/components/rich-text-editor";
 
-type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs";
+type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs" | "invoices";
 
 interface UserRecord {
   id: number;
@@ -115,6 +115,12 @@ function AdminDashboard() {
           >
             <ScrollText className="w-4 h-4" /> Logboek
           </button>
+          <button
+            onClick={() => setTab("invoices")}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold text-sm border-b-2 transition-colors -mb-px ${tab === "invoices" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-secondary"}`}
+          >
+            <FileText className="w-4 h-4" /> Facturen
+          </button>
         </div>
 
         {tab === "categories" && <CategoriesTab />}
@@ -125,6 +131,7 @@ function AdminDashboard() {
         {tab === "kennisbank" && <KennisbankTab />}
         {tab === "pages" && <PaginasTab />}
         {tab === "logs" && <LogboekTab />}
+        {tab === "invoices" && <FacturenTab />}
       </div>
     </Layout>
   );
@@ -980,6 +987,11 @@ function SettingsTab() {
   const [savingOpenai, setSavingOpenai] = useState(false);
   const [openaiConfigured, setOpenaiConfigured] = useState(false);
 
+  const [invoiceNumberPrefix, setInvoiceNumberPrefix] = useState("F");
+  const [invoiceNextNumber, setInvoiceNextNumber] = useState(1001);
+  const [invoiceTemplate, setInvoiceTemplate] = useState("");
+  const [savingInvoice, setSavingInvoice] = useState(false);
+
   useEffect(() => {
     fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
@@ -991,6 +1003,9 @@ function SettingsTab() {
         setInitialSellerCredits(d.initialSellerCredits ?? 10);
         setOpenaiApiKey(d.openaiApiKeyMasked ?? "");
         setOpenaiConfigured(d.openaiConfigured ?? false);
+        setInvoiceNumberPrefix(d.invoiceNumberPrefix ?? "F");
+        setInvoiceNextNumber(d.invoiceNextNumber ?? 1001);
+        setInvoiceTemplate(d.invoiceTemplate ?? "");
       })
       .catch(() => setOfflineMode(false));
   }, [token]);
@@ -1114,6 +1129,27 @@ function SettingsTab() {
       toast({ title: "Fout bij wissen", description: err.message, variant: "destructive" });
     } finally {
       setSavingOpenai(false);
+    }
+  }
+
+  async function saveInvoiceSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingInvoice(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ invoiceNumberPrefix, invoiceNextNumber, invoiceTemplate }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setInvoiceNumberPrefix(d.invoiceNumberPrefix ?? "F");
+      setInvoiceNextNumber(d.invoiceNextNumber ?? 1001);
+      toast({ title: "Factuurinstellingen opgeslagen" });
+    } catch (err: any) {
+      toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingInvoice(false);
     }
   }
 
@@ -1311,6 +1347,59 @@ function SettingsTab() {
               </button>
             )}
           </div>
+        </form>
+      </div>
+
+      {/* Invoice Settings */}
+      <div className="rounded-2xl border-2 border-border bg-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg leading-tight">Factuurinstellingen</h3>
+            <p className="text-sm text-muted-foreground">Prefix, startnummer en e-mailtemplate voor facturen</p>
+          </div>
+        </div>
+        <form onSubmit={saveInvoiceSettings} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium block mb-1">Factuurprefix</label>
+              <Input
+                value={invoiceNumberPrefix}
+                onChange={e => setInvoiceNumberPrefix(e.target.value.toUpperCase().slice(0, 10))}
+                placeholder="bijv. F of INV"
+                maxLength={10}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Voorvoegsel voor factuurnummers (bijv. F2025001)</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1">Volgend factuurnummer</label>
+              <Input
+                type="number"
+                min={1}
+                value={invoiceNextNumber}
+                onChange={e => setInvoiceNextNumber(parseInt(e.target.value) || 1)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Wordt automatisch verhoogd na elke factuur</p>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">E-mailtemplate factuur</label>
+            <textarea
+              value={invoiceTemplate}
+              onChange={e => setInvoiceTemplate(e.target.value)}
+              rows={10}
+              className="w-full border border-input rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/40"
+              placeholder="HTML template voor factuur-e-mails..."
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Beschikbare velden: <code className="bg-muted px-1 rounded">[klantnaam]</code> <code className="bg-muted px-1 rounded">[factuurnummer]</code> <code className="bg-muted px-1 rounded">[datum]</code> <code className="bg-muted px-1 rounded">[omschrijving]</code> <code className="bg-muted px-1 rounded">[bedragExclBtw]</code> <code className="bg-muted px-1 rounded">[btwPercent]</code> <code className="bg-muted px-1 rounded">[btwBedrag]</code> <code className="bg-muted px-1 rounded">[totaalbedrag]</code>
+            </p>
+          </div>
+          <Button type="submit" disabled={savingInvoice}>
+            {savingInvoice ? "Opslaan..." : "Factuurinstellingen opslaan"}
+          </Button>
         </form>
       </div>
 
@@ -2671,6 +2760,143 @@ function LogboekTab() {
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Vorige</Button>
             <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Volgende</Button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Facturen Tab ─────────────────────────────────────────────────────────
+
+interface AdminInvoice {
+  id: number;
+  invoiceNumber: string;
+  userId: number;
+  type: string;
+  description: string;
+  amountCents: number;
+  vatPercent: number;
+  vatCents: number;
+  totalCents: number;
+  sentAt: string | null;
+  createdAt: string;
+  userName: string | null;
+  userEmail: string | null;
+  userStore: string | null;
+}
+
+function FacturenTab() {
+  const { token } = useUserAuth();
+  const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [downloading, setDownloading] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/invoices", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { setInvoices(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [token]);
+
+  const filtered = invoices.filter(inv => {
+    const q = search.toLowerCase();
+    return !q || inv.invoiceNumber.toLowerCase().includes(q) || (inv.userEmail ?? "").toLowerCase().includes(q) || (inv.userStore ?? "").toLowerCase().includes(q) || inv.description.toLowerCase().includes(q);
+  });
+
+  async function downloadPdf(inv: AdminInvoice) {
+    setDownloading(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}/pdf`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Download mislukt");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${inv.invoiceNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("PDF kon niet worden gedownload");
+    } finally {
+      setDownloading(null);
+    }
+  }
+
+  const fmtEuro = (cents: number) =>
+    new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
+  const fmtDate = (s: string) =>
+    new Date(s).toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl font-bold">Facturen</h2>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Zoek op nummer, winkel, e-mail..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 pr-4 h-9 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-72"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center text-muted-foreground">Geen facturen gevonden</div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Factuurnummer</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Datum</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Verkoper</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Omschrijving</th>
+                <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Excl. BTW</th>
+                <th className="px-4 py-3 text-right font-semibold text-muted-foreground">BTW</th>
+                <th className="px-4 py-3 text-right font-semibold text-muted-foreground">Totaal</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Verzonden</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((inv, i) => (
+                <tr key={inv.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-muted/20"}`}>
+                  <td className="px-4 py-3 font-mono font-semibold text-primary">{inv.invoiceNumber}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{fmtDate(inv.createdAt)}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{inv.userStore ?? inv.userName ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground">{inv.userEmail}</div>
+                  </td>
+                  <td className="px-4 py-3 max-w-xs truncate">{inv.description}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">{fmtEuro(inv.amountCents)}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap text-muted-foreground">{fmtEuro(inv.vatCents)}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap font-semibold">{fmtEuro(inv.totalCents)}</td>
+                  <td className="px-4 py-3">
+                    {inv.sentAt
+                      ? <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">Verzonden</span>
+                      : <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">Niet verzonden</span>
+                    }
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => downloadPdf(inv)}
+                      disabled={downloading === inv.id}
+                      className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                    >
+                      {downloading === inv.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                      PDF
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

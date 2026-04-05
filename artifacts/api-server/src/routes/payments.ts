@@ -4,6 +4,7 @@ import { userAccountsTable, paymentOrdersTable, creditPurchasesTable, paymentLog
 import { eq, sql, desc, like, asc } from "drizzle-orm";
 import { requireSellerOrAdmin, requireAdmin } from "./auth";
 import { createPaynlTransaction, getPaynlTransactionStatus, getPaynlCredentials } from "../services/paynl";
+import { createInvoice } from "../services/invoices";
 
 // Custom multipart/form-data parser for text fields only (no file uploads needed)
 // Handles Pay.nl's exchange format without needing an Express response object
@@ -111,6 +112,14 @@ async function processPayment(orderId: number, paynlOrderId?: string | null): Pr
     creditsAmount: order.creditsAmount,
     amountPaidCents: order.amountCents,
   });
+
+  createInvoice({
+    userId: order.userId,
+    type: "credit_purchase",
+    description: `Credits pakket "${order.bundleName}" — ${order.creditsAmount} connecties`,
+    amountCents: order.amountCents,
+    vatPercent: 21,
+  }).catch((err: any) => console.error("[INVOICE] Failed to create credit invoice:", err));
 
   return { done: true, credits: order.creditsAmount };
 }

@@ -285,6 +285,34 @@ export async function ensureTables(): Promise<void> {
     // Auto-purge logs older than 60 days
     await client.query(`DELETE FROM system_logs WHERE created_at < NOW() - INTERVAL '60 days'`);
 
+    // Invoice support (v4.0)
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS invoice_number_prefix TEXT NOT NULL DEFAULT 'F'`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS invoice_next_number INTEGER NOT NULL DEFAULT 1001`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS invoice_template TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS company_name TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS vat_number TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS billing_address TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS billing_postcode TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS billing_city TEXT`).catch(() => {});
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id             SERIAL PRIMARY KEY,
+        invoice_number TEXT NOT NULL,
+        user_id        INTEGER NOT NULL REFERENCES user_accounts(id),
+        type           TEXT NOT NULL CHECK (type IN ('lead_purchase','credit_purchase')),
+        description    TEXT NOT NULL,
+        amount_cents   INTEGER NOT NULL,
+        vat_percent    INTEGER NOT NULL DEFAULT 21,
+        vat_cents      INTEGER NOT NULL DEFAULT 0,
+        total_cents    INTEGER NOT NULL,
+        pdf_base64     TEXT,
+        sent_at        TIMESTAMP,
+        created_at     TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `).catch(() => {});
+    await client.query(`CREATE INDEX IF NOT EXISTS invoices_user_id_idx ON invoices (user_id)`).catch(() => {});
+    await client.query(`CREATE INDEX IF NOT EXISTS invoices_created_at_idx ON invoices (created_at DESC)`).catch(() => {});
+
     // Seed emoji from active categories into the library if not already present
     await client.query(`
       INSERT INTO icon_library (name, type, emoji, object_path)

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { siteSettingsTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "./auth";
+import { DEFAULT_INVOICE_TEMPLATE } from "../services/invoice-pdf";
 
 const router: IRouter = Router();
 
@@ -30,6 +31,9 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       initialSellerCredits: settings.initialSellerCredits ?? 10,
       openaiApiKeyMasked: maskSecret(settings.openaiApiKey),
       openaiConfigured: !!(settings.openaiApiKey),
+      invoiceNumberPrefix: (settings as any).invoiceNumberPrefix ?? "F",
+      invoiceNextNumber: (settings as any).invoiceNextNumber ?? 1001,
+      invoiceTemplate: (settings as any).invoiceTemplate ?? DEFAULT_INVOICE_TEMPLATE,
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -38,19 +42,20 @@ router.get("/settings", requireAdmin, async (_req, res) => {
 
 router.put("/settings", requireAdmin, async (req, res) => {
   try {
-    const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits, openaiApiKey } = req.body as {
+    const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits, openaiApiKey,
+      invoiceNumberPrefix, invoiceNextNumber, invoiceTemplate } = req.body as {
       offlineMode?: boolean;
       paynlServiceId?: string;
       paynlToken?: string;
       initialSellerCredits?: number;
       openaiApiKey?: string;
+      invoiceNumberPrefix?: string;
+      invoiceNextNumber?: number;
+      invoiceTemplate?: string;
     };
 
     const settings = await getOrCreateSettings();
-
-    const updates: Partial<typeof siteSettingsTable.$inferInsert> = {
-      updatedAt: new Date(),
-    };
+    const updates: Partial<typeof siteSettingsTable.$inferInsert> = { updatedAt: new Date() };
 
     if (typeof offlineMode === "boolean") updates.offlineMode = offlineMode;
     if (typeof paynlServiceId === "string") updates.paynlServiceId = paynlServiceId.trim() || null;
@@ -62,6 +67,15 @@ router.put("/settings", requireAdmin, async (req, res) => {
     }
     if (typeof openaiApiKey === "string" && !openaiApiKey.startsWith("****")) {
       updates.openaiApiKey = openaiApiKey.trim() || null;
+    }
+    if (typeof invoiceNumberPrefix === "string" && invoiceNumberPrefix.trim()) {
+      (updates as any).invoiceNumberPrefix = invoiceNumberPrefix.trim().toUpperCase().slice(0, 10);
+    }
+    if (typeof invoiceNextNumber === "number" && invoiceNextNumber >= 1) {
+      (updates as any).invoiceNextNumber = Math.floor(invoiceNextNumber);
+    }
+    if (typeof invoiceTemplate === "string") {
+      (updates as any).invoiceTemplate = invoiceTemplate;
     }
 
     const updated = await db
@@ -79,6 +93,9 @@ router.put("/settings", requireAdmin, async (req, res) => {
       initialSellerCredits: s.initialSellerCredits ?? 10,
       openaiApiKeyMasked: maskSecret(s.openaiApiKey),
       openaiConfigured: !!(s.openaiApiKey),
+      invoiceNumberPrefix: (s as any).invoiceNumberPrefix ?? "F",
+      invoiceNextNumber: (s as any).invoiceNextNumber ?? 1001,
+      invoiceTemplate: (s as any).invoiceTemplate ?? DEFAULT_INVOICE_TEMPLATE,
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });
