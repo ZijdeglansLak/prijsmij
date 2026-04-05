@@ -215,24 +215,70 @@ export default function RequestDetail() {
               </div>
             )}
 
-            {/* Specs */}
-            {request.specs && Object.keys(request.specs).length > 0 && (
-              <div className="bg-card rounded-2xl p-5 border border-border">
-                <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-primary" /> Specificaties
-                </h3>
-                <div className="space-y-2">
-                  {Object.entries(request.specs as Record<string, string>).map(([key, val]) => (
-                    val ? (
-                      <div key={key} className="flex justify-between text-sm gap-3">
-                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
-                        <span className="font-medium text-right">{val}</span>
-                      </div>
-                    ) : null
-                  ))}
+            {/* Uitvraagdetails */}
+            <div className="bg-card rounded-2xl p-5 border border-border">
+              <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                <Info className="w-4 h-4 text-primary" /> Uitvraagdetails
+              </h3>
+              <div className="space-y-2.5 text-sm">
+                {/* Brand */}
+                {request.brand && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Merk / Model</span>
+                    <span className="font-medium text-right">{request.brand}</span>
+                  </div>
+                )}
+                {/* Allowed offer types */}
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Staat van product</span>
+                  <span className="font-medium text-right">
+                    {(request.allowedOfferTypes as string[]).map(t =>
+                      t === "new" ? "Nieuw" : t === "refurbished" ? "Refurbished" : "Occasion"
+                    ).join(", ")}
+                  </span>
                 </div>
+                {/* Allow similar models */}
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Alternatief model</span>
+                  <span className={`font-medium ${request.allowSimilarModels ? "text-green-600" : "text-red-500"}`}>
+                    {request.allowSimilarModels ? "Toegestaan" : "Niet toegestaan"}
+                  </span>
+                </div>
+                {/* Category-specific fields */}
+                {(() => {
+                  const specs = (request.specifications ?? {}) as Record<string, unknown>;
+                  const fields = ((request as any).categoryFields ?? []) as Array<{ key: string; label: string; unit?: string; type: string }>;
+                  const rows: JSX.Element[] = [];
+                  // First render fields in category order (with labels)
+                  for (const field of fields) {
+                    const val = specs[field.key];
+                    if (val === undefined || val === null || val === "" || val === false) continue;
+                    const display = field.type === "boolean"
+                      ? (val ? "Ja" : "Nee")
+                      : `${val}${field.unit ? " " + field.unit : ""}`;
+                    rows.push(
+                      <div key={field.key} className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">{field.label}</span>
+                        <span className="font-medium text-right">{String(display)}</span>
+                      </div>
+                    );
+                  }
+                  // Then render any extra keys not in the template
+                  const templateKeys = new Set(fields.map(f => f.key));
+                  for (const [key, val] of Object.entries(specs)) {
+                    if (templateKeys.has(key)) continue;
+                    if (val === undefined || val === null || val === "") continue;
+                    rows.push(
+                      <div key={key} className="flex justify-between gap-3">
+                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                        <span className="font-medium text-right">{String(val)}</span>
+                      </div>
+                    );
+                  }
+                  return rows;
+                })()}
               </div>
-            )}
+            </div>
 
             {/* Place bid CTA */}
             <div className="bg-gradient-to-br from-primary to-accent rounded-2xl p-6 text-white text-center shadow-lg">

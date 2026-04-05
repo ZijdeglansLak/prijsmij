@@ -262,6 +262,7 @@ router.get("/requests/:id", async (req, res) => {
       categoryId: request.categoryId,
       categoryName: cat?.name ?? "",
       categoryIcon: cat?.icon ?? "",
+      categoryFields: (cat?.fields ?? []) as any[],
       specifications: request.specifications,
       allowedOfferTypes: request.allowedOfferTypes as string[],
       allowSimilarModels: request.allowSimilarModels,
