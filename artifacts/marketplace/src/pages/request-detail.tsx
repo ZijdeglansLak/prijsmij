@@ -341,14 +341,18 @@ export default function RequestDetail() {
             </div>
 
             <div className="space-y-4">
-              {bids?.length === 0 ? (
-                <div className="text-center py-16 bg-muted/30 rounded-2xl border border-dashed border-border">
-                  <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-bold text-secondary mb-1">Nog geen biedingen</h3>
-                  <p className="text-muted-foreground">Ben jij de eerste die een bod plaatst?</p>
-                </div>
-              ) : (
-                bids?.filter((bid) => !(bid as any).isPurchased || purchasedBidIds.has(bid.id)).map((bid, index) => (
+              {(() => {
+                const visibleBids = (bids ?? []).filter((bid) =>
+                  isRequester || !(bid as any).isPurchased || purchasedBidIds.has(bid.id)
+                );
+                if (visibleBids.length === 0) return (
+                  <div className="text-center py-16 bg-muted/30 rounded-2xl border border-dashed border-border">
+                    <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-secondary mb-1">Nog geen biedingen</h3>
+                    <p className="text-muted-foreground">Ben jij de eerste die een bod plaatst?</p>
+                  </div>
+                );
+                return visibleBids.map((bid, index) => (
                   <div key={bid.id} className={`bg-card rounded-2xl p-6 border transition-all hover:shadow-md ${index === 0 && filterType === 'all' ? 'border-primary/50 shadow-sm ring-1 ring-primary/10' : 'border-border'}`}>
                     {index === 0 && filterType === 'all' && (
                       <div className="absolute -translate-y-9 translate-x-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
@@ -428,8 +432,8 @@ export default function RequestDetail() {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
         </div>
