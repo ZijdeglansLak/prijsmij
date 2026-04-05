@@ -14,7 +14,7 @@ import { useI18n } from "@/contexts/i18n";
 export default function RequestsPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const { isSeller, isLoggedIn, isAdmin } = useUserAuth();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [, setLocation] = useLocation();
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
@@ -66,7 +66,7 @@ export default function RequestsPage() {
                 >
                   <span className="text-3xl">{cat.icon}</span>
                   <div className="text-center">
-                    <p className="font-bold text-secondary text-sm">{cat.name}</p>
+                    <p className="font-bold text-secondary text-sm">{(cat as any).nameI18n?.[lang] || cat.name}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       <span className="font-semibold text-primary">{cat.activeRequestCount}</span> {t.requests.activeRequests}
                     </p>
@@ -147,7 +147,7 @@ export default function RequestsPage() {
                       return categories.map(cat => (
                         <button key={cat.id} onClick={() => setCategoryId(cat.id)}
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}>
-                          <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
+                          <span className="flex items-center gap-2">{cat.icon} {(cat as any).nameI18n?.[lang] || cat.name}</span>
                           <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
                         </button>
                       ));
@@ -164,7 +164,7 @@ export default function RequestsPage() {
                             {cats.map(cat => (
                               <button key={cat.id} onClick={() => setCategoryId(cat.id)}
                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}>
-                                <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
+                                <span className="flex items-center gap-2">{cat.icon} {(cat as any).nameI18n?.[lang] || cat.name}</span>
                                 <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
                               </button>
                             ))}
@@ -173,7 +173,7 @@ export default function RequestsPage() {
                         {ungrouped.map(cat => (
                           <button key={cat.id} onClick={() => setCategoryId(cat.id)}
                             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex justify-between items-center ${categoryId === cat.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-secondary'}`}>
-                            <span className="flex items-center gap-2">{cat.icon} {cat.name}</span>
+                            <span className="flex items-center gap-2">{cat.icon} {(cat as any).nameI18n?.[lang] || cat.name}</span>
                             <span className="bg-white/50 text-xs py-0.5 px-2 rounded-md">{cat.activeRequestCount}</span>
                           </button>
                         ))}

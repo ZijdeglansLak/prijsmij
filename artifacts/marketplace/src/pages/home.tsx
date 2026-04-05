@@ -241,7 +241,7 @@ export default function Home() {
   const { data: categories } = useListCategories();
   const { groups: categoryGroups } = useCategoryGroups();
   const { data: recentRequests } = useListRequests();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user, isBuyer, isSeller, isLoggedIn } = useUserAuth();
   const { token } = useSupplierAuth();
 
@@ -423,7 +423,7 @@ export default function Home() {
                       <IconDisplay value={cat.icon} size="sm" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-secondary leading-tight truncate">{cat.name}</p>
+                      <p className="font-semibold text-sm text-secondary leading-tight truncate">{(cat as any).nameI18n?.[lang] || cat.name}</p>
                       <p className="text-[11px] text-primary font-medium leading-tight">{cat.activeRequestCount} {t.home.active}</p>
                     </div>
                   </div>

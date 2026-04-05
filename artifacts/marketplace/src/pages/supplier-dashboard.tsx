@@ -53,7 +53,7 @@ type DashTab = "overview" | "billing" | "invoices";
 export default function SupplierDashboard() {
   const [, setLocation] = useLocation();
   const { user, token, logout, updateCredits, isSeller } = useUserAuth();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { toast } = useToast();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -218,7 +218,7 @@ export default function SupplierDashboard() {
                               onCheckedChange={() => toggleCategory(cat.id)}
                             />
                             <span className="text-sm group-hover:text-primary transition-colors">
-                              {cat.icon} {cat.name}
+                              {cat.icon} {(cat as any).nameI18n?.[lang] || cat.name}
                             </span>
                           </label>
                         ))}

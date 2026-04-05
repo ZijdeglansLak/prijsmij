@@ -31,6 +31,8 @@ router.get("/categories", async (req, res) => {
       slug: cat.slug,
       icon: cat.icon,
       description: cat.description,
+      nameI18n: (cat as any).nameI18n ?? {},
+      descriptionI18n: (cat as any).descriptionI18n ?? {},
       isActive: cat.isActive,
       groupId: cat.groupId ?? null,
       activeRequestCount: countMap.get(cat.id) ?? 0,

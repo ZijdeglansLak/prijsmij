@@ -161,7 +161,7 @@ export default function CreateRequest() {
                     className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 ${categoryId === cat.id ? 'border-primary bg-primary/5 shadow-md' : 'border-border bg-card hover:border-primary/30'}`}
                   >
                     <div className="text-4xl">{cat.icon}</div>
-                    <span className="font-bold text-secondary">{cat.name}</span>
+                    <span className="font-bold text-secondary">{(cat as any).nameI18n?.[lang] || cat.name}</span>
                   </button>
                 ))}
               </div>
