@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { marked } from "marked";
 import { useLocation, Link } from "wouter";
 import { Layout } from "@/components/layout";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
 import { IconPicker, IconDisplay } from "@/components/icon-picker";
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs";
 
@@ -2021,12 +2022,11 @@ interface PageEditorProps {
 }
 
 function PageEditor({ title, content, saving, selectedSlug, onTitleChange, onContentChange, onSave }: PageEditorProps) {
-  const [mode, setMode] = useState<"edit" | "preview">("edit");
-  const preview = useMemo(() => {
+  const htmlContent = useMemo(() => {
     if (!content) return "";
     if (content.trimStart().startsWith("<")) return content;
     return marked.parse(content) as string;
-  }, [content]);
+  }, [selectedSlug]);
 
   return (
     <>
@@ -2042,41 +2042,15 @@ function PageEditor({ title, content, saving, selectedSlug, onTitleChange, onCon
       </div>
 
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-semibold text-secondary">Inhoud</label>
-          <div className="flex rounded-lg border border-border overflow-hidden text-xs">
-            <button
-              onClick={() => setMode("edit")}
-              className={`px-3 py-1.5 font-medium transition-colors ${mode === "edit" ? "bg-primary text-white" : "bg-white text-muted-foreground hover:bg-muted"}`}
-            >
-              Bewerken
-            </button>
-            <button
-              onClick={() => setMode("preview")}
-              className={`px-3 py-1.5 font-medium transition-colors ${mode === "preview" ? "bg-primary text-white" : "bg-white text-muted-foreground hover:bg-muted"}`}
-            >
-              Voorbeeld
-            </button>
-          </div>
-        </div>
-
-        {mode === "edit" ? (
-          <textarea
-            value={content}
-            onChange={e => onContentChange(e.target.value)}
-            rows={16}
-            className="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 resize-y"
-            placeholder={`## Koptekst\n\nSchrijf hier de inhoud. Gebruik Markdown voor opmaak:\n- **vet**, _cursief_\n- # Koptekst 1, ## Koptekst 2\n- - lijstitem`}
-          />
-        ) : (
-          <div className="min-h-[300px] border border-border rounded-lg p-4 bg-white">
-            {preview ? (
-              <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: preview }} />
-            ) : (
-              <p className="text-muted-foreground italic text-sm">Nog geen inhoud om te bekijken.</p>
-            )}
-          </div>
-        )}
+        <label className="block text-sm font-semibold text-secondary mb-2">Inhoud</label>
+        <RichTextEditor
+          key={selectedSlug}
+          content={htmlContent}
+          onChange={onContentChange}
+        />
+        <p className="text-xs text-muted-foreground mt-1.5">
+          Opgemaakte tekst plakken vanuit Word of een website werkt direct.
+        </p>
       </div>
 
       <div className="flex items-center gap-3">
