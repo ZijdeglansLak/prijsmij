@@ -15,11 +15,11 @@ export function RequestCard({ request, featured = false }: RequestCardProps) {
     <Link href={`/requests/${request.id}`} className="group block h-full">
       <div className={`
         bg-card rounded-2xl p-6 h-full flex flex-col
-        border border-border/50
+        shadow-sm border border-border
         transition-all duration-300 ease-out
-        hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30
+        hover:shadow-lg hover:shadow-primary/8 hover:border-primary/40
         hover:-translate-y-1
-        ${featured ? 'ring-2 ring-primary/20 bg-gradient-to-b from-white to-orange-50/30' : ''}
+        ${featured ? 'ring-2 ring-primary/30 bg-gradient-to-b from-white to-orange-50/30' : ''}
       `}>
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
