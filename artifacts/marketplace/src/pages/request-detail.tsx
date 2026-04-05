@@ -149,7 +149,7 @@ export default function RequestDetail() {
               <div className="inline-flex items-center gap-2 bg-white/10 text-white/80 rounded-full px-3 py-1 text-sm font-medium mb-4">
                 <Tag className="w-4 h-4" /> {request.category?.name}
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-white">{request.brand}</h1>
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-white">{request.brand} {request.title}</h1>
               {request.description && <p className="text-white/70 text-lg mb-4">{request.description}</p>}
               {request.budget && (
                 <div className="inline-flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2">
@@ -221,18 +221,18 @@ export default function RequestDetail() {
                 <Info className="w-4 h-4 text-primary" /> Uitvraagdetails
               </h3>
               <div className="space-y-2.5 text-sm">
-                {/* Brand */}
+                {/* Merk */}
                 {request.brand && (
                   <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Merk / Model</span>
+                    <span className="text-muted-foreground">Merk</span>
                     <span className="font-medium text-right">{request.brand}</span>
                   </div>
                 )}
-                {/* Aanvullende wensen (request title) */}
+                {/* Model */}
                 {request.title && (
                   <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Aanvullende wensen</span>
-                    <span className="font-medium text-right max-w-[60%]">{request.title}</span>
+                    <span className="text-muted-foreground">Model</span>
+                    <span className="font-medium text-right">{request.title}</span>
                   </div>
                 )}
                 {/* Allowed offer types */}
