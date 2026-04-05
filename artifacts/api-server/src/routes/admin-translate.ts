@@ -11,7 +11,8 @@ async function getOpenAIClient(): Promise<OpenAI | null> {
     const dbKey = rows[0]?.openai_api_key as string | null | undefined;
     if (dbKey?.trim()) return new OpenAI({ apiKey: dbKey.trim() });
   } catch {}
-  const envKey = process.env.OPENAI_API_KEY2;
+  // Check multiple env var names so dev and prod both work
+  const envKey = process.env.OPENAI_API_KEY2 || process.env.OPENAI_API_KEY;
   if (envKey?.trim()) return new OpenAI({ apiKey: envKey.trim() });
   return null;
 }
@@ -324,7 +325,17 @@ Antwoord ALLEEN met geldige JSON, geen extra tekst.`;
     return c;
   });
 
-  res.json({ categories: updatedCategories, translated: items.length });
+  res.json({
+    categories: updatedCategories,
+    translated: items.length,
+    details: {
+      names: items.filter(i => i.id.startsWith("catname__")).length,
+      descriptions: items.filter(i => i.id.startsWith("catdesc__")).length,
+      labels: items.filter(i => i.id.startsWith("label__")).length,
+      placeholders: items.filter(i => i.id.startsWith("placeholder__")).length,
+      options: items.filter(i => i.id.startsWith("option__")).length,
+    },
+  });
 });
 
 export default router;

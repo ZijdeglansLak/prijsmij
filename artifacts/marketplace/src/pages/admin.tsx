@@ -281,7 +281,9 @@ function CategoriesTab() {
         saved++;
       }
       setCategories(updatedCats);
-      toast({ title: `${data.translated} vertalingen ingevuld en ${saved} categorieën opgeslagen` });
+      const d = data.details;
+      const detail = d ? ` (${d.names} namen, ${d.labels} veldnamen, ${d.placeholders} voorbeeldteksten, ${d.options} opties)` : "";
+      toast({ title: `${data.translated} vertalingen ingevuld en ${saved} categorieën opgeslagen${detail}` });
     } catch {
       toast({ title: "Vertaling mislukt", variant: "destructive" });
     } finally {
@@ -530,7 +532,9 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
       setNameI18n(c.nameI18n ?? {});
       setDescriptionI18n(c.descriptionI18n ?? {});
       setFields(c.fields);
-      toast({ title: `${data.translated} vertalingen automatisch ingevuld` });
+      const d = data.details;
+      const detail = d ? ` (${d.labels} labels, ${d.placeholders} voorbeeldteksten, ${d.options} opties)` : "";
+      toast({ title: `${data.translated} vertalingen automatisch ingevuld${detail}` });
     } catch {
       toast({ title: "Vertaaldienst niet bereikbaar", variant: "destructive" });
     } finally {
@@ -1485,7 +1489,7 @@ function SettingsTab() {
           </div>
           <div>
             <h3 className="font-bold text-lg leading-tight">Quootje chatbot — OpenAI sleutel</h3>
-            <p className="text-sm text-muted-foreground">Stel de OpenAI API-sleutel in voor de chatbot (valt terug op omgevingsvariabele OPENAI_API_KEY2 als leeg)</p>
+            <p className="text-sm text-muted-foreground">Stel de OpenAI API-sleutel in voor de chatbot én automatisch vertalen. Sla op om te activeren op de live omgeving (vereist opnieuw instellen in productie).</p>
           </div>
           {openaiConfigured
             ? <span className="ml-auto text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Actief</span>
