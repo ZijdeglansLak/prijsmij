@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { userAccountsTable, registerSchema, loginSchema } from "@workspace/db";
+import { userAccountsTable, registerSchema, loginSchema, siteSettingsTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -128,13 +128,19 @@ router.post("/auth/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
+    let initialCredits = 0;
+    if (role === "seller") {
+      const settings = await db.select({ initialSellerCredits: siteSettingsTable.initialSellerCredits }).from(siteSettingsTable).limit(1);
+      initialCredits = settings[0]?.initialSellerCredits ?? 0;
+    }
+
     const [user] = await db.insert(userAccountsTable).values({
       role,
       storeName: storeName ?? null,
       contactName,
       email,
       passwordHash,
-      credits: 0,
+      credits: initialCredits,
       emailVerificationToken: verificationToken,
       emailVerified: false,
     }).returning();
