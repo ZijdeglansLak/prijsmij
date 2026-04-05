@@ -67,11 +67,17 @@ export interface CreateInvoiceOptions {
 }
 
 export async function createInvoice(opts: CreateInvoiceOptions): Promise<number> {
-  const { userId, type, description, amountCents } = opts;
+  const { userId, type, description } = opts;
   const vatPercent = opts.vatPercent ?? 21;
 
-  const vatCents = Math.round(amountCents * vatPercent / 100);
-  const totalCents = amountCents + vatCents;
+  // amountCents is the price INCLUSIVE of BTW (as shown on the site)
+  const totalCents = opts.amountCents;
+  const exclBtwCents = vatPercent > 0
+    ? Math.round(totalCents * 100 / (100 + vatPercent))
+    : totalCents;
+  const vatCents = totalCents - exclBtwCents;
+  // amountCents on the invoice = excl. BTW
+  const amountCents = exclBtwCents;
 
   const [settings] = await db.select().from(siteSettingsTable).limit(1);
   const [user] = await db.select().from(userAccountsTable).where(eq(userAccountsTable.id, userId));
