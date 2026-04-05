@@ -54,6 +54,8 @@ export function RichTextEditor({ content, onChange, placeholder = "Begin met typ
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        link: false,
+        underline: false,
       }),
       Underline,
       Link.configure({
