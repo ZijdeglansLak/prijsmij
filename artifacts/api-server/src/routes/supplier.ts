@@ -279,6 +279,7 @@ router.get("/supplier/interested-bids", requireSeller, async (req, res) => {
 
     res.json(interestedBids.map((b) => {
       const r = reqMap.get(b.requestId);
+      const connected = connectedBidIds.has(b.id);
       return {
         bidId: b.id,
         requestId: b.requestId,
@@ -286,11 +287,11 @@ router.get("/supplier/interested-bids", requireSeller, async (req, res) => {
         supplierStore: b.supplierStore,
         price: parseFloat(String(b.price)),
         modelName: b.modelName,
-        buyerName: b.buyerInterestName ?? b.buyerInterestEmail ?? "",
-        buyerEmail: b.buyerInterestEmail ?? "",
-        buyerPhone: b.buyerInterestPhone ?? null,
+        buyerName: connected ? (b.buyerInterestName ?? b.buyerInterestEmail ?? "") : null,
+        buyerEmail: connected ? (b.buyerInterestEmail ?? "") : null,
+        buyerPhone: connected ? (b.buyerInterestPhone ?? null) : null,
         interestAt: b.buyerInterestAt,
-        alreadyConnected: connectedBidIds.has(b.id),
+        alreadyConnected: connected,
       };
     }));
   } catch (err) { req.log.error({ err }, "Failed to get interested bids"); res.status(500).json({ error: "Internal server error" }); }

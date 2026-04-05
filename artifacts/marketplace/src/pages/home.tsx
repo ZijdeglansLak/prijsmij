@@ -170,7 +170,10 @@ function SellerDashboard({ token }: { token: string }) {
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">{b.modelName} — <span className="font-semibold text-primary">€{b.price.toFixed(2)}</span></p>
                   <div className="text-xs text-muted-foreground">
-                    Koper: <span className="font-semibold text-secondary">{b.buyerName}</span>
+                    {b.alreadyConnected && b.buyerName
+                      ? <>Koper: <span className="font-semibold text-secondary">{b.buyerName}</span></>
+                      : <span className="italic">Contactgegevens zichtbaar na aankoop</span>
+                    }
                   </div>
                 </div>
               </Link>

@@ -91,10 +91,12 @@ export default function SupplierLeads() {
                     </div>
 
                     <div className="mt-3 pt-3 border-t border-border/60 flex flex-wrap gap-3 text-sm">
-                      <span className="flex items-center gap-1.5 text-muted-foreground">
-                        <User className="w-3.5 h-3.5" />
-                        <span className="font-medium text-secondary">{lead.buyerName}</span>
-                      </span>
+                      {lead.alreadyConnected && lead.buyerName && (
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <User className="w-3.5 h-3.5" />
+                          <span className="font-medium text-secondary">{lead.buyerName}</span>
+                        </span>
+                      )}
                       {lead.alreadyConnected ? (
                         <>
                           <a href={`mailto:${lead.buyerEmail}`} className="flex items-center gap-1.5 text-primary hover:underline">
