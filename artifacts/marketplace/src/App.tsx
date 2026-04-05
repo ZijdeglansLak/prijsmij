@@ -23,6 +23,7 @@ import AuthVerifyEmail from "@/pages/auth-verify-email";
 import Profile from "@/pages/profile";
 import SupplierDashboard from "@/pages/supplier-dashboard";
 import SupplierCredits from "@/pages/supplier-credits";
+import BetalingGeslaagd from "@/pages/betaling-geslaagd";
 import SupplierLeads from "@/pages/supplier-leads";
 import BuyerRequests from "@/pages/buyer-requests";
 import OfflinePage from "@/pages/offline";
@@ -60,6 +61,7 @@ function Router() {
       {/* Supplier dashboard (sellers only) */}
       <Route path="/supplier/dashboard" component={SupplierDashboard} />
       <Route path="/supplier/credits" component={SupplierCredits} />
+      <Route path="/betaling-geslaagd" component={BetalingGeslaagd} />
       <Route path="/supplier/leads" component={SupplierLeads} />
       <Route path="/my-requests" component={BuyerRequests} />
       <Route path="/pages/:slug" component={StaticPage} />

@@ -86,9 +86,8 @@ export default function SupplierCredits() {
       if (!res.ok) return "pending";
       const data = await res.json();
       if (data.status === "paid") {
-        setPaymentStatus("success");
-        updateCredits((user?.credits ?? 0) + data.credits);
         setPendingOrderId(null);
+        window.location.href = `/betaling-geslaagd?credits=${data.credits}`;
         return "paid";
       }
       if (data.status === "failed" || data.status === "cancelled") {

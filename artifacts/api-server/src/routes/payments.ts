@@ -205,7 +205,7 @@ router.get("/payments/return", async (req, res) => {
 
     if (order.status === "paid") {
       await logPayment({ source: "return_url", action: paynlActionRaw || undefined, internalOrderId: order.id, paynlOrderId: paynlOrderIdFromQuery, rawBody: JSON.stringify(allParams), result: "already_paid" });
-      res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
+      res.redirect(`${appUrl}/betaling-geslaagd?credits=${order.creditsAmount}`);
       return;
     }
 
@@ -213,7 +213,7 @@ router.get("/payments/return", async (req, res) => {
     if (paynlActionRaw && PAID_ACTIONS.has(paynlActionRaw)) {
       const { credits } = await processPayment(order.id, paynlOrderIdFromQuery || order.paynlOrderId);
       await logPayment({ source: "return_url", action: paynlActionRaw, internalOrderId: order.id, paynlOrderId: paynlOrderIdFromQuery, rawBody: JSON.stringify(allParams), result: "paid_via_return_action", creditsAdded: credits });
-      res.redirect(`${appUrl}/supplier/credits?payment=success&credits=${order.creditsAmount}`);
+      res.redirect(`${appUrl}/betaling-geslaagd?credits=${order.creditsAmount}`);
       return;
     }
 
