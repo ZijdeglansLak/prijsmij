@@ -259,33 +259,61 @@ function CategoriesTab() {
   async function handleTranslateAll() {
     if (!categories || categories.length === 0) return;
     setTranslatingAll(true);
-    try {
-      const res = await fetch("/api/admin/translate-all-categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ categories }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast({ title: data.error ?? "Fout bij vertalen", variant: "destructive" }); return; }
-      if (data.translated === 0) { toast({ title: "Alle vertalingen waren al ingevuld" }); return; }
+    let totalTranslated = 0;
+    let totalSaved = 0;
+    const updatedCats = [...categories];
 
-      // Auto-save each category that has changes
-      const updatedCats: CategoryRecord[] = data.categories;
-      let saved = 0;
-      for (const cat of updatedCats) {
-        await fetch(`/api/admin/categories/${cat.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ name: cat.name, icon: cat.icon, description: cat.description, fields: cat.fields, groupId: cat.groupId, nameI18n: cat.nameI18n, descriptionI18n: cat.descriptionI18n }),
-        }).catch(() => {});
-        saved++;
+    try {
+      // Translate per category to stay within proxy timeout limits
+      for (let i = 0; i < categories.length; i++) {
+        const cat = updatedCats[i];
+        let res: Response;
+        try {
+          res = await fetch("/api/admin/translate-all-categories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ categories: [cat] }),
+          });
+        } catch (fetchErr) {
+          toast({ title: `Verbindingsfout bij categorie "${cat.name}": ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`, variant: "destructive" });
+          break;
+        }
+
+        let data: any;
+        try {
+          data = await res.json();
+        } catch {
+          toast({ title: `Ongeldig antwoord van server (categorie: ${cat.name})`, variant: "destructive" });
+          break;
+        }
+
+        if (!res.ok) {
+          toast({ title: data.error ?? "Fout bij vertalen", variant: "destructive" });
+          break;
+        }
+
+        if (data.translated > 0) {
+          const translated = data.categories[0];
+          updatedCats[i] = translated;
+          totalTranslated += data.translated;
+
+          await fetch(`/api/admin/categories/${translated.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ name: translated.name, icon: translated.icon, description: translated.description, fields: translated.fields, groupId: translated.groupId, nameI18n: translated.nameI18n, descriptionI18n: translated.descriptionI18n }),
+          }).catch(() => {});
+          totalSaved++;
+        }
       }
+
       setCategories(updatedCats);
-      const d = data.details;
-      const detail = d ? ` (${d.names} namen, ${d.labels} veldnamen, ${d.placeholders} voorbeeldteksten, ${d.options} opties)` : "";
-      toast({ title: `${data.translated} vertalingen ingevuld en ${saved} categorieën opgeslagen${detail}` });
-    } catch {
-      toast({ title: "Vertaling mislukt", variant: "destructive" });
+      if (totalTranslated === 0) {
+        toast({ title: "Alle vertalingen waren al ingevuld" });
+      } else {
+        toast({ title: `${totalTranslated} vertalingen ingevuld, ${totalSaved} categorieën opgeslagen` });
+      }
+    } catch (err) {
+      toast({ title: `Vertaling mislukt: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
     } finally {
       setTranslatingAll(false);
     }
@@ -535,8 +563,8 @@ function CategoryCard({ cat, groups, isEditing, isSaving, onEdit, onSave, onCanc
       const d = data.details;
       const detail = d ? ` (${d.labels} labels, ${d.placeholders} voorbeeldteksten, ${d.options} opties)` : "";
       toast({ title: `${data.translated} vertalingen automatisch ingevuld${detail}` });
-    } catch {
-      toast({ title: "Vertaaldienst niet bereikbaar", variant: "destructive" });
+    } catch (err) {
+      toast({ title: `Vertaaldienst niet bereikbaar: ${err instanceof Error ? err.message : String(err)}`, variant: "destructive" });
     } finally {
       setTranslating(false);
     }
