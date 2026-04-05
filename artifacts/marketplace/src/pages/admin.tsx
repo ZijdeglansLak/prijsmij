@@ -2469,6 +2469,22 @@ const CAT_COLORS: Record<string, string> = {
   ERROR:  "bg-red-100 text-red-800 border-red-200",
 };
 
+function fmtLogDateTime(log_date: string, log_time: string): string {
+  const dateOnly = log_date.slice(0, 10); // "2026-04-05"
+  const d = new Date(`${dateOnly}T${log_time}Z`);
+  // sv-SE locale geeft exact "yyyy-mm-dd hh:mm:ss" in de opgegeven tijdzone
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(d);
+}
+
 function LogboekTab() {
   const { token } = useUserAuth();
   const [logs, setLogs]         = useState<LogEntry[]>([]);
@@ -2604,7 +2620,7 @@ function LogboekTab() {
             ) : (
               logs.map((log, i) => (
                 <tr key={log.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-muted/20"}`}>
-                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{log.log_date} {log.log_time}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs whitespace-nowrap">{fmtLogDateTime(log.log_date, log.log_time)}</td>
                   <td className="px-4 py-2.5">
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold border ${CAT_COLORS[log.category] ?? "bg-gray-100 text-gray-700 border-gray-200"}`}>
                       {log.category}
