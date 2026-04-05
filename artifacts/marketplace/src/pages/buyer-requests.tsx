@@ -36,7 +36,7 @@ interface MyBid {
 
 export default function BuyerRequests() {
   const [, setLocation] = useLocation();
-  const { user, isBuyer, isLoggedIn } = useUserAuth();
+  const { user, token, isBuyer, isLoggedIn } = useUserAuth();
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [myBids, setMyBids] = useState<MyBid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,9 +50,10 @@ export default function BuyerRequests() {
   async function fetchAll() {
     setLoading(true);
     try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const [rRes, bRes] = await Promise.all([
         fetch(`/api/consumer/requests?email=${encodeURIComponent(user!.email)}`),
-        fetch(`/api/consumer/my-bids?email=${encodeURIComponent(user!.email)}`),
+        fetch(`/api/consumer/my-bids`, { headers }),
       ]);
       if (rRes.ok) setRequests(await rRes.json());
       if (bRes.ok) setMyBids(await bRes.json());

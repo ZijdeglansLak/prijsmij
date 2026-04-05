@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { requireVerifiedEmail, requireSeller } from "./auth";
+import { requireVerifiedEmail, requireSeller, requireAuth } from "./auth";
 import { db } from "@workspace/db";
 import {
   requestsTable,
@@ -604,11 +604,11 @@ router.get("/consumer/requests", async (req, res) => {
 });
 
 // GET /consumer/my-bids — bids where this buyer expressed interest, with connection status
-router.get("/consumer/my-bids", async (req, res) => {
+router.get("/consumer/my-bids", requireAuth, async (req, res) => {
   try {
-    const email = (req.query.email as string | undefined)?.toLowerCase().trim();
+    const email = ((req as any).userEmail as string | undefined)?.toLowerCase().trim();
     if (!email) {
-      res.status(400).json({ error: "email query parameter required" });
+      res.status(400).json({ error: "Niet geautoriseerd" });
       return;
     }
 
