@@ -23,7 +23,7 @@ export default function RequestDetail() {
   const [consumerName, setConsumerName] = useState("");
   const [consumerPhone, setConsumerPhone] = useState("");
   const [connectieBidId, setConnectieBidId] = useState<number | null>(null);
-  const [connectieResult, setConnectieResult] = useState<{ consumerName: string; consumerEmail: string } | null>(null);
+  const [connectieResult, setConnectieResult] = useState<{ consumerName: string; consumerEmail: string; consumerPhone?: string | null } | null>(null);
   const [connectieLoading, setConnectieLoading] = useState(false);
   const [purchasedBidIds, setPurchasedBidIds] = useState<Set<number>>(new Set());
   const [myInterestBidId, setMyInterestBidId] = useState<number | null>(null);
@@ -117,7 +117,7 @@ export default function RequestDetail() {
       if (!data.alreadyConnected && connectieBidId) {
         setPurchasedBidIds((prev) => new Set([...prev, connectieBidId]));
       }
-      setConnectieResult({ consumerName: data.consumerName, consumerEmail: data.consumerEmail });
+      setConnectieResult({ consumerName: data.consumerName, consumerEmail: data.consumerEmail, consumerPhone: data.consumerPhone ?? null });
     } catch {
       toast({ title: "Verbindingsfout", variant: "destructive" });
     } finally {
@@ -401,7 +401,10 @@ export default function RequestDetail() {
                           )}
                           {isRequester && myInterestBidId !== bid.id && (
                             <Button 
-                              onClick={() => handleInterest(bid.id)}
+                              onClick={() => {
+                                if (user) { setConsumerName(user.contactName); setConsumerEmail(user.email); }
+                                setInterestBidId(bid.id);
+                              }}
                               disabled={expressInterestMutation.isPending || myInterestBidId !== null}
                               className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
                             >
@@ -443,40 +446,54 @@ export default function RequestDetail() {
       <Dialog open={!!interestBidId} onOpenChange={(o) => { if (!o) { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Interesse in dit bod?</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">{isRequester ? "Bod accepteren" : "Interesse in dit bod?"}</DialogTitle>
             <DialogDescription className="text-base mt-2">
-              Geweldig! Vul je gegevens in zodat de winkelier contact met je op kan nemen.
+              {isRequester
+                ? "Vul je telefoonnummer in zodat de winkelier contact met je op kan nemen."
+                : "Geweldig! Vul je gegevens in zodat de winkelier contact met je op kan nemen."}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
+            {!isRequester && (
+              <>
+                <div>
+                  <label className="block text-sm font-bold text-secondary mb-2">Jouw naam</label>
+                  <Input 
+                    type="text"
+                    placeholder="Jan Jansen" 
+                    value={consumerName}
+                    onChange={(e) => setConsumerName(e.target.value)}
+                    className="h-12 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
+                  <Input 
+                    type="email" 
+                    placeholder="naam@voorbeeld.nl" 
+                    value={consumerEmail}
+                    onChange={(e) => setConsumerEmail(e.target.value)}
+                    className="h-12 text-base"
+                  />
+                </div>
+              </>
+            )}
+            {isRequester && (
+              <div className="bg-muted/40 rounded-lg px-4 py-3 text-sm text-muted-foreground">
+                <span className="font-medium text-secondary">{user?.contactName}</span> &middot; {user?.email}
+              </div>
+            )}
             <div>
-              <label className="block text-sm font-bold text-secondary mb-2">Jouw naam</label>
-              <Input 
-                type="text"
-                placeholder="Jan Jansen" 
-                value={consumerName}
-                onChange={(e) => setConsumerName(e.target.value)}
-                className="h-12 text-base"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
-              <Input 
-                type="email" 
-                placeholder="naam@voorbeeld.nl" 
-                value={consumerEmail}
-                onChange={(e) => setConsumerEmail(e.target.value)}
-                className="h-12 text-base"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-secondary mb-2">Jouw telefoonnummer</label>
+              <label className="block text-sm font-bold text-secondary mb-2">
+                Jouw telefoonnummer {isRequester && <span className="text-primary">*</span>}
+              </label>
               <Input 
                 type="tel" 
                 placeholder="06 12345678" 
                 value={consumerPhone}
                 onChange={(e) => setConsumerPhone(e.target.value)}
                 className="h-12 text-base"
+                autoFocus={isRequester}
               />
             </div>
           </div>
@@ -484,10 +501,10 @@ export default function RequestDetail() {
             <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>Annuleren</Button>
             <Button 
               onClick={handleInterest} 
-              disabled={!consumerEmail || expressInterestMutation.isPending}
+              disabled={!consumerEmail || expressInterestMutation.isPending || (isRequester && !consumerPhone)}
               className="bg-primary hover:bg-primary/90 text-white"
             >
-              {expressInterestMutation.isPending ? "Verwerken..." : "Interesse bevestigen"}
+              {expressInterestMutation.isPending ? "Verwerken..." : isRequester ? "Bevestig acceptatie" : "Interesse bevestigen"}
             </Button>
           </div>
         </DialogContent>
@@ -521,6 +538,12 @@ export default function RequestDetail() {
                 <p className="text-sm text-green-700 font-medium mb-1">E-mailadres</p>
                 <p className="font-bold text-lg font-mono">{connectieResult.consumerEmail}</p>
               </div>
+              {connectieResult.consumerPhone && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+                  <p className="text-sm text-green-700 font-medium mb-1">Telefoonnummer</p>
+                  <p className="font-bold text-lg font-mono">{connectieResult.consumerPhone}</p>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">Resterend saldo: {supplier?.credits} credits. Deze connectie is ook terug te vinden in je dashboard.</p>
               <Button onClick={() => { setConnectieBidId(null); setConnectieResult(null); }} className="w-full">Sluiten</Button>
             </div>
