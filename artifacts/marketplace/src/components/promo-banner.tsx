@@ -2,60 +2,53 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Link } from "wouter";
 
-interface PromoBannerConfig {
-  id: string;
-  icon: string;
-  text: string;
-  cta?: { label: string; href: string };
-  gradient: string;
-  textColor: string;
+interface BannerData {
+  enabled: boolean;
+  icon?: string;
+  text?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
 }
 
-// ─── HUIDIGE ACTIE ────────────────────────────────────────────────────────────
-// Verander alleen dit object om een andere banner te tonen.
-// Verhoog `id` bij elke nieuwe actie zodat eerder weggeklikte banners opnieuw verschijnen.
-const ACTIVE_BANNER: PromoBannerConfig = {
-  id: "promo-2025-welkom-credits-v1",
-  icon: "🎁",
-  text: "Nieuwe winkels ontvangen 5 gratis credits bij hun eerste aanmelding!",
-  cta: { label: "Aanmelden als winkel", href: "/auth/register?role=supplier" },
-  gradient: "from-primary to-accent",
-  textColor: "text-white",
-};
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function PromoBanner() {
-  const [visible, setVisible] = useState(false);
+  const [banner, setBanner] = useState<BannerData | null>(null);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem(`banner-dismissed:${ACTIVE_BANNER.id}`);
-    if (!dismissed) setVisible(true);
+    fetch("/api/admin/promo-banner")
+      .then(r => r.json())
+      .then((d: BannerData) => {
+        if (!d.enabled || !d.text?.trim()) return;
+        const key = `promo-dismissed:${d.text}`;
+        if (localStorage.getItem(key)) return;
+        setBanner(d);
+      })
+      .catch(() => {});
   }, []);
 
   function dismiss() {
-    localStorage.setItem(`banner-dismissed:${ACTIVE_BANNER.id}`, "1");
-    setVisible(false);
+    if (!banner?.text) return;
+    localStorage.setItem(`promo-dismissed:${banner.text}`, "1");
+    setDismissed(true);
   }
 
-  if (!visible) return null;
-
-  const b = ACTIVE_BANNER;
+  if (!banner || dismissed) return null;
 
   return (
-    <div className={`w-full bg-gradient-to-r ${b.gradient} ${b.textColor}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3">
+    <div className="w-full bg-gradient-to-r from-primary to-accent text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-xl shrink-0 leading-none">{b.icon}</span>
-          <p className="text-sm font-medium leading-snug">
-            {b.text}
-          </p>
+          {banner.icon && (
+            <span className="text-xl shrink-0 leading-none">{banner.icon}</span>
+          )}
+          <p className="text-sm font-medium leading-snug">{banner.text}</p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {b.cta && (
-            <Link href={b.cta.href}>
+          {banner.ctaLabel && banner.ctaUrl && (
+            <Link href={banner.ctaUrl}>
               <span className="text-xs font-bold bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-full cursor-pointer whitespace-nowrap">
-                {b.cta.label} →
+                {banner.ctaLabel} →
               </span>
             </Link>
           )}

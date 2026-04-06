@@ -295,6 +295,13 @@ export async function ensureTables(): Promise<void> {
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_ads_conversion_label TEXT`).catch(() => {});
     await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS google_analytics_id TEXT`).catch(() => {});
 
+    // Promobanner (v4.9)
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS promo_banner_enabled BOOLEAN NOT NULL DEFAULT FALSE`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS promo_banner_icon TEXT NOT NULL DEFAULT '🎁'`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS promo_banner_text TEXT NOT NULL DEFAULT ''`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS promo_banner_cta_label TEXT NOT NULL DEFAULT ''`).catch(() => {});
+    await client.query(`ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS promo_banner_cta_url TEXT NOT NULL DEFAULT ''`).catch(() => {});
+
     // Category i18n for name/description (v4.4)
     await client.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS name_i18n JSONB NOT NULL DEFAULT '{}'`).catch(() => {});
     await client.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS description_i18n JSONB NOT NULL DEFAULT '{}'`).catch(() => {});

@@ -3122,6 +3122,13 @@ function MarketingTab() {
   const [googleAdsConversionId, setGoogleAdsConversionId] = useState("");
   const [googleAdsConversionLabel, setGoogleAdsConversionLabel] = useState("");
   const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
+
+  const [promoBannerEnabled, setPromoBannerEnabled] = useState(false);
+  const [promoBannerIcon, setPromoBannerIcon] = useState("🎁");
+  const [promoBannerText, setPromoBannerText] = useState("");
+  const [promoBannerCtaLabel, setPromoBannerCtaLabel] = useState("");
+  const [promoBannerCtaUrl, setPromoBannerCtaUrl] = useState("");
+
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -3131,6 +3138,11 @@ function MarketingTab() {
         setGoogleAdsConversionId(d.googleAdsConversionId ?? "");
         setGoogleAdsConversionLabel(d.googleAdsConversionLabel ?? "");
         setGoogleAnalyticsId(d.googleAnalyticsId ?? "");
+        setPromoBannerEnabled(d.promoBannerEnabled ?? false);
+        setPromoBannerIcon(d.promoBannerIcon ?? "🎁");
+        setPromoBannerText(d.promoBannerText ?? "");
+        setPromoBannerCtaLabel(d.promoBannerCtaLabel ?? "");
+        setPromoBannerCtaUrl(d.promoBannerCtaUrl ?? "");
       })
       .catch(() => {});
   }, [token]);
@@ -3142,7 +3154,10 @@ function MarketingTab() {
       const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ googleAdsConversionId, googleAdsConversionLabel, googleAnalyticsId }),
+        body: JSON.stringify({
+          googleAdsConversionId, googleAdsConversionLabel, googleAnalyticsId,
+          promoBannerEnabled, promoBannerIcon, promoBannerText, promoBannerCtaLabel, promoBannerCtaUrl,
+        }),
       });
       if (!res.ok) throw new Error();
       toast({ title: "Marketing-instellingen opgeslagen" });
@@ -3158,11 +3173,95 @@ function MarketingTab() {
       <div>
         <h2 className="text-xl font-bold text-secondary mb-1">Marketing &amp; Tracking</h2>
         <p className="text-sm text-muted-foreground">
-          Koppel Google Ads en Google Analytics voor conversietracking en advertentieoptimalisatie.
+          Beheer promobanner, Google Ads en Google Analytics.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* Promobanner */}
+        <div className="bg-card border rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-secondary flex items-center gap-2">
+              <span className="text-lg">📢</span> Promobanner
+            </h3>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span className="text-sm font-medium text-muted-foreground">{promoBannerEnabled ? "Actief" : "Uitgeschakeld"}</span>
+              <button
+                type="button"
+                onClick={() => setPromoBannerEnabled(v => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${promoBannerEnabled ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${promoBannerEnabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Toon een actiebanner boven de categorieën op de homepage. Zet de schakelaar aan om hem zichtbaar te maken.
+          </p>
+
+          <div className="grid grid-cols-[80px_1fr] gap-3 items-start">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium">Icoon</label>
+              <Input
+                value={promoBannerIcon}
+                onChange={e => setPromoBannerIcon(e.target.value)}
+                placeholder="🎁"
+                className="text-xl text-center"
+                maxLength={4}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium">Bannertekst</label>
+              <Input
+                value={promoBannerText}
+                onChange={e => setPromoBannerText(e.target.value)}
+                placeholder="Nieuwe winkels ontvangen 5 gratis credits bij hun eerste aanmelding!"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium">Knoptekst <span className="text-muted-foreground font-normal">(optioneel)</span></label>
+              <Input
+                value={promoBannerCtaLabel}
+                onChange={e => setPromoBannerCtaLabel(e.target.value)}
+                placeholder="Aanmelden als winkel"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium">Knop-URL <span className="text-muted-foreground font-normal">(optioneel)</span></label>
+              <Input
+                value={promoBannerCtaUrl}
+                onChange={e => setPromoBannerCtaUrl(e.target.value)}
+                placeholder="/auth/register?role=supplier"
+              />
+            </div>
+          </div>
+
+          {/* Live preview */}
+          {promoBannerText.trim() && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Voorbeeld:</p>
+              <div className="rounded-lg overflow-hidden bg-gradient-to-r from-primary to-accent text-white">
+                <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {promoBannerIcon && <span className="text-lg shrink-0">{promoBannerIcon}</span>}
+                    <p className="text-sm font-medium">{promoBannerText}</p>
+                  </div>
+                  {promoBannerCtaLabel && (
+                    <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full whitespace-nowrap shrink-0">
+                      {promoBannerCtaLabel} →
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Google Ads */}
         <div className="bg-card border rounded-xl p-5 space-y-4">
           <h3 className="font-semibold text-secondary flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-primary" /> Google Ads conversietracking

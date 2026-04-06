@@ -248,7 +248,6 @@ export default function Home() {
 
   return (
     <Layout>
-      <PromoBanner />
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -392,6 +391,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* Promobanner — boven categorieën */}
+      <PromoBanner />
 
       {/* Categories Section — v2.3 compact layout */}
       <section className="py-14 bg-white">
