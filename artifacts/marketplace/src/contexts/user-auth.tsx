@@ -75,9 +75,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }
 
-  // Refresh user data from the server on mount to pick up changes
-  // (e.g. email verification done on another device)
-  useEffect(() => {
+  function refreshFromServer() {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     if (!storedToken) return;
     fetch("/api/auth/me", { headers: { Authorization: `Bearer ${storedToken}` } })
@@ -98,6 +96,36 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         setUser(refreshed);
       })
       .catch(() => {});
+  }
+
+  // Refresh user data from the server on mount
+  useEffect(() => {
+    refreshFromServer();
+  }, []);
+
+  // Pick up changes made in other tabs (e.g. email verified in a different tab)
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key === USER_KEY && e.newValue) {
+        try { setUser(JSON.parse(e.newValue)); } catch {}
+      }
+      if (e.key === TOKEN_KEY) {
+        setToken(e.newValue);
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Re-check when the user switches back to this tab
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        refreshFromServer();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   return (
