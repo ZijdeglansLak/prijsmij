@@ -4,7 +4,7 @@ import { RequestCard } from "@/components/request-card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, ShoppingBag, Store, Zap, ShieldCheck, Clock, TrendingDown, Bell, Star } from "lucide-react";
+import { ArrowRight, ChevronRight, ShoppingBag, Store, Zap, ShieldCheck, Clock, TrendingDown, Bell, Star } from "lucide-react";
 import { useGetStats, useListCategories, useListRequests } from "@workspace/api-client-react";
 import { useI18n } from "@/contexts/i18n";
 import { useUserAuth } from "@/contexts/user-auth";
@@ -314,6 +314,39 @@ export default function Home() {
                   {t.home.ctaView}
                 </Link>
               )}
+            </motion.div>
+
+            {/* Mini how-it-works flow + trust */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.45 }}
+              className="mt-8"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 flex-wrap">
+                {([
+                  { step: "1", text: t.home.miniStep1, time: t.home.miniStep1Time },
+                  { step: "2", text: t.home.miniStep2, time: t.home.miniStep2Time },
+                  { step: "3", text: t.home.miniStep3, time: t.home.miniStep3Time },
+                ] as const).map((item, i) => (
+                  <div key={i} className="flex items-center gap-0">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full bg-primary/90 text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-sm">
+                        {item.step}
+                      </span>
+                      <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1.5">
+                        <span className="text-sm font-semibold text-secondary leading-tight">{item.text}</span>
+                        <span className="text-xs text-muted-foreground">({item.time})</span>
+                      </div>
+                    </div>
+                    {i < 2 && <ChevronRight className="hidden sm:block w-4 h-4 text-primary/30 mx-3 shrink-0" />}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3.5 text-xs text-muted-foreground flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                {t.home.heroTrust}
+              </p>
             </motion.div>
           </div>
 

@@ -402,16 +402,22 @@ export default function RequestDetail() {
                             </div>
                           )}
                           {isRequester && myInterestBidId !== bid.id && (
-                            <Button 
-                              onClick={() => {
-                                if (user) { setConsumerName(user.contactName); setConsumerEmail(user.email); }
-                                setInterestBidId(bid.id);
-                              }}
-                              disabled={expressInterestMutation.isPending || myInterestBidId !== null}
-                              className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
-                            >
-                              {expressInterestMutation.isPending ? "..." : "Bod Accepteren"}
-                            </Button>
+                            <div className="flex flex-col gap-1.5">
+                              <Button 
+                                onClick={() => {
+                                  if (user) { setConsumerName(user.contactName); setConsumerEmail(user.email); }
+                                  setInterestBidId(bid.id);
+                                }}
+                                disabled={expressInterestMutation.isPending || myInterestBidId !== null}
+                                className={`w-full sm:w-auto h-11 ${index === 0 && filterType === 'all' ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-secondary hover:bg-secondary/90 text-white'}`}
+                              >
+                                {expressInterestMutation.isPending ? "..." : "Bod Accepteren"}
+                              </Button>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Shield className="w-3 h-3 text-primary shrink-0" />
+                                De winkel neemt daarna direct contact op
+                              </p>
+                            </div>
                           )}
                           {isLoggedIn && (bid as any).hasInterest && !purchasedBidIds.has(bid.id) && !(request as any).isClosed && (
                             <Button
@@ -507,6 +513,12 @@ export default function RequestDetail() {
               />
             </div>
           </div>
+          {!isRequester && (
+            <div className="flex items-start gap-2 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2.5 text-xs text-muted-foreground">
+              <Lock className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+              <span>{t.detail.interestTrust}</span>
+            </div>
+          )}
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>{t.detail.cancel}</Button>
             <Button 
