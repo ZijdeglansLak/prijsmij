@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MailWarning, RefreshCw, CheckCircle2 } from "lucide-react";
+import { MailWarning, RefreshCw, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserAuth } from "@/contexts/user-auth";
 
@@ -7,14 +7,19 @@ export function EmailVerificationBanner() {
   const { token } = useUserAuth();
   const [resending, setResending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [devLink, setDevLink] = useState<string | null>(null);
 
   async function resend() {
     setResending(true);
     try {
-      await fetch("/api/auth/resend-verification", {
+      const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      const data = await res.json();
+      if (data.verificationLink) {
+        setDevLink(data.verificationLink);
+      }
       setSent(true);
     } finally {
       setResending(false);
@@ -33,9 +38,20 @@ export function EmailVerificationBanner() {
           Controleer je inbox voor de bevestigingsmail.
         </p>
         {sent ? (
-          <div className="flex items-center justify-center gap-2 text-green-700 font-semibold text-sm">
-            <CheckCircle2 className="w-4 h-4" />
-            Bevestigingsmail opnieuw verstuurd!
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              {devLink ? "Klik op de link hieronder om je e-mail te bevestigen:" : "Bevestigingsmail opnieuw verstuurd!"}
+            </div>
+            {devLink && (
+              <a
+                href={devLink}
+                className="inline-flex items-center gap-1.5 text-sm text-primary font-medium underline underline-offset-2 hover:text-primary/80 break-all"
+              >
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                Bevestig je e-mailadres
+              </a>
+            )}
           </div>
         ) : (
           <Button
