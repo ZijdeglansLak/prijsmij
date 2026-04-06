@@ -3126,8 +3126,16 @@ function MarketingTab() {
   const [promoBannerEnabled, setPromoBannerEnabled] = useState(false);
   const [promoBannerIcon, setPromoBannerIcon] = useState("🎁");
   const [promoBannerText, setPromoBannerText] = useState("");
+  const [promoBannerTextEn, setPromoBannerTextEn] = useState("");
+  const [promoBannerTextDe, setPromoBannerTextDe] = useState("");
+  const [promoBannerTextFr, setPromoBannerTextFr] = useState("");
   const [promoBannerCtaLabel, setPromoBannerCtaLabel] = useState("");
+  const [promoBannerCtaLabelEn, setPromoBannerCtaLabelEn] = useState("");
+  const [promoBannerCtaLabelDe, setPromoBannerCtaLabelDe] = useState("");
+  const [promoBannerCtaLabelFr, setPromoBannerCtaLabelFr] = useState("");
   const [promoBannerCtaUrl, setPromoBannerCtaUrl] = useState("");
+  const [promoBannerOnlyLoggedOut, setPromoBannerOnlyLoggedOut] = useState(false);
+  const [bannerLangTab, setBannerLangTab] = useState<"nl"|"en"|"de"|"fr">("nl");
 
   const [saving, setSaving] = useState(false);
 
@@ -3141,11 +3149,23 @@ function MarketingTab() {
         setPromoBannerEnabled(d.promoBannerEnabled ?? false);
         setPromoBannerIcon(d.promoBannerIcon ?? "🎁");
         setPromoBannerText(d.promoBannerText ?? "");
+        setPromoBannerTextEn(d.promoBannerTextEn ?? "");
+        setPromoBannerTextDe(d.promoBannerTextDe ?? "");
+        setPromoBannerTextFr(d.promoBannerTextFr ?? "");
         setPromoBannerCtaLabel(d.promoBannerCtaLabel ?? "");
+        setPromoBannerCtaLabelEn(d.promoBannerCtaLabelEn ?? "");
+        setPromoBannerCtaLabelDe(d.promoBannerCtaLabelDe ?? "");
+        setPromoBannerCtaLabelFr(d.promoBannerCtaLabelFr ?? "");
         setPromoBannerCtaUrl(d.promoBannerCtaUrl ?? "");
+        setPromoBannerOnlyLoggedOut(d.promoBannerOnlyLoggedOut ?? false);
       })
       .catch(() => {});
   }, [token]);
+
+  const bannerTextByTab = { nl: promoBannerText, en: promoBannerTextEn, de: promoBannerTextDe, fr: promoBannerTextFr };
+  const bannerCtaByTab = { nl: promoBannerCtaLabel, en: promoBannerCtaLabelEn, de: promoBannerCtaLabelDe, fr: promoBannerCtaLabelFr };
+  const setTextByTab = { nl: setPromoBannerText, en: setPromoBannerTextEn, de: setPromoBannerTextDe, fr: setPromoBannerTextFr };
+  const setCtaByTab = { nl: setPromoBannerCtaLabel, en: setPromoBannerCtaLabelEn, de: setPromoBannerCtaLabelDe, fr: setPromoBannerCtaLabelFr };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -3156,7 +3176,10 @@ function MarketingTab() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           googleAdsConversionId, googleAdsConversionLabel, googleAnalyticsId,
-          promoBannerEnabled, promoBannerIcon, promoBannerText, promoBannerCtaLabel, promoBannerCtaUrl,
+          promoBannerEnabled, promoBannerIcon,
+          promoBannerText, promoBannerTextEn, promoBannerTextDe, promoBannerTextFr,
+          promoBannerCtaLabel, promoBannerCtaLabelEn, promoBannerCtaLabelDe, promoBannerCtaLabelFr,
+          promoBannerCtaUrl, promoBannerOnlyLoggedOut,
         }),
       });
       if (!res.ok) throw new Error();
@@ -3200,6 +3223,32 @@ function MarketingTab() {
             Toon een actiebanner boven de categorieën op de homepage. Zet de schakelaar aan om hem zichtbaar te maken.
           </p>
 
+          {/* Only logged-out toggle */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <button
+              type="button"
+              onClick={() => setPromoBannerOnlyLoggedOut(v => !v)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${promoBannerOnlyLoggedOut ? "bg-primary" : "bg-muted-foreground/30"}`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${promoBannerOnlyLoggedOut ? "translate-x-4" : "translate-x-1"}`} />
+            </button>
+            <span className="text-sm font-medium">Alleen zichtbaar voor niet-ingelogde bezoekers</span>
+          </label>
+
+          {/* Language tabs */}
+          <div className="flex gap-1 border-b pb-0">
+            {(["nl","en","de","fr"] as const).map(l => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setBannerLangTab(l)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-t border-b-2 transition-colors ${bannerLangTab === l ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-[80px_1fr] gap-3 items-start">
             <div className="space-y-1">
               <label className="block text-sm font-medium">Icoon</label>
@@ -3212,26 +3261,26 @@ function MarketingTab() {
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium">Bannertekst</label>
+              <label className="block text-sm font-medium">Bannertekst <span className="text-xs text-muted-foreground font-normal">({bannerLangTab.toUpperCase()})</span></label>
               <Input
-                value={promoBannerText}
-                onChange={e => setPromoBannerText(e.target.value)}
-                placeholder="Nieuwe winkels ontvangen 5 gratis credits bij hun eerste aanmelding!"
+                value={bannerTextByTab[bannerLangTab]}
+                onChange={e => setTextByTab[bannerLangTab](e.target.value)}
+                placeholder={bannerLangTab === "nl" ? "Nieuwe winkels ontvangen 5 gratis credits!" : bannerLangTab === "en" ? "New shops receive 5 free credits on signup!" : bannerLangTab === "de" ? "Neue Händler erhalten 5 Gratis-Credits bei Anmeldung!" : "Les nouveaux magasins reçoivent 5 crédits gratuits !"}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="block text-sm font-medium">Knoptekst <span className="text-muted-foreground font-normal">(optioneel)</span></label>
+              <label className="block text-sm font-medium">Knoptekst <span className="text-muted-foreground font-normal text-xs">({bannerLangTab.toUpperCase()}, optioneel)</span></label>
               <Input
-                value={promoBannerCtaLabel}
-                onChange={e => setPromoBannerCtaLabel(e.target.value)}
-                placeholder="Aanmelden als winkel"
+                value={bannerCtaByTab[bannerLangTab]}
+                onChange={e => setCtaByTab[bannerLangTab](e.target.value)}
+                placeholder={bannerLangTab === "nl" ? "Aanmelden als winkel" : bannerLangTab === "en" ? "Register as shop" : bannerLangTab === "de" ? "Als Händler registrieren" : "S'inscrire comme magasin"}
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium">Knop-URL <span className="text-muted-foreground font-normal">(optioneel)</span></label>
+              <label className="block text-sm font-medium">Knop-URL <span className="text-muted-foreground font-normal text-xs">(optioneel)</span></label>
               <Input
                 value={promoBannerCtaUrl}
                 onChange={e => setPromoBannerCtaUrl(e.target.value)}
@@ -3241,18 +3290,18 @@ function MarketingTab() {
           </div>
 
           {/* Live preview */}
-          {promoBannerText.trim() && (
+          {bannerTextByTab[bannerLangTab].trim() && (
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Voorbeeld:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Voorbeeld ({bannerLangTab.toUpperCase()}):</p>
               <div className="rounded-lg overflow-hidden bg-gradient-to-r from-primary to-accent text-white">
                 <div className="px-4 py-2.5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {promoBannerIcon && <span className="text-lg shrink-0">{promoBannerIcon}</span>}
-                    <p className="text-sm font-medium">{promoBannerText}</p>
+                    <p className="text-sm font-medium">{bannerTextByTab[bannerLangTab]}</p>
                   </div>
-                  {promoBannerCtaLabel && (
+                  {bannerCtaByTab[bannerLangTab] && (
                     <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full whitespace-nowrap shrink-0">
-                      {promoBannerCtaLabel} →
+                      {bannerCtaByTab[bannerLangTab]} →
                     </span>
                   )}
                 </div>

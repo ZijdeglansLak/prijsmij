@@ -39,8 +39,15 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       promoBannerEnabled: settings.promoBannerEnabled ?? false,
       promoBannerIcon: settings.promoBannerIcon ?? "🎁",
       promoBannerText: settings.promoBannerText ?? "",
+      promoBannerTextEn: (settings as any).promoBannerTextEn ?? "",
+      promoBannerTextDe: (settings as any).promoBannerTextDe ?? "",
+      promoBannerTextFr: (settings as any).promoBannerTextFr ?? "",
       promoBannerCtaLabel: settings.promoBannerCtaLabel ?? "",
+      promoBannerCtaLabelEn: (settings as any).promoBannerCtaLabelEn ?? "",
+      promoBannerCtaLabelDe: (settings as any).promoBannerCtaLabelDe ?? "",
+      promoBannerCtaLabelFr: (settings as any).promoBannerCtaLabelFr ?? "",
       promoBannerCtaUrl: settings.promoBannerCtaUrl ?? "",
+      promoBannerOnlyLoggedOut: (settings as any).promoBannerOnlyLoggedOut ?? false,
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -52,7 +59,10 @@ router.put("/settings", requireAdmin, async (req, res) => {
     const { offlineMode, paynlServiceId, paynlToken, initialSellerCredits, openaiApiKey,
       invoiceNumberPrefix, invoiceNextNumber, invoiceTemplate,
       googleAdsConversionId, googleAdsConversionLabel, googleAnalyticsId,
-      promoBannerEnabled, promoBannerIcon, promoBannerText, promoBannerCtaLabel, promoBannerCtaUrl } = req.body as {
+      promoBannerEnabled, promoBannerIcon,
+      promoBannerText, promoBannerTextEn, promoBannerTextDe, promoBannerTextFr,
+      promoBannerCtaLabel, promoBannerCtaLabelEn, promoBannerCtaLabelDe, promoBannerCtaLabelFr,
+      promoBannerCtaUrl, promoBannerOnlyLoggedOut } = req.body as {
       offlineMode?: boolean;
       paynlServiceId?: string;
       paynlToken?: string;
@@ -67,8 +77,15 @@ router.put("/settings", requireAdmin, async (req, res) => {
       promoBannerEnabled?: boolean;
       promoBannerIcon?: string;
       promoBannerText?: string;
+      promoBannerTextEn?: string;
+      promoBannerTextDe?: string;
+      promoBannerTextFr?: string;
       promoBannerCtaLabel?: string;
+      promoBannerCtaLabelEn?: string;
+      promoBannerCtaLabelDe?: string;
+      promoBannerCtaLabelFr?: string;
       promoBannerCtaUrl?: string;
+      promoBannerOnlyLoggedOut?: boolean;
     };
 
     const settings = await getOrCreateSettings();
@@ -106,8 +123,15 @@ router.put("/settings", requireAdmin, async (req, res) => {
     if (typeof promoBannerEnabled === "boolean") updates.promoBannerEnabled = promoBannerEnabled;
     if (typeof promoBannerIcon === "string") updates.promoBannerIcon = promoBannerIcon.trim() || "🎁";
     if (typeof promoBannerText === "string") updates.promoBannerText = promoBannerText;
+    if (typeof promoBannerTextEn === "string") (updates as any).promoBannerTextEn = promoBannerTextEn;
+    if (typeof promoBannerTextDe === "string") (updates as any).promoBannerTextDe = promoBannerTextDe;
+    if (typeof promoBannerTextFr === "string") (updates as any).promoBannerTextFr = promoBannerTextFr;
     if (typeof promoBannerCtaLabel === "string") updates.promoBannerCtaLabel = promoBannerCtaLabel.trim();
+    if (typeof promoBannerCtaLabelEn === "string") (updates as any).promoBannerCtaLabelEn = promoBannerCtaLabelEn.trim();
+    if (typeof promoBannerCtaLabelDe === "string") (updates as any).promoBannerCtaLabelDe = promoBannerCtaLabelDe.trim();
+    if (typeof promoBannerCtaLabelFr === "string") (updates as any).promoBannerCtaLabelFr = promoBannerCtaLabelFr.trim();
     if (typeof promoBannerCtaUrl === "string") updates.promoBannerCtaUrl = promoBannerCtaUrl.trim();
+    if (typeof promoBannerOnlyLoggedOut === "boolean") (updates as any).promoBannerOnlyLoggedOut = promoBannerOnlyLoggedOut;
 
     const updated = await db
       .update(siteSettingsTable)
@@ -133,8 +157,15 @@ router.put("/settings", requireAdmin, async (req, res) => {
       promoBannerEnabled: s.promoBannerEnabled ?? false,
       promoBannerIcon: s.promoBannerIcon ?? "🎁",
       promoBannerText: s.promoBannerText ?? "",
+      promoBannerTextEn: (s as any).promoBannerTextEn ?? "",
+      promoBannerTextDe: (s as any).promoBannerTextDe ?? "",
+      promoBannerTextFr: (s as any).promoBannerTextFr ?? "",
       promoBannerCtaLabel: s.promoBannerCtaLabel ?? "",
+      promoBannerCtaLabelEn: (s as any).promoBannerCtaLabelEn ?? "",
+      promoBannerCtaLabelDe: (s as any).promoBannerCtaLabelDe ?? "",
+      promoBannerCtaLabelFr: (s as any).promoBannerCtaLabelFr ?? "",
       promoBannerCtaUrl: s.promoBannerCtaUrl ?? "",
+      promoBannerOnlyLoggedOut: (s as any).promoBannerOnlyLoggedOut ?? false,
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });
@@ -152,9 +183,20 @@ router.get("/promo-banner", async (_req, res) => {
     res.json({
       enabled: true,
       icon: s.promoBannerIcon ?? "🎁",
-      text: s.promoBannerText ?? "",
-      ctaLabel: s.promoBannerCtaLabel ?? "",
+      texts: {
+        nl: s.promoBannerText ?? "",
+        en: (s as any).promoBannerTextEn ?? "",
+        de: (s as any).promoBannerTextDe ?? "",
+        fr: (s as any).promoBannerTextFr ?? "",
+      },
+      ctaLabels: {
+        nl: s.promoBannerCtaLabel ?? "",
+        en: (s as any).promoBannerCtaLabelEn ?? "",
+        de: (s as any).promoBannerCtaLabelDe ?? "",
+        fr: (s as any).promoBannerCtaLabelFr ?? "",
+      },
       ctaUrl: s.promoBannerCtaUrl ?? "",
+      onlyLoggedOut: (s as any).promoBannerOnlyLoggedOut ?? false,
     });
   } catch {
     res.json({ enabled: false });
