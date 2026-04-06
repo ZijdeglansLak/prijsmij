@@ -13,5 +13,10 @@ export const siteSettingsTable = pgTable("site_settings", {
   googleAdsConversionId: text("google_ads_conversion_id"),
   googleAdsConversionLabel: text("google_ads_conversion_label"),
   googleAnalyticsId: text("google_analytics_id"),
+  promoBannerEnabled: boolean("promo_banner_enabled").notNull().default(false),
+  promoBannerIcon: text("promo_banner_icon").notNull().default("🎁"),
+  promoBannerText: text("promo_banner_text").notNull().default(""),
+  promoBannerCtaLabel: text("promo_banner_cta_label").notNull().default(""),
+  promoBannerCtaUrl: text("promo_banner_cta_url").notNull().default(""),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

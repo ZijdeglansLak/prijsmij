@@ -36,11 +36,11 @@ router.get("/settings", requireAdmin, async (_req, res) => {
       googleAdsConversionId: (settings as any).googleAdsConversionId ?? "",
       googleAdsConversionLabel: (settings as any).googleAdsConversionLabel ?? "",
       googleAnalyticsId: (settings as any).googleAnalyticsId ?? "",
-      promoBannerEnabled: (settings as any).promoBannerEnabled ?? false,
-      promoBannerIcon: (settings as any).promoBannerIcon ?? "🎁",
-      promoBannerText: (settings as any).promoBannerText ?? "",
-      promoBannerCtaLabel: (settings as any).promoBannerCtaLabel ?? "",
-      promoBannerCtaUrl: (settings as any).promoBannerCtaUrl ?? "",
+      promoBannerEnabled: settings.promoBannerEnabled ?? false,
+      promoBannerIcon: settings.promoBannerIcon ?? "🎁",
+      promoBannerText: settings.promoBannerText ?? "",
+      promoBannerCtaLabel: settings.promoBannerCtaLabel ?? "",
+      promoBannerCtaUrl: settings.promoBannerCtaUrl ?? "",
     });
   } catch {
     res.status(500).json({ error: "Fout bij ophalen instellingen" });
@@ -103,11 +103,11 @@ router.put("/settings", requireAdmin, async (req, res) => {
     if (typeof googleAnalyticsId === "string") {
       (updates as any).googleAnalyticsId = googleAnalyticsId.trim() || null;
     }
-    if (typeof promoBannerEnabled === "boolean") (updates as any).promoBannerEnabled = promoBannerEnabled;
-    if (typeof promoBannerIcon === "string") (updates as any).promoBannerIcon = promoBannerIcon.trim() || "🎁";
-    if (typeof promoBannerText === "string") (updates as any).promoBannerText = promoBannerText;
-    if (typeof promoBannerCtaLabel === "string") (updates as any).promoBannerCtaLabel = promoBannerCtaLabel.trim();
-    if (typeof promoBannerCtaUrl === "string") (updates as any).promoBannerCtaUrl = promoBannerCtaUrl.trim();
+    if (typeof promoBannerEnabled === "boolean") updates.promoBannerEnabled = promoBannerEnabled;
+    if (typeof promoBannerIcon === "string") updates.promoBannerIcon = promoBannerIcon.trim() || "🎁";
+    if (typeof promoBannerText === "string") updates.promoBannerText = promoBannerText;
+    if (typeof promoBannerCtaLabel === "string") updates.promoBannerCtaLabel = promoBannerCtaLabel.trim();
+    if (typeof promoBannerCtaUrl === "string") updates.promoBannerCtaUrl = promoBannerCtaUrl.trim();
 
     const updated = await db
       .update(siteSettingsTable)
@@ -130,11 +130,11 @@ router.put("/settings", requireAdmin, async (req, res) => {
       googleAdsConversionId: (s as any).googleAdsConversionId ?? "",
       googleAdsConversionLabel: (s as any).googleAdsConversionLabel ?? "",
       googleAnalyticsId: (s as any).googleAnalyticsId ?? "",
-      promoBannerEnabled: (s as any).promoBannerEnabled ?? false,
-      promoBannerIcon: (s as any).promoBannerIcon ?? "🎁",
-      promoBannerText: (s as any).promoBannerText ?? "",
-      promoBannerCtaLabel: (s as any).promoBannerCtaLabel ?? "",
-      promoBannerCtaUrl: (s as any).promoBannerCtaUrl ?? "",
+      promoBannerEnabled: s.promoBannerEnabled ?? false,
+      promoBannerIcon: s.promoBannerIcon ?? "🎁",
+      promoBannerText: s.promoBannerText ?? "",
+      promoBannerCtaLabel: s.promoBannerCtaLabel ?? "",
+      promoBannerCtaUrl: s.promoBannerCtaUrl ?? "",
     });
   } catch {
     res.status(500).json({ error: "Fout bij opslaan instellingen" });
@@ -146,15 +146,15 @@ router.get("/promo-banner", async (_req, res) => {
   try {
     const rows = await db.select().from(siteSettingsTable).limit(1);
     const s = rows[0];
-    if (!s || !(s as any).promoBannerEnabled) {
+    if (!s || !s.promoBannerEnabled) {
       return res.json({ enabled: false });
     }
     res.json({
       enabled: true,
-      icon: (s as any).promoBannerIcon ?? "🎁",
-      text: (s as any).promoBannerText ?? "",
-      ctaLabel: (s as any).promoBannerCtaLabel ?? "",
-      ctaUrl: (s as any).promoBannerCtaUrl ?? "",
+      icon: s.promoBannerIcon ?? "🎁",
+      text: s.promoBannerText ?? "",
+      ctaLabel: s.promoBannerCtaLabel ?? "",
+      ctaUrl: s.promoBannerCtaUrl ?? "",
     });
   } catch {
     res.json({ enabled: false });
