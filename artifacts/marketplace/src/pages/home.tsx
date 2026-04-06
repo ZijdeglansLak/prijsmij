@@ -323,23 +323,20 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.45 }}
               className="mt-8"
             >
-              <div className="flex flex-row items-center gap-0 flex-wrap">
+              <div className="flex flex-row items-center">
                 {([
                   { step: "1", text: t.home.miniStep1, time: t.home.miniStep1Time },
                   { step: "2", text: t.home.miniStep2, time: t.home.miniStep2Time },
                   { step: "3", text: t.home.miniStep3, time: t.home.miniStep3Time },
                 ] as const).map((item, i) => (
-                  <div key={i} className="flex items-center gap-0">
-                    <div className="flex items-center gap-2">
+                  <div key={i} className="flex items-center">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="w-5 h-5 rounded-full bg-primary/90 text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-sm">
                         {item.step}
                       </span>
-                      <div className="flex flex-row items-baseline gap-1">
-                        <span className="text-xs font-semibold text-secondary leading-tight">{item.text}</span>
-                        <span className="text-xs text-muted-foreground hidden sm:inline">({item.time})</span>
-                      </div>
+                      <span className="text-xs font-semibold text-secondary whitespace-nowrap">{item.text}</span>
                     </div>
-                    {i < 2 && <ChevronRight className="w-4 h-4 text-primary/30 mx-2 shrink-0" />}
+                    {i < 2 && <ChevronRight className="w-4 h-4 text-primary/30 mx-1.5 shrink-0" />}
                   </div>
                 ))}
               </div>
