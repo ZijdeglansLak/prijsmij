@@ -56,8 +56,8 @@ export const nl = {
     miniStep2: "Winkels bieden op jouw uitvraag",
     miniStep2Time: "zodra winkels reageren",
     miniStep3: "Jij kiest de beste deal",
-    miniStep3Time: "volledig gratis",
-    heroTrust: "Gratis · Geen verborgen kosten · Winkels bieden op jouw uitvraag",
+    miniStep3Time: "jij hebt de keuze",
+    heroTrust: "Geen verborgen kosten · Winkels bieden op jouw uitvraag",
   },
   stats: {
     activeRequests: "Actieve Uitvragen",
@@ -441,8 +441,8 @@ export const en: Translations = {
     miniStep2: "Shops bid on your request",
     miniStep2Time: "as soon as shops respond",
     miniStep3: "You pick the best deal",
-    miniStep3Time: "completely free",
-    heroTrust: "Free · No hidden costs · Shops bid on your request",
+    miniStep3Time: "your choice",
+    heroTrust: "No hidden costs · Shops bid on your request",
   },
   stats: {
     activeRequests: "Active Requests",
@@ -826,8 +826,8 @@ export const de: Translations = {
     miniStep2: "Händler bieten auf deine Anfrage",
     miniStep2Time: "sobald Händler antworten",
     miniStep3: "Du wählst das beste Angebot",
-    miniStep3Time: "völlig kostenlos",
-    heroTrust: "Kostenlos · Keine versteckten Kosten · Händler bieten auf deine Anfrage",
+    miniStep3Time: "du entscheidest",
+    heroTrust: "Keine versteckten Kosten · Händler bieten auf deine Anfrage",
   },
   stats: {
     activeRequests: "Aktive Anfragen",
@@ -1211,8 +1211,8 @@ export const fr: Translations = {
     miniStep2: "Les boutiques enchérissent sur votre demande",
     miniStep2Time: "dès que les boutiques répondent",
     miniStep3: "Vous choisissez la meilleure offre",
-    miniStep3Time: "totalement gratuit",
-    heroTrust: "Gratuit · Sans frais cachés · Les boutiques enchérissent sur votre demande",
+    miniStep3Time: "vous décidez",
+    heroTrust: "Sans frais cachés · Les boutiques enchérissent sur votre demande",
   },
   stats: {
     activeRequests: "Demandes actives",
