@@ -134,10 +134,10 @@ export function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     doc.text(`BTW ${data.vatPercent}%`, M + contentW - 200, y, { width: 150, align: "right" });
     doc.text(formatMoney(data.vatCents), M + contentW - 50, y, { width: 50, align: "right" });
 
-    y += 4;
+    y += 16;
     doc.moveTo(M + contentW - 200, y).lineTo(W - M, y).lineWidth(1.5).strokeColor(PRIMARY).stroke();
 
-    y += 10;
+    y += 8;
     doc.fontSize(12).fillColor(SECONDARY).font("Helvetica-Bold");
     doc.text("TOTAAL INCL. BTW", M + contentW - 200, y, { width: 150, align: "right" });
     doc.text(formatMoney(data.totalCents), M + contentW - 50, y, { width: 50, align: "right" });
