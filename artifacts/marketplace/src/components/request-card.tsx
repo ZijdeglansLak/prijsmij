@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { formatCurrency, formatExpiry } from "@/lib/utils";
 import { Clock, Tag, MessageCircle, ArrowRight } from "lucide-react";
 import type { RequestSummary } from "@workspace/api-client-react";
+import { useI18n } from "@/contexts/i18n";
 
 interface RequestCardProps {
   request: RequestSummary;
@@ -9,6 +10,7 @@ interface RequestCardProps {
 }
 
 export function RequestCard({ request, featured = false }: RequestCardProps) {
+  const { t } = useI18n();
   const isExpiringSoon = new Date(request.expiresAt).getTime() - new Date().getTime() < 48 * 60 * 60 * 1000;
 
   return (
@@ -62,7 +64,7 @@ export function RequestCard({ request, featured = false }: RequestCardProps) {
         <div className="mt-auto pt-4 border-t border-border flex items-center justify-between">
           <div className={`flex items-center gap-1.5 text-xs font-semibold ${isExpiringSoon ? 'text-destructive' : 'text-muted-foreground'}`}>
             <Clock className="w-3.5 h-3.5" />
-            {formatExpiry(request.expiresAt)}
+            {formatExpiry(request.expiresAt, t.common)}
           </div>
           
           <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">

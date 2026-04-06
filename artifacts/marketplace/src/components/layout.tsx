@@ -309,7 +309,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {/* Language switcher mobile */}
               <div className="px-4 py-3">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Taal / Language</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.nav.languageLabel}</p>
                 <div className="flex gap-2">
                   {LANGUAGES.map(l => (
                     <button
@@ -345,7 +345,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       >
                         <Coins className="w-5 h-5 text-primary" />
                         <span className="text-primary font-bold">{user.credits} credits</span>
-                        <span className="text-xs text-muted-foreground ml-auto">Kopen →</span>
+                        <span className="text-xs text-muted-foreground ml-auto">{t.nav.buyCta} →</span>
                       </Link>
                     </>
                   )}

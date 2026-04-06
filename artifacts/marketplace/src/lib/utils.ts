@@ -17,13 +17,17 @@ export function formatCurrency(amount: number | null | undefined): string {
   }).format(amount);
 }
 
-export function formatExpiry(dateString: string): string {
+export function formatExpiry(
+  dateString: string,
+  i18n?: { expired: string; expiresToday: string; expiresInDay: string; expiresInDays: string }
+): string {
   const date = new Date(dateString);
   const days = differenceInDays(date, new Date());
   
-  if (days < 0) return "Verlopen";
-  if (days === 0) return "Vervalt vandaag";
-  return `Vervalt over ${days} ${days === 1 ? 'dag' : 'dagen'}`;
+  if (days < 0) return i18n?.expired ?? "Verlopen";
+  if (days === 0) return i18n?.expiresToday ?? "Vervalt vandaag";
+  if (days === 1) return i18n?.expiresInDay ?? "Vervalt over 1 dag";
+  return i18n?.expiresInDays.replace("{days}", String(days)) ?? `Vervalt over ${days} dagen`;
 }
 
 export function formatRelative(dateString: string): string {

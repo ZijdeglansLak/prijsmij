@@ -54,9 +54,9 @@ interface InterestedBid {
   alreadyConnected: boolean;
 }
 
-function timeLeft(expiresAt: string) {
+function timeLeft(expiresAt: string, expired: string) {
   const diff = new Date(expiresAt).getTime() - Date.now();
-  if (diff <= 0) return "Verlopen";
+  if (diff <= 0) return expired;
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);
   if (days > 0) return `${days}d ${hours}u`;
@@ -64,6 +64,7 @@ function timeLeft(expiresAt: string) {
 }
 
 function ConsumerDashboard({ email }: { email: string }) {
+  const { t } = useI18n();
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +91,7 @@ function ConsumerDashboard({ email }: { email: string }) {
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">{r.categoryIcon}</span>
               <span className="text-xs text-muted-foreground font-medium">{r.categoryName}</span>
-              {r.isExpired && <span className="ml-auto text-xs bg-red-100 text-red-600 rounded-full px-2 py-0.5 font-semibold">Verlopen</span>}
+              {r.isExpired && <span className="ml-auto text-xs bg-red-100 text-red-600 rounded-full px-2 py-0.5 font-semibold">{t.common.expired}</span>}
             </div>
             <h3 className="font-bold text-secondary mb-1 line-clamp-2">{r.title}</h3>
             {r.brand && <p className="text-xs text-muted-foreground mb-3">{r.brand}</p>}
@@ -103,7 +104,7 @@ function ConsumerDashboard({ email }: { email: string }) {
               )}
               {!r.isExpired && (
                 <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                  <Clock className="w-3 h-3" />{timeLeft(r.expiresAt)}
+                  <Clock className="w-3 h-3" />{timeLeft(r.expiresAt, t.common.expired)}
                 </span>
               )}
             </div>
@@ -131,6 +132,7 @@ function ConsumerDashboard({ email }: { email: string }) {
 }
 
 function SellerDashboard({ token }: { token: string }) {
+  const { t } = useI18n();
   const [categoryReqs, setCategoryReqs] = useState<SupplierRequest[]>([]);
   const [interestedBids, setInterestedBids] = useState<InterestedBid[]>([]);
   const [watchedCategoryCount, setWatchedCategoryCount] = useState<number | null>(null);
@@ -221,7 +223,7 @@ function SellerDashboard({ token }: { token: string }) {
                       </span>
                     )}
                     <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                      <Clock className="w-3 h-3" />{timeLeft(r.expiresAt)}
+                      <Clock className="w-3 h-3" />{timeLeft(r.expiresAt, t.common.expired)}
                     </span>
                   </div>
                   <div className="mt-3 pt-3 border-t border-border/50">

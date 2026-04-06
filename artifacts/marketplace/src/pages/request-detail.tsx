@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useSupplierAuth } from "@/contexts/supplier-auth";
 import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n } from "@/contexts/i18n";
 
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +39,7 @@ export default function RequestDetail() {
   
   const expressInterestMutation = useExpressInterest();
   const { toast } = useToast();
+  const { t } = useI18n();
   const { supplier, token, isLoggedIn, updateCredits } = useSupplierAuth();
 
   // Load which bids this seller has already purchased
@@ -73,8 +75,8 @@ export default function RequestDetail() {
       
       setMyInterestBidId(targetBidId);
       toast({
-        title: "Interesse bevestigd!",
-        description: `De verkoper is op de hoogte gebracht en neemt snel contact met je op.`,
+        title: t.detail.interestConfirmed,
+        description: t.detail.interestConfirmedDesc,
       });
       setInterestBidId(null);
       setConsumerEmail("");
@@ -446,11 +448,11 @@ export default function RequestDetail() {
       <Dialog open={!!interestBidId} onOpenChange={(o) => { if (!o) { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">{isRequester ? "Bod accepteren" : "Interesse in dit bod?"}</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">{isRequester ? t.detail.acceptBidTitle : t.detail.interestTitle}</DialogTitle>
             <DialogDescription className="text-base mt-2">
               {isRequester
-                ? "Vul je telefoonnummer in zodat de winkelier contact met je op kan nemen."
-                : "Geweldig! Vul je gegevens in zodat de winkelier contact met je op kan nemen."}
+                ? t.detail.acceptBidDesc
+                : t.detail.interestDesc2}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
@@ -463,7 +465,7 @@ export default function RequestDetail() {
                 ) : (
                   <>
                     <div>
-                      <label className="block text-sm font-bold text-secondary mb-2">Jouw naam</label>
+                      <label className="block text-sm font-bold text-secondary mb-2">{t.detail.yourName}</label>
                       <Input 
                         type="text"
                         placeholder="Jan Jansen" 
@@ -473,7 +475,7 @@ export default function RequestDetail() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-secondary mb-2">Jouw e-mailadres</label>
+                      <label className="block text-sm font-bold text-secondary mb-2">{t.detail.yourEmail}</label>
                       <Input 
                         type="email" 
                         placeholder="naam@voorbeeld.nl" 
@@ -493,7 +495,7 @@ export default function RequestDetail() {
             )}
             <div>
               <label className="block text-sm font-bold text-secondary mb-2">
-                Jouw telefoonnummer {isRequester && <span className="text-primary">*</span>}
+                {t.detail.yourPhone} {isRequester && <span className="text-primary">*</span>}
               </label>
               <Input 
                 type="tel" 
@@ -506,13 +508,13 @@ export default function RequestDetail() {
             </div>
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>Annuleren</Button>
+            <Button variant="outline" onClick={() => { setInterestBidId(null); setConsumerEmail(""); setConsumerName(""); setConsumerPhone(""); }}>{t.detail.cancel}</Button>
             <Button 
               onClick={() => handleInterest()}
               disabled={!(user?.email ?? consumerEmail) || expressInterestMutation.isPending || (isRequester && !consumerPhone)}
               className="bg-primary hover:bg-primary/90 text-white"
             >
-              {expressInterestMutation.isPending ? "Verwerken..." : isRequester ? "Bevestig acceptatie" : "Interesse bevestigen"}
+              {expressInterestMutation.isPending ? t.detail.processing : isRequester ? t.detail.confirmAccept : t.detail.confirmInterest}
             </Button>
           </div>
         </DialogContent>
@@ -563,7 +565,7 @@ export default function RequestDetail() {
                 disabled={connectieLoading || !supplier || supplier.credits < 1}
                 className="bg-primary text-white"
               >
-                {connectieLoading ? "Bezig..." : "Bevestigen (1 credit)"}
+                {connectieLoading ? t.detail.connecting : t.detail.confirmConnect}
               </Button>
             </div>
           )}
@@ -574,12 +576,13 @@ export default function RequestDetail() {
 }
 
 function Timer({ expiresAt }: { expiresAt: string }) {
+  const { t } = useI18n();
   const { days, hours, minutes, seconds, isExpired } = useCountdown(expiresAt);
 
   if (isExpired) {
     return (
       <div className="inline-flex items-center gap-2 text-destructive font-bold bg-destructive/10 px-4 py-2 rounded-xl">
-        <Clock className="w-5 h-5" /> Uitvraag Verlopen
+        <Clock className="w-5 h-5" /> {t.detail.alreadyExpired}
       </div>
     );
   }

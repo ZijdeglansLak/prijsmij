@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n } from "@/contexts/i18n";
 import { Bell, RefreshCw, Loader2, Tag, ShoppingBag, ArrowRight, Euro, CheckCircle2, Clock, Mail, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +38,7 @@ interface MyBid {
 export default function BuyerRequests() {
   const [, setLocation] = useLocation();
   const { user, token, isBuyer, isLoggedIn } = useUserAuth();
+  const { t } = useI18n();
   const [requests, setRequests] = useState<ConsumerRequest[]>([]);
   const [myBids, setMyBids] = useState<MyBid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,10 +52,10 @@ export default function BuyerRequests() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       const [rRes, bRes] = await Promise.all([
         fetch(`/api/consumer/requests?email=${encodeURIComponent(user!.email)}`),
-        fetch(`/api/consumer/my-bids`, { headers }),
+        fetch(`/api/consumer/my-bids`, { headers: authHeader }),
       ]);
       if (rRes.ok) setRequests(await rRes.json());
       if (bRes.ok) setMyBids(await bRes.json());
@@ -62,12 +64,14 @@ export default function BuyerRequests() {
     }
   }
 
-  const withBids = requests.filter(r => r.bidCount > 0);
-  const totalBids = requests.reduce((sum, r) => sum + r.bidCount, 0);
-
-  const accepted = myBids.filter(b => b.isPurchased);
-  const pending = myBids.filter(b => !b.isPurchased);
+  const accepted = myBids.filter((b) => b.isPurchased);
+  const pending = myBids.filter((b) => !b.isPurchased);
   const sortedMyBids = [...accepted, ...pending];
+
+  const withBids = requests.filter((r) => r.bidCount > 0);
+  const totalBids = requests.reduce((s, r) => s + r.bidCount, 0);
+
+  const tr = t.buyerRequests;
 
   return (
     <Layout>
@@ -81,16 +85,16 @@ export default function BuyerRequests() {
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-extrabold text-secondary">Mijn biedingen</h1>
+                <h1 className="text-2xl font-extrabold text-secondary">{tr.myBids}</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {sortedMyBids.length > 0
-                    ? `${sortedMyBids.length} bieding${sortedMyBids.length !== 1 ? "en" : ""} waarbij je interesse hebt getoond`
-                    : "Zodra je interesse toont in een bieding, zie je dat hier"}
+                    ? `${sortedMyBids.length} ${sortedMyBids.length !== 1 ? tr.bidPlural : tr.bidSingular} ${tr.interestShown}`
+                    : tr.myBidsEmpty}
                 </p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={fetchAll} className="flex items-center gap-2">
-              <RefreshCw className="w-3.5 h-3.5" /> Vernieuwen
+              <RefreshCw className="w-3.5 h-3.5" /> {tr.refresh}
             </Button>
           </div>
 
@@ -101,10 +105,10 @@ export default function BuyerRequests() {
           ) : sortedMyBids.length === 0 ? (
             <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed border-border">
               <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="font-semibold text-secondary">Nog geen biedingen</p>
-              <p className="text-sm text-muted-foreground mt-1">Bekijk uitvragen en toon interesse in een bieding.</p>
+              <p className="font-semibold text-secondary">{tr.noBids}</p>
+              <p className="text-sm text-muted-foreground mt-1">{tr.noBidsDesc}</p>
               <Link href="/requests">
-                <Button className="mt-4" size="sm" variant="outline">Bekijk uitvragen</Button>
+                <Button className="mt-4" size="sm" variant="outline">{tr.viewRequests}</Button>
               </Link>
             </div>
           ) : (
@@ -119,15 +123,15 @@ export default function BuyerRequests() {
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {b.isPurchased ? (
                           <span className="inline-flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full">
-                            <CheckCircle2 className="w-3 h-3" /> Geaccepteerd
+                            <CheckCircle2 className="w-3 h-3" /> {tr.accepted}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-bold bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full">
-                            <Clock className="w-3 h-3" /> Wacht op leverancier
+                            <Clock className="w-3 h-3" /> {tr.waitingSupplier}
                           </span>
                         )}
                         {b.isExpired && (
-                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">Verlopen</span>
+                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{t.common.expired}</span>
                         )}
                       </div>
 
@@ -151,7 +155,7 @@ export default function BuyerRequests() {
 
                       {b.isPurchased && b.supplierEmail ? (
                         <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 space-y-1.5">
-                          <p className="text-xs font-bold text-green-800 uppercase tracking-wider mb-2">Contactgegevens leverancier</p>
+                          <p className="text-xs font-bold text-green-800 uppercase tracking-wider mb-2">{tr.supplierContact}</p>
                           <p className="font-semibold text-secondary">{b.supplierName} · {b.supplierStore}</p>
                           <a href={`mailto:${b.supplierEmail}`} className="flex items-center gap-1.5 text-sm text-primary hover:underline">
                             <Mail className="w-3.5 h-3.5 shrink-0" /> {b.supplierEmail}
@@ -160,7 +164,7 @@ export default function BuyerRequests() {
                       ) : !b.isPurchased ? (
                         <div className="mt-3 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 w-fit">
                           <Clock className="w-4 h-4 shrink-0" />
-                          De leverancier wordt op de hoogte gesteld en neemt snel contact op.
+                          {tr.supplierNotification}
                         </div>
                       ) : null}
                     </div>
@@ -182,11 +186,11 @@ export default function BuyerRequests() {
               <Bell className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-secondary">Mijn uitvragen</h2>
+              <h2 className="text-2xl font-extrabold text-secondary">{tr.myRequests}</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {totalBids > 0
-                  ? `${totalBids} bieding${totalBids !== 1 ? "en" : ""} ontvangen op ${withBids.length} uitvra${withBids.length !== 1 ? "gen" : "ag"}`
-                  : "Zodra winkels op jouw uitvraag bieden, zie je dat hier"}
+                  ? `${totalBids} ${totalBids !== 1 ? tr.bidPlural : tr.bidSingular} ${tr.bidsReceived} ${withBids.length} ${withBids.length !== 1 ? tr.requestPlural : tr.requestSingular}`
+                  : tr.myRequestsEmpty}
               </p>
             </div>
           </div>
@@ -198,10 +202,10 @@ export default function BuyerRequests() {
           ) : requests.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-30" />
-              <p className="font-semibold text-lg">Nog geen uitvragen geplaatst</p>
-              <p className="text-sm mt-2">Plaats een uitvraag zodat winkels op jou kunnen bieden.</p>
+              <p className="font-semibold text-lg">{tr.noRequests}</p>
+              <p className="text-sm mt-2">{tr.noRequestsDesc}</p>
               <Link href="/request/new">
-                <Button className="mt-5">Uitvraag plaatsen</Button>
+                <Button className="mt-5">{t.nav.postRequest}</Button>
               </Link>
             </div>
           ) : (
@@ -221,7 +225,7 @@ export default function BuyerRequests() {
                           )}
                           <span className="text-xs text-muted-foreground font-medium">{req.categoryName}</span>
                           {req.isExpired && (
-                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">Verlopen</span>
+                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">{t.common.expired}</span>
                           )}
                         </div>
                         <h3 className="font-bold text-secondary text-base">{req.title}</h3>
@@ -230,20 +234,20 @@ export default function BuyerRequests() {
                           <div className="mt-2 flex flex-wrap gap-3 text-sm">
                             <span className="flex items-center gap-1.5 font-semibold text-primary">
                               <Tag className="w-3.5 h-3.5" />
-                              {req.bidCount} bieding{req.bidCount !== 1 ? "en" : ""}
+                              {req.bidCount} {req.bidCount !== 1 ? tr.bidPlural : tr.bidSingular}
                             </span>
                             {req.lowestBidPrice !== null && (
                               <span className="flex items-center gap-1.5 text-muted-foreground">
                                 <Euro className="w-3.5 h-3.5" />
-                                Laagste: <strong className="text-secondary">€ {Number(req.lowestBidPrice).toFixed(2)}</strong>
-                                {req.lowestBidStore && <span>van {req.lowestBidStore}</span>}
+                                {tr.lowest} <strong className="text-secondary">€ {Number(req.lowestBidPrice).toFixed(2)}</strong>
+                                {req.lowestBidStore && <span>{tr.from} {req.lowestBidStore}</span>}
                               </span>
                             )}
                           </div>
                         )}
 
                         {req.bidCount === 0 && (
-                          <p className="mt-1 text-sm text-muted-foreground italic">Nog geen biedingen ontvangen</p>
+                          <p className="mt-1 text-sm text-muted-foreground italic">{tr.noBidsReceived}</p>
                         )}
                       </div>
 
