@@ -154,6 +154,23 @@ router.put("/admin/users/:id/suspend", requireAdmin, async (req, res) => {
   } catch (err) { req.log.error({ err }, "Suspend user failed"); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// PUT /admin/users/:id/verify — manually verify or unverify email
+router.put("/admin/users/:id/verify", requireAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) { res.status(400).json({ error: "Ongeldig gebruikers-id" }); return; }
+    const { verified } = req.body as { verified: boolean };
+    if (typeof verified !== "boolean") { res.status(400).json({ error: "Geef 'verified' mee als boolean" }); return; }
+
+    const [updated] = await db.update(userAccountsTable)
+      .set({ emailVerified: verified, emailVerificationToken: null })
+      .where(eq(userAccountsTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "Gebruiker niet gevonden" }); return; }
+    res.json(safeUser(updated));
+  } catch (err) { req.log.error({ err }, "Verify user failed"); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // POST /admin/users — create admin account
 router.post("/admin/users", requireAdmin, async (req, res) => {
   try {
