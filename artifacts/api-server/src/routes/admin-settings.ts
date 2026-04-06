@@ -142,6 +142,7 @@ router.put("/settings", requireAdmin, async (req, res) => {
 });
 
 router.get("/promo-banner", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   try {
     const rows = await db.select().from(siteSettingsTable).limit(1);
     const s = rows[0];
