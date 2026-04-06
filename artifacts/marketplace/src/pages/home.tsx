@@ -358,12 +358,12 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-secondary">Jouw uitvragen</h2>
-                <p className="text-muted-foreground mt-1">Jouw actieve uitvragen en binnengekomen biedingen</p>
+                <h2 className="text-2xl font-bold text-secondary">{t.home.myRequests}</h2>
+                <p className="text-muted-foreground mt-1">{t.home.myRequestsSub}</p>
               </div>
               <Link href="/request/new">
                 <Button className="gap-2">
-                  <ShoppingBag className="w-4 h-4" />Nieuwe uitvraag
+                  <ShoppingBag className="w-4 h-4" />{t.home.newRequest}
                 </Button>
               </Link>
             </div>
@@ -379,11 +379,11 @@ export default function Home() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-secondary">Dashboard — {user?.storeName ?? user?.contactName}</h2>
-                <p className="text-muted-foreground mt-1">Overzicht van uitvragen en geïnteresseerde kopers</p>
+                <p className="text-muted-foreground mt-1">{t.home.sellerDashboardSub}</p>
               </div>
               <Link href="/requests">
                 <Button variant="outline" className="gap-2">
-                  <Store className="w-4 h-4" />Alle uitvragen
+                  <Store className="w-4 h-4" />{t.home.allRequests}
                 </Button>
               </Link>
             </div>
@@ -460,7 +460,7 @@ export default function Home() {
                 {ungrouped.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-sm font-bold text-secondary uppercase tracking-wide">Overig</h3>
+                      <h3 className="text-sm font-bold text-secondary uppercase tracking-wide">{t.home.other}</h3>
                       <div className="flex-1 h-px bg-border" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">

@@ -60,7 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       value={searchVal}
                       onChange={e => setSearchVal(e.target.value)}
                       onBlur={() => { if (!searchVal) setSearchOpen(false); }}
-                      placeholder="Zoek uitvragen..."
+                      placeholder={t.nav.searchPlaceholder}
                       className="w-48 pl-8 pr-3 py-1.5 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white"
                     />
                   ) : (
@@ -278,7 +278,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       type="text"
                       value={searchVal}
                       onChange={e => setSearchVal(e.target.value)}
-                      placeholder="Zoek uitvragen..."
+                      placeholder={t.nav.searchPlaceholder}
                       className="w-full pl-9 pr-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
@@ -426,18 +426,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </ul>
             </div>
             <div>
-              <h4 className="font-bold text-lg mb-6">Informatie</h4>
+              <h4 className="font-bold text-lg mb-6">{t.footer.information}</h4>
               <ul className="space-y-4">
-                <li><Link href="/pages/algemene-voorwaarden" className="text-secondary-foreground/70 hover:text-white transition-colors">Algemene voorwaarden</Link></li>
-                <li><Link href="/pages/privacy" className="text-secondary-foreground/70 hover:text-white transition-colors">Privacy</Link></li>
-                <li><Link href="/pages/cookies" className="text-secondary-foreground/70 hover:text-white transition-colors">Cookies</Link></li>
-                <li><Link href="/pages/contact" className="text-secondary-foreground/70 hover:text-white transition-colors">Contact</Link></li>
-                <li><Link href="/pages/veelgestelde-vragen" className="text-secondary-foreground/70 hover:text-white transition-colors">Veelgestelde vragen</Link></li>
+                <li><Link href="/pages/algemene-voorwaarden" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.terms}</Link></li>
+                <li><Link href="/pages/privacy" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.privacy}</Link></li>
+                <li><Link href="/pages/cookies" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.cookies}</Link></li>
+                <li><Link href="/pages/contact" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.contactPage}</Link></li>
+                <li><Link href="/pages/veelgestelde-vragen" className="text-secondary-foreground/70 hover:text-white transition-colors">{t.footer.faq}</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-white/10 mt-12 pt-8 text-center text-sm text-secondary-foreground/50">
-            &copy; {new Date().getFullYear()} PrijsMij. Alle rechten voorbehouden.
+            &copy; {new Date().getFullYear()} PrijsMij. {t.footer.allRights}
           </div>
         </div>
       </footer>

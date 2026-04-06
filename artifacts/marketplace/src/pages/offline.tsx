@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
+import { useI18n } from "@/contexts/i18n";
 
 export default function OfflinePage() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function OfflinePage() {
   const { login } = useUserAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { t } = useI18n();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -26,18 +28,18 @@ export default function OfflinePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast({ title: "Inloggen mislukt", description: "Ongeldige gegevens of geen beheerdersaccount.", variant: "destructive" });
+        toast({ title: t.offline.loginFailed, description: t.offline.invalidCredentials, variant: "destructive" });
         return;
       }
       if (!data.user?.isAdmin) {
-        toast({ title: "Geen toegang", description: "De site is offline. Alleen beheerders kunnen inloggen.", variant: "destructive" });
+        toast({ title: t.offline.noAccess, description: t.offline.offlineOnly, variant: "destructive" });
         return;
       }
       login(data.token, data.user);
-      toast({ title: "Welkom, beheerder" });
+      toast({ title: t.offline.welcome });
       setLocation("/admin");
     } catch {
-      toast({ title: "Verbindingsfout", variant: "destructive" });
+      toast({ title: t.offline.loginFailed, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -46,7 +48,6 @@ export default function OfflinePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center mb-4 border border-white/20">
             <WifiOff className="w-10 h-10 text-white/60" />
@@ -54,21 +55,18 @@ export default function OfflinePage() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">
             Prijs<span className="text-orange-400">Mij</span>
           </h1>
-          <p className="text-slate-400 text-sm text-center">
-            De website is tijdelijk offline voor onderhoud.
-          </p>
+          <p className="text-slate-400 text-sm text-center">{t.offline.subtitle}</p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-6">
             <Lock className="w-4 h-4 text-orange-400" />
-            <span className="text-sm font-semibold text-slate-300">Beheerderstoegang</span>
+            <span className="text-sm font-semibold text-slate-300">{t.offline.adminAccess}</span>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">E-mailadres of gebruikersnaam</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">{t.offline.emailLabel}</label>
               <Input
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -78,7 +76,7 @@ export default function OfflinePage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1">Wachtwoord</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">{t.offline.passwordLabel}</label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -101,14 +99,12 @@ export default function OfflinePage() {
               disabled={loading || !email || !password}
               className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3"
             >
-              {loading ? "Inloggen..." : "Inloggen als beheerder"}
+              {loading ? t.offline.loginLoading : t.offline.loginButton}
             </Button>
           </form>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-6">
-          Neem contact op met de beheerder als je geen toegang hebt.
-        </p>
+        <p className="text-center text-slate-500 text-xs mt-6">{t.offline.contactAdmin}</p>
       </div>
     </div>
   );

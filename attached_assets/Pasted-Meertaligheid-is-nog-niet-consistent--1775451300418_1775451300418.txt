@@ -1,0 +1,79 @@
+Meertaligheid is nog niet consistent.                                                                     
+ Hoewel NL/EN/DE/FR in translations.ts staan, bevat de UI op veel plekken nog harde Nederlandse tekst.     
+ Daardoor voelt EN/DE/FR “half vertaald”.                                                                  
+                                                                                                           
+ Voorbeelden:                                                                                              
+ - layout.tsx: footer “Informatie”, “Algemene voorwaarden”, “Veelgestelde vragen”, “Alle rechten           
+ voorbehouden”, placeholders zoals “Zoek uitvragen...”                                                     
+ - home.tsx: buyer/seller dashboardblokken (“Jouw uitvragen”, “Overig”, “Verlopen”, etc.)                  
+ - offline.tsx: volledig NL                                                                                
+ - not-found.tsx: juist alleen EN (“Did you forget to add the page to the router?”) → niet                 
+ production-proof                                                                                          
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ UX-advies (geprioriteerd)                                                                                 
+                                                                                                           
+ ### 1) Taalconsistentie fixen (P1)                                                                        
+                                                                                                           
+ - Verplaats alle hardcoded teksten naar i18n keys.                                                        
+ - Start met: layout.tsx, home.tsx, offline.tsx, not-found.tsx, buyer-requests.tsx, supplier-*.            
+ - Voeg “translation coverage check” toe in CI (fail build bij ontbrekende keys).                          
+                                                                                                           
+ Waarom: grootste directe winst voor internationale conversie + professioneel vertrouwen.                  
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ ### 2) Terminologie versimpelen (P1)                                                                      
+                                                                                                           
+ De termen zijn soms intern/technisch (“connectie”, “uitvraag”, “interesse bevestigen”).                   
+ Advies: gebruik 1 vaste termenset per taal + korte uitleg bij eerste gebruik.                             
+                                                                                                           
+ - NL: “uitvraag” kan, maar geef tooltips/mini-uitleg voor nieuwe users.                                   
+ - EN/DE/FR: kies natuurlijke marketplace-termen (“request”, “lead”, “contact unlock”) i.p.v. letterlijke  
+ vertaling.                                                                                                
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ ### 3) Onboarding verbeteren voor first-time users (P1)                                                   
+                                                                                                           
+ Nu moet gebruiker het model “post request → bids → select winner” zelf ontdekken.                         
+ Advies:                                                                                                   
+ - Voeg bovenaan /request/new een compacte progress helper (“Stap 1/3” + verwachtte tijd).                 
+ - Toon voorbeeld-uitvraag (prefilled hints) per categorie.                                                
+ - Bij lege states: altijd 1 duidelijke primaire CTA.                                                      
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ ### 4) Navigatie op mobiel iets duidelijker maken (P2)                                                    
+                                                                                                           
+ - Huidige taalswitch op mobiel (door cyclen van vlag) is snel, maar niet transparant.                     
+ - Beter: altijd expliciete taalkeuze-knop met label (“Language”) i.p.v. alleen cyclen.                    
+ - Notification bell is goed, maar voeg tekstlabel toe in menu voor duidelijkheid.                         
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ ### 5) Fout- en fallbackpagina’s production-ready maken (P2)                                              
+                                                                                                           
+ - not-found.tsx developer-tekst vervangen door gebruikersvriendelijke copy + CTA naar home/requests.      
+ - offline.tsx meertalig maken (minstens EN erbij).                                                        
+ - Error toasts consistent per taal via i18n.                                                              
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ ### 6) Footer/localisatie van content-slugs (P2)                                                          
+                                                                                                           
+ Footer links en page slugs zijn NL-only (/pages/algemene-voorwaarden, etc.).                              
+ Voor internationale UX:                                                                                   
+ - taalafhankelijke labels + liefst taalafhankelijke routes of redirects                                   
+ - of één neutrale slug-structuur met vertaalde titels.                                                    
+                                                                                                           
+ ────────────────────────────────────────────────────────────────────────────────                          
+                                                                                                           
+ ### 7) Kleine conversie-winst (P3)                                                                        
+                                                                                                           
+ - Voeg trustblokken toe op kritieke momenten:                                                             
+ - bij email-invoer (“alleen gedeeld met gekozen aanbieder”)                                               
+ - bij betalen/credits (“secure checkout”, “geen abonnement”)                                              
+ - Op request detail: maak primaire actie visueel dominanter (nu veel competitie tussen                    
+ knoppen/informatie). 
