@@ -9,7 +9,7 @@ PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gra
 - Versienummer zichtbaar in `artifacts/marketplace/src/App.tsx` (onderaan elke pagina)
 - **Regel: bij élke git push naar GitHub het versienummer met 0.1 ophogen**
 - Commit als: `release: vX.X - omschrijving`
-- Huidige versie: **v4.14 (UX-verbeteringen: mini how-it-works flow in hero, trust-microtext bij CTA en bid-knoppen, privacy-guarantee in interesse-dialog, alle 4 talen)
+- Huidige versie: **v4.15** (verificatiemail banner: echte foutafhandeling, toont foutmelding bij 401/500, checkt res.ok, "al bevestigd" refresht user-state)
 
 ## BELANGRIJK: Taalselectie vlaggen
 
