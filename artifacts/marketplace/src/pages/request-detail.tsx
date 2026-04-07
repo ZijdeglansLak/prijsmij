@@ -4,7 +4,7 @@ import { useGetRequestById, useListBidsForRequest, useExpressInterest } from "@w
 import type { BidOfferType } from "@workspace/api-client-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { useCountdown } from "@/hooks/use-countdown";
-import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock, XCircle } from "lucide-react";
+import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock, XCircle, PackageCheck, PackageX } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -392,6 +392,11 @@ export default function RequestDetail() {
                         <div className="flex flex-wrap gap-4 text-xs font-medium text-gray-600">
                           <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> {bid.warrantyMonths} mnd garantie</span>
                           <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> Levering: {bid.deliveryDays} {bid.deliveryDays === 1 ? 'dag' : 'dagen'}</span>
+                          {(bid as any).shippingIncluded !== false ? (
+                            <span className="flex items-center gap-1.5 text-green-600"><PackageCheck className="w-4 h-4" /> Incl. bezorging</span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-orange-500"><PackageX className="w-4 h-4" /> Excl. bezorging</span>
+                          )}
                           <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> {formatDateTime(bid.createdAt)}</span>
                         </div>
                       </div>

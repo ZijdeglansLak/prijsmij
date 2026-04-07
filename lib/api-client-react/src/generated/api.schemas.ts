@@ -103,6 +103,7 @@ export interface Bid {
   deliveryDays: number;
   imageUrl: string | null;
   isSimilarModel: boolean;
+  shippingIncluded: boolean;
   createdAt: string;
 }
 
@@ -171,6 +172,7 @@ export interface CreateBidBody {
   deliveryDays: number;
   imageUrl?: string | null;
   isSimilarModel: boolean;
+  shippingIncluded?: boolean;
 }
 
 export interface ExpressInterestBody {

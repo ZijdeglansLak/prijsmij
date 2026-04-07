@@ -391,6 +391,7 @@ export async function ensureTables(): Promise<void> {
     }
 
     await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS avatar_data TEXT`).catch(() => {});
+    await client.query(`ALTER TABLE bids ADD COLUMN IF NOT EXISTS shipping_included BOOLEAN NOT NULL DEFAULT TRUE`).catch(() => {});
 
     logger.info("Database tables verified/created");
   } catch (err) {

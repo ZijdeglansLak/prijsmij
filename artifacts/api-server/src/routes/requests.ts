@@ -261,6 +261,7 @@ router.get("/requests/:id", async (req, res) => {
       deliveryDays: b.deliveryDays,
       imageUrl: b.imageUrl,
       isSimilarModel: b.isSimilarModel,
+      shippingIncluded: b.shippingIncluded,
       createdAt: b.createdAt,
       supplierAvatarUrl: avatarMap.get(b.supplierEmail.toLowerCase()) ?? null,
     }));
@@ -367,6 +368,7 @@ router.get("/requests/:id/bids", async (req, res) => {
           deliveryDays: b.deliveryDays,
           imageUrl: b.imageUrl,
           isSimilarModel: b.isSimilarModel,
+          shippingIncluded: b.shippingIncluded,
           visibility: b.visibility ?? "public",
           hasInterest: interestActive,
           isMyInterest,
@@ -426,6 +428,7 @@ router.post("/requests/:id/bids", requireSeller, requireVerifiedEmail, async (re
         offerType: "Staat van product",
         warrantyMonths: "Garantiemaanden",
         deliveryDays: "Levertijd",
+        shippingIncluded: "Bezorgkosten inbegrepen",
         visibility: "Zichtbaarheid",
       };
       const firstIssue = parsed.error.issues[0];
@@ -455,6 +458,7 @@ router.post("/requests/:id/bids", requireSeller, requireVerifiedEmail, async (re
         deliveryDays: data.deliveryDays ?? 3,
         imageUrl: data.imageUrl ?? null,
         isSimilarModel: data.isSimilarModel,
+        shippingIncluded: data.shippingIncluded ?? true,
         visibility: data.visibility ?? "public",
       })
       .returning();
@@ -480,6 +484,7 @@ router.post("/requests/:id/bids", requireSeller, requireVerifiedEmail, async (re
       deliveryDays: bid.deliveryDays,
       imageUrl: bid.imageUrl,
       isSimilarModel: bid.isSimilarModel,
+      shippingIncluded: bid.shippingIncluded,
       visibility: bid.visibility ?? "public",
       createdAt: bid.createdAt,
     });

@@ -36,6 +36,7 @@ export default function PlaceBid() {
   const [warrantyMonths, setWarrantyMonths] = useState("24");
   const [deliveryDays, setDeliveryDays] = useState("1");
   const [isSimilarModel, setIsSimilarModel] = useState(false);
+  const [shippingIncluded, setShippingIncluded] = useState(true);
   const visibility = "public" as const;
   const [priceError, setPriceError] = useState("");
 
@@ -76,6 +77,7 @@ export default function PlaceBid() {
           warrantyMonths: parseInt(warrantyMonths),
           deliveryDays: parseInt(deliveryDays),
           isSimilarModel,
+          shippingIncluded,
           visibility,
         }
       });
@@ -237,6 +239,11 @@ export default function PlaceBid() {
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                   />
+                </div>
+
+                <div className="col-span-2 flex items-center gap-3 bg-muted p-4 rounded-xl">
+                  <input type="checkbox" id="shipping" checked={shippingIncluded} onChange={e => setShippingIncluded(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-primary" />
+                  <label htmlFor="shipping" className="font-bold cursor-pointer">Prijs inclusief bezorgkosten</label>
                 </div>
 
                 {request.allowSimilarModels && (
