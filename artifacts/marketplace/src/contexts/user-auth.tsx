@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 export type UserRole = "buyer" | "seller";
 
@@ -34,12 +35,23 @@ const USER_KEY = "prijsmij_user";
 
 export function UserAuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const tokenRef = useRef(token);
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       const raw = localStorage.getItem(USER_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   });
+
+  // Keep the ref in sync and register a global token getter for the API client
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+
+  useEffect(() => {
+    setAuthTokenGetter(() => tokenRef.current);
+    return () => { setAuthTokenGetter(null); };
+  }, []);
 
   function login(newToken: string, newUser: AuthUser) {
     localStorage.setItem(TOKEN_KEY, newToken);
