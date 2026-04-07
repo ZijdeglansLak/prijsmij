@@ -389,7 +389,7 @@ export default function RequestDetail() {
                         <p className="font-medium text-secondary mb-3">{bid.modelName}</p>
                         {bid.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{bid.description}</p>}
                         
-                        <div className="flex flex-wrap gap-4 text-xs font-medium text-secondary-foreground/70">
+                        <div className="flex flex-wrap gap-4 text-xs font-medium text-gray-600">
                           <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-primary" /> {bid.warrantyMonths} mnd garantie</span>
                           <span className="flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> Levering: {bid.deliveryDays} {bid.deliveryDays === 1 ? 'dag' : 'dagen'}</span>
                           <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-primary" /> {formatDateTime(bid.createdAt)}</span>
