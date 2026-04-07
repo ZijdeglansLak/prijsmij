@@ -203,6 +203,10 @@ function CategoriesTab() {
   const [icon, setIcon] = useState("");
   const [description, setDescription] = useState("");
   const [adding, setAdding] = useState(false);
+  const [newCatGroupId, setNewCatGroupId] = useState<number | "new" | "">("") ;
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupSlug, setNewGroupSlug] = useState("");
+  const [newGroupIcon, setNewGroupIcon] = useState("");
 
   function loadGroups() {
     fetch("/api/category-groups")
@@ -241,18 +245,34 @@ function CategoriesTab() {
     if (!name || !slug || !icon || !description) {
       toast({ title: "Vul alle velden in", variant: "destructive" }); return;
     }
+    if (newCatGroupId === "new" && (!newGroupName || !newGroupSlug)) {
+      toast({ title: "Vul naam en slug in voor de nieuwe groep", variant: "destructive" }); return;
+    }
     setAdding(true);
     try {
+      let resolvedGroupId: number | null = typeof newCatGroupId === "number" ? newCatGroupId : null;
+      if (newCatGroupId === "new") {
+        const gRes = await fetch("/api/admin/category-groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ name: newGroupName, slug: newGroupSlug, icon: newGroupIcon, sortOrder: 0, isActive: true }),
+        });
+        const gData = await gRes.json();
+        if (!gRes.ok) { toast({ title: gData.error ?? "Fout bij aanmaken groep", variant: "destructive" }); return; }
+        resolvedGroupId = gData.id;
+        loadGroups();
+      }
       const res = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name, slug, icon, description, fields: [] }),
+        body: JSON.stringify({ name, slug, icon, description, fields: [], groupId: resolvedGroupId }),
       });
       const data = await res.json();
       if (!res.ok) { toast({ title: data.error ?? "Fout bij aanmaken", variant: "destructive" }); return; }
       setCategories(prev => [...(prev ?? []), { ...data, activeRequestCount: 0 }]);
       toast({ title: "Categorie aangemaakt" });
       setIsAdding(false); setName(""); setSlug(""); setIcon(""); setDescription("");
+      setNewCatGroupId(""); setNewGroupName(""); setNewGroupSlug(""); setNewGroupIcon("");
     } catch {
       toast({ title: "Fout", variant: "destructive" });
     } finally { setAdding(false); }
@@ -360,10 +380,32 @@ function CategoriesTab() {
             <div><label className="text-xs font-bold mb-1 block">Slug</label><Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="bijv. elektronica" /></div>
             <div><IconPicker value={icon} onChange={setIcon} label="Icoon" /></div>
             <div><label className="text-xs font-bold mb-1 block">Beschrijving</label><Input value={description} onChange={e => setDescription(e.target.value)} /></div>
+            <div className="col-span-2">
+              <label className="text-xs font-bold mb-1 block">Bovenliggende groep</label>
+              <select
+                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background"
+                value={newCatGroupId}
+                onChange={e => setNewCatGroupId(e.target.value === "" ? "" : e.target.value === "new" ? "new" : parseInt(e.target.value))}
+              >
+                <option value="">— Geen groep —</option>
+                {groups.map(g => (
+                  <option key={g.id} value={g.id}>{g.icon} {g.name}</option>
+                ))}
+                <option value="new">+ Nieuwe groep aanmaken…</option>
+              </select>
+            </div>
+            {newCatGroupId === "new" && (
+              <div className="col-span-2 bg-muted/40 border border-dashed border-primary/30 rounded-xl p-4 grid grid-cols-2 gap-3">
+                <p className="col-span-2 text-xs font-semibold text-primary mb-1">Nieuwe groep</p>
+                <div><label className="text-xs font-bold mb-1 block">Naam groep</label><Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="bijv. Elektronica" /></div>
+                <div><label className="text-xs font-bold mb-1 block">Slug groep</label><Input value={newGroupSlug} onChange={e => setNewGroupSlug(e.target.value)} placeholder="bijv. elektronica" /></div>
+                <div className="col-span-2"><IconPicker value={newGroupIcon} onChange={setNewGroupIcon} label="Icoon groep (optioneel)" /></div>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <Button onClick={handleCreate} disabled={adding}>{adding ? "Aanmaken..." : "Aanmaken"}</Button>
-            <Button variant="outline" onClick={() => setIsAdding(false)}>Annuleren</Button>
+            <Button variant="outline" onClick={() => { setIsAdding(false); setNewCatGroupId(""); setNewGroupName(""); setNewGroupSlug(""); setNewGroupIcon(""); }}>Annuleren</Button>
           </div>
         </div>
       )}
