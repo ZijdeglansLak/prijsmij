@@ -6,6 +6,7 @@ import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n, FLAG_URL, LABEL, type Language } from "@/contexts/i18n";
 import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/hooks/use-notifications";
+import { UserAvatar } from "@/components/user-avatar";
 
 const LANGUAGES: Language[] = ["nl", "en", "de", "fr"];
 
@@ -143,7 +144,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           location.startsWith("/supplier") && !location.startsWith("/supplier/credits") && !location.startsWith("/supplier/leads") ? "text-primary" : "text-muted-foreground"
                         )}
                       >
-                        <Store className="w-4 h-4" />
+                        <UserAvatar avatarUrl={user.avatarUrl} name={user.storeName ?? user.contactName} size="sm" />
                         <span>{user.storeName ?? user.contactName}</span>
                       </Link>
                       <Link
@@ -173,7 +174,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         location === "/profile" ? "text-primary" : "text-muted-foreground"
                       )}
                     >
-                      <User className="w-4 h-4" />
+                      <UserAvatar avatarUrl={user.avatarUrl} name={user.contactName} size="sm" />
                       <span>{user.contactName}</span>
                       <Badge variant="outline" className="ml-1 text-xs">Admin</Badge>
                     </Link>
@@ -187,7 +188,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           location === "/profile" ? "text-primary" : "text-muted-foreground"
                         )}
                       >
-                        <User className="w-4 h-4" />
+                        <UserAvatar avatarUrl={user.avatarUrl} name={user.contactName} size="sm" />
                         <span>{user.contactName}</span>
                       </Link>
                       {/* Notification bell for buyers */}
@@ -335,7 +336,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <Store className="w-5 h-5 text-primary" />
+                        <UserAvatar avatarUrl={user.avatarUrl} name={user.storeName ?? user.contactName} size="sm" />
                         {user.storeName ?? user.contactName}
                       </Link>
                       <Link
@@ -354,7 +355,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-secondary hover:bg-muted"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <User className="w-5 h-5 text-primary" />
+                    <UserAvatar avatarUrl={user.avatarUrl} name={user.contactName} size="sm" />
                     {t.nav.profile}
                   </Link>
                   <button

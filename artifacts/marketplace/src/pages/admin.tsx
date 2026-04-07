@@ -11,6 +11,7 @@ import { useUserAuth } from "@/contexts/user-auth";
 import { Badge } from "@/components/ui/badge";
 import { IconPicker, IconDisplay } from "@/components/icon-picker";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { UserAvatar } from "@/components/user-avatar";
 
 type Tab = "categories" | "users" | "settings" | "payments" | "bundles" | "pages" | "kennisbank" | "logs" | "invoices" | "marketing";
 
@@ -26,6 +27,7 @@ interface UserRecord {
   username?: string | null;
   isSuspended: boolean;
   createdAt: string;
+  avatarUrl?: string | null;
 }
 
 export default function Admin() {
@@ -1655,9 +1657,7 @@ function UserRow({ user, isEditing, onToggleEdit, onSave, onSuspend, onVerify }:
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 transition-colors" onClick={onToggleEdit}>
-        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-          <User2 className="w-5 h-5 text-primary" />
-        </div>
+        <UserAvatar avatarUrl={user.avatarUrl} name={user.contactName} size="sm" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm">{user.contactName}</span>

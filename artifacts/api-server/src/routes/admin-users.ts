@@ -20,6 +20,7 @@ function safeUser(u: typeof userAccountsTable.$inferSelect) {
     username: u.username,
     isSuspended: u.isSuspended,
     createdAt: u.createdAt,
+    avatarUrl: u.avatarData ? `/api/users/${u.id}/avatar` : null,
   };
 }
 
