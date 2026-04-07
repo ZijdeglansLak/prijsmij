@@ -390,6 +390,8 @@ export async function ensureTables(): Promise<void> {
       }
     }
 
+    await client.query(`ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS avatar_data TEXT`).catch(() => {});
+
     logger.info("Database tables verified/created");
   } catch (err) {
     logger.error({ err }, "Failed to ensure database tables");
