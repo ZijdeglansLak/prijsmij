@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
 import { User, Lock, CheckCircle, ShieldCheck } from "lucide-react";
+import { AvatarUpload } from "@/components/user-avatar";
 
 export default function Profile() {
   const { user, token, updateUser, isLoggedIn } = useUserAuth();
@@ -80,6 +81,15 @@ export default function Profile() {
               </span>
             )}
           </div>
+        </div>
+
+        {/* Avatar upload */}
+        <div className="bg-card rounded-2xl border border-border p-6 mb-6">
+          <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Profielfoto
+          </h2>
+          <AvatarUpload />
         </div>
 
         {/* Account info (read-only) */}

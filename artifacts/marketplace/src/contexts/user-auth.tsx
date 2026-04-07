@@ -11,6 +11,7 @@ export interface AuthUser {
   credits: number;
   isAdmin: boolean;
   emailVerified: boolean;
+  avatarUrl?: string | null;
 }
 
 interface UserAuthContextType {
@@ -91,6 +92,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
           credits: data.credits,
           isAdmin: data.isAdmin,
           emailVerified: data.emailVerified,
+          avatarUrl: data.avatarUrl ?? null,
         };
         localStorage.setItem(USER_KEY, JSON.stringify(refreshed));
         setUser(refreshed);

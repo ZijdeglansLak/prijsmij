@@ -5,6 +5,7 @@ import type { BidOfferType } from "@workspace/api-client-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { useCountdown } from "@/hooks/use-countdown";
 import { Tag, Clock, Package, CheckCircle2, Info, ArrowLeft, Trophy, Truck, Shield, Link2, Coins, Lock, XCircle } from "lucide-react";
+import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -365,6 +366,11 @@ export default function RequestDetail() {
                     <div className="flex flex-col sm:flex-row justify-between gap-6">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <UserAvatar
+                            avatarUrl={(bid as any).supplierAvatarUrl}
+                            name={bid.supplierStore ?? bid.supplierName ?? "?"}
+                            size="sm"
+                          />
                           <h4 className="font-bold text-lg text-secondary">{bid.supplierStore}</h4>
                           <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-accent/10 text-accent border border-accent/20">
                             {bid.offerType}

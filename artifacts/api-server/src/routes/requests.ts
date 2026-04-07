@@ -10,7 +10,7 @@ import {
   createRequestBodySchema,
   createBidBodySchema,
 } from "@workspace/db";
-import { eq, sql, and, desc, asc } from "drizzle-orm";
+import { eq, sql, and, desc, asc, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { sendNewRequestNotification, sendNewBidNotification, sendBuyerInterestNotification } from "../services/email";
 import { writeLog } from "../lib/db-log";
@@ -239,6 +239,15 @@ router.get("/requests/:id", async (req, res) => {
     const prices = bids.map((b) => parseFloat(String(b.price)));
     const lowestBidPrice = prices.length > 0 ? Math.min(...prices) : null;
 
+    // Lookup avatar URLs for all involved users (consumer + bid suppliers)
+    const allEmails = [...new Set([request.consumerEmail, ...bids.map(b => b.supplierEmail)])].map(e => e.toLowerCase());
+    const avatarUsers = allEmails.length > 0
+      ? await db.select({ id: userAccountsTable.id, email: userAccountsTable.email, avatarData: userAccountsTable.avatarData })
+          .from(userAccountsTable)
+          .where(inArray(userAccountsTable.email, allEmails))
+      : [];
+    const avatarMap = new Map(avatarUsers.map(u => [u.email.toLowerCase(), u.avatarData ? `/api/users/${u.id}/avatar` : null]));
+
     const formattedBids = bids.map((b) => ({
       id: b.id,
       requestId: b.requestId,
@@ -253,6 +262,7 @@ router.get("/requests/:id", async (req, res) => {
       imageUrl: b.imageUrl,
       isSimilarModel: b.isSimilarModel,
       createdAt: b.createdAt,
+      supplierAvatarUrl: avatarMap.get(b.supplierEmail.toLowerCase()) ?? null,
     }));
 
     res.json({
@@ -274,6 +284,7 @@ router.get("/requests/:id", async (req, res) => {
       createdAt: request.createdAt,
       consumerName: request.consumerName,
       consumerEmail: request.consumerEmail,
+      consumerAvatarUrl: avatarMap.get(request.consumerEmail.toLowerCase()) ?? null,
       isClosed: (request as any).isClosed ?? false,
     });
   } catch (err) {

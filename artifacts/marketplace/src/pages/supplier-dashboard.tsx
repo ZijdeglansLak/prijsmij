@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, Link2, ShoppingCart, LogOut, RefreshCw, Bell, CheckCircle2, Phone, Mail, FileText, Download, Loader2, Building2 } from "lucide-react";
+import { Coins, Link2, ShoppingCart, LogOut, RefreshCw, Bell, CheckCircle2, Phone, Mail, FileText, Download, Loader2, Building2, Camera } from "lucide-react";
+import { AvatarUpload } from "@/components/user-avatar";
 import { motion } from "framer-motion";
 
 interface Connection {
@@ -193,6 +194,19 @@ export default function SupplierDashboard() {
 
           {activeTab === "overview" && (
             <div className="space-y-6">
+              {/* Avatar */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-primary" />
+                    Profielfoto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AvatarUpload />
+                </CardContent>
+              </Card>
+
               {/* Notification Preferences */}
               <Card>
                 <CardHeader>

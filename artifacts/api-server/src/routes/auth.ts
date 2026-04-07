@@ -95,6 +95,7 @@ function userResponse(u: typeof userAccountsTable.$inferSelect) {
     credits: u.credits,
     isAdmin: u.isAdmin,
     emailVerified: u.emailVerified,
+    avatarUrl: u.avatarData ? `/api/users/${u.id}/avatar` : null,
   };
 }
 
