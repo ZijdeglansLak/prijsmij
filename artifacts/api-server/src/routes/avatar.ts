@@ -5,6 +5,7 @@ import { db } from "@workspace/db";
 import { userAccountsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "./auth";
+import { writeLog } from "../lib/db-log";
 
 const router: IRouter = Router();
 
@@ -16,7 +17,7 @@ const upload = multer({
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Alleen JPEG en PNG bestanden zijn toegestaan"));
+      cb(new Error(`Ongeldig bestandstype: ${file.mimetype}`));
     }
   },
 });
@@ -24,25 +25,43 @@ const upload = multer({
 router.post("/auth/avatar", requireAuth, (req, res, next) => {
   upload.single("avatar")(req, res, (err) => {
     if (err) {
-      const msg = err.message ?? "";
-      if (msg.includes("Alleen") || msg.toLowerCase().includes("file type") || msg.toLowerCase().includes("unexpected field")) {
+      const userId = (req as any).userId as number | undefined;
+      const userEmail = (req as any).userEmail as string | undefined;
+      const msg = err.message ?? String(err);
+      const isMimeError = msg.toLowerCase().includes("ongeldig bestandstype") || msg.toLowerCase().includes("file type");
+      const isSizeError = msg.toLowerCase().includes("too large") || msg.toLowerCase().includes("limit");
+
+      writeLog({
+        category: "ERROR",
+        message: `[AVATAR] Upload afgewezen — ${isMimeError ? "ongeldig bestandstype" : isSizeError ? "bestand te groot" : "multer fout"}: ${msg}`,
+        userId: userId ?? null,
+        userEmail: userEmail ?? null,
+        errorCode: isMimeError ? "AVATAR_INVALID_TYPE" : isSizeError ? "AVATAR_TOO_LARGE" : "AVATAR_MULTER_ERROR",
+      });
+
+      if (isMimeError) {
         res.status(400).json({ error: "Alleen JPEG en PNG bestanden zijn toegestaan" });
-      } else if (msg.toLowerCase().includes("too large") || msg.toLowerCase().includes("limit")) {
+      } else if (isSizeError) {
         res.status(400).json({ error: "Bestand is te groot (max 10 MB)" });
       } else {
-        console.error("[AVATAR] multer error:", err);
-        res.status(400).json({ error: "Ongeldig bestand" });
+        res.status(400).json({ error: `Ongeldig bestand: ${msg}` });
       }
       return;
     }
     next();
   });
 }, async (req, res) => {
+  const userId = (req as any).userId as number;
+  const userEmail = (req as any).userEmail as string;
+
   try {
     if (!req.file) {
+      await writeLog({ category: "ERROR", message: "[AVATAR] Upload aangeroepen zonder bestand", userId, userEmail, errorCode: "AVATAR_NO_FILE" });
       res.status(400).json({ error: "Geen afbeelding ontvangen" });
       return;
     }
+
+    const { size, mimetype } = req.file;
 
     const compressed = await sharp(req.file.buffer)
       .resize(400, 400, { fit: "cover", position: "centre" })
@@ -50,29 +69,45 @@ router.post("/auth/avatar", requireAuth, (req, res, next) => {
       .toBuffer();
 
     const base64 = compressed.toString("base64");
-    const userId = (req as any).userId as number;
 
     await db
       .update(userAccountsTable)
       .set({ avatarData: base64 })
       .where(eq(userAccountsTable.id, userId));
 
+    await writeLog({
+      category: "LOGIN",
+      message: `[AVATAR] Avatar opgeslagen — origineel ${Math.round(size / 1024)} KB (${mimetype}), gecomprimeerd ${Math.round(compressed.length / 1024)} KB`,
+      userId,
+      userEmail,
+    });
+
     res.json({ avatarUrl: `/api/users/${userId}/avatar` });
   } catch (err: any) {
-    console.error("[AVATAR]", err);
-    res.status(500).json({ error: "Upload mislukt" });
+    const detail = err?.message ?? String(err);
+    await writeLog({
+      category: "ERROR",
+      message: `[AVATAR] Serverfout bij upload: ${detail}`,
+      userId,
+      userEmail,
+      errorCode: "AVATAR_SERVER_ERROR",
+    });
+    res.status(500).json({ error: `Upload mislukt: ${detail}` });
   }
 });
 
 router.delete("/auth/avatar", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as number;
+  const userEmail = (req as any).userEmail as string;
   try {
-    const userId = (req as any).userId as number;
     await db
       .update(userAccountsTable)
       .set({ avatarData: null })
       .where(eq(userAccountsTable.id, userId));
+    await writeLog({ category: "LOGIN", message: "[AVATAR] Avatar verwijderd", userId, userEmail });
     res.json({ ok: true });
-  } catch (err) {
+  } catch (err: any) {
+    await writeLog({ category: "ERROR", message: `[AVATAR] Verwijderen mislukt: ${err?.message}`, userId, userEmail, errorCode: "AVATAR_DELETE_ERROR" });
     res.status(500).json({ error: "Verwijderen mislukt" });
   }
 });
