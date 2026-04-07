@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,11 @@ export default function Profile() {
   const [savingName, setSavingName] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
-  if (!isLoggedIn || !user) {
-    setLocation("/auth/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoggedIn || !user) setLocation("/auth/login");
+  }, [isLoggedIn, user, setLocation]);
+
+  if (!isLoggedIn || !user) return null;
 
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();

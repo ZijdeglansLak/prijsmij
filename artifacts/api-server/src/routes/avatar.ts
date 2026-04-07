@@ -21,7 +21,23 @@ const upload = multer({
   },
 });
 
-router.post("/auth/avatar", requireAuth, upload.single("avatar"), async (req, res) => {
+router.post("/auth/avatar", requireAuth, (req, res, next) => {
+  upload.single("avatar")(req, res, (err) => {
+    if (err) {
+      const msg = err.message ?? "";
+      if (msg.includes("Alleen") || msg.toLowerCase().includes("file type") || msg.toLowerCase().includes("unexpected field")) {
+        res.status(400).json({ error: "Alleen JPEG en PNG bestanden zijn toegestaan" });
+      } else if (msg.toLowerCase().includes("too large") || msg.toLowerCase().includes("limit")) {
+        res.status(400).json({ error: "Bestand is te groot (max 10 MB)" });
+      } else {
+        console.error("[AVATAR] multer error:", err);
+        res.status(400).json({ error: "Ongeldig bestand" });
+      }
+      return;
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: "Geen afbeelding ontvangen" });
@@ -43,12 +59,8 @@ router.post("/auth/avatar", requireAuth, upload.single("avatar"), async (req, re
 
     res.json({ avatarUrl: `/api/users/${userId}/avatar` });
   } catch (err: any) {
-    if (err.message?.includes("Alleen")) {
-      res.status(400).json({ error: err.message });
-    } else {
-      console.error("[AVATAR]", err);
-      res.status(500).json({ error: "Upload mislukt" });
-    }
+    console.error("[AVATAR]", err);
+    res.status(500).json({ error: "Upload mislukt" });
   }
 });
 
