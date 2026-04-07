@@ -56,4 +56,5 @@ export const createCategoryBodySchema = z.object({
   icon: z.string().min(1),
   description: z.string().min(1),
   fields: z.array(templateFieldSchema),
+  groupId: z.number().int().nullable().optional(),
 });
