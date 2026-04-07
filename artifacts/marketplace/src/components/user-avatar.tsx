@@ -58,7 +58,11 @@ export function AvatarUpload({ onUploaded }: AvatarUploadProps) {
   async function handleFile(file: File) {
     const allowed = ["image/jpeg", "image/jpg", "image/png"];
     if (!allowed.includes(file.type)) {
-      toast({ title: "Ongeldig bestandstype", description: "Alleen JPEG en PNG zijn toegestaan.", variant: "destructive" });
+      toast({ title: "Ongeldig bestandstype — alleen JPEG of PNG", variant: "destructive" });
+      return;
+    }
+    if (!token) {
+      toast({ title: "Niet ingelogd — log opnieuw in", variant: "destructive" });
       return;
     }
     setUploading(true);
@@ -70,16 +74,22 @@ export function AvatarUpload({ onUploaded }: AvatarUploadProps) {
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      const data = await res.json();
+      let data: any = {};
+      try { data = await res.json(); } catch { /* not JSON */ }
+
+      if (res.status === 401) {
+        toast({ title: "Sessie verlopen — log opnieuw in en probeer het opnieuw", variant: "destructive" });
+        return;
+      }
       if (!res.ok) {
-        toast({ title: "Upload mislukt", description: data.error ?? "Probeer het opnieuw.", variant: "destructive" });
+        toast({ title: data.error ?? "Upload mislukt", variant: "destructive" });
         return;
       }
       updateUser({ avatarUrl: data.avatarUrl });
       onUploaded?.(data.avatarUrl);
       toast({ title: "Avatar opgeslagen" });
-    } catch {
-      toast({ title: "Upload mislukt", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: `Upload mislukt: ${err?.message ?? "Netwerkfout"}`, variant: "destructive" });
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -87,18 +97,25 @@ export function AvatarUpload({ onUploaded }: AvatarUploadProps) {
   }
 
   async function handleRemove() {
+    if (!token) {
+      toast({ title: "Niet ingelogd — log opnieuw in", variant: "destructive" });
+      return;
+    }
     setRemoving(true);
     try {
       const res = await fetch("/api/auth/avatar", {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) { toast({ title: "Verwijderen mislukt", variant: "destructive" }); return; }
+      let data: any = {};
+      try { data = await res.json(); } catch { /* not JSON */ }
+      if (res.status === 401) { toast({ title: "Sessie verlopen — log opnieuw in", variant: "destructive" }); return; }
+      if (!res.ok) { toast({ title: data.error ?? "Verwijderen mislukt", variant: "destructive" }); return; }
       updateUser({ avatarUrl: null });
       onUploaded?.(null);
       toast({ title: "Avatar verwijderd" });
-    } catch {
-      toast({ title: "Verwijderen mislukt", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: `Verwijderen mislukt: ${err?.message ?? "Netwerkfout"}`, variant: "destructive" });
     } finally {
       setRemoving(false);
     }
