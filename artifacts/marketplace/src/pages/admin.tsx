@@ -2390,17 +2390,18 @@ interface PageEditorProps {
   content: string;
   saving: boolean;
   selectedSlug: string;
+  selectedLang: string;
   onTitleChange: (v: string) => void;
   onContentChange: (v: string) => void;
   onSave: () => void;
 }
 
-function PageEditor({ title, content, saving, selectedSlug, onTitleChange, onContentChange, onSave }: PageEditorProps) {
+function PageEditor({ title, content, saving, selectedSlug, selectedLang, onTitleChange, onContentChange, onSave }: PageEditorProps) {
   const htmlContent = useMemo(() => {
     if (!content) return "";
     if (content.trimStart().startsWith("<")) return content;
     return marked.parse(content) as string;
-  }, [selectedSlug]);
+  }, [content]);
 
   return (
     <>
@@ -2418,7 +2419,7 @@ function PageEditor({ title, content, saving, selectedSlug, onTitleChange, onCon
       <div className="mb-4">
         <label className="block text-sm font-semibold text-secondary mb-2">Inhoud</label>
         <RichTextEditor
-          key={selectedSlug}
+          key={selectedSlug + "_" + selectedLang}
           content={htmlContent}
           onChange={onContentChange}
         />
@@ -2779,6 +2780,7 @@ function PaginasTab() {
                 content={content}
                 saving={saving}
                 selectedSlug={selectedSlug}
+                selectedLang={selectedLang}
                 onTitleChange={setTitle}
                 onContentChange={setContent}
                 onSave={savePage}
