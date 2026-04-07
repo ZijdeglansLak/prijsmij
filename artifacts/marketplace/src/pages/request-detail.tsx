@@ -359,7 +359,7 @@ export default function RequestDetail() {
                   <div key={bid.id} className={`bg-card rounded-2xl p-6 border transition-all hover:shadow-md ${index === 0 && filterType === 'all' ? 'border-primary/50 shadow-sm ring-1 ring-primary/10' : 'border-border'}`}>
                     {index === 0 && filterType === 'all' && (
                       <div className="absolute -translate-y-9 translate-x-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                        <Trophy className="w-3 h-3" /> Beste Deal
+                        <Trophy className="w-3 h-3" /> Laagste bod
                       </div>
                     )}
                     
