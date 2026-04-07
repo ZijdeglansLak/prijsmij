@@ -355,12 +355,12 @@ export default function Home() {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8"
             >
-              <div className="glass-card rounded-2xl p-6 text-center">
+              <Link href="/requests" className="glass-card rounded-2xl p-6 text-center block hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer group">
                 <div className="text-4xl font-display font-extrabold text-primary mb-2">
                   <AnimatedCounter value={stats.totalActiveRequests} />
                 </div>
-                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t.stats.activeRequests}</div>
-              </div>
+                <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-primary transition-colors">{t.stats.activeRequests}</div>
+              </Link>
               <div className="glass-card rounded-2xl p-6 text-center">
                 <div className="text-4xl font-display font-extrabold text-accent mb-2">
                   <AnimatedCounter value={stats.totalBidsToday} />
