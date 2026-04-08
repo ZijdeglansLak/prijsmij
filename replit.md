@@ -9,7 +9,7 @@ PrijsMij — een Dutch reverse-marketplace voor consumenten. Kopers plaatsen gra
 - Versienummer zichtbaar in `artifacts/marketplace/src/App.tsx` (onderaan elke pagina)
 - **Regel: bij élke git push naar GitHub het versienummer met 0.1 ophogen**
 - Commit als: `release: vX.X - omschrijving`
-- Huidige versie: **v4.29** (avatar feature: upload/verwijder profielfoto via POST/DELETE /api/auth/avatar; GET /api/users/:id/avatar; `AvatarUpload` widget in profile + supplier-dashboard; `UserAvatar` component in bid cards; `avatar_data text` DB kolom; sharp 400×400 JPEG resize)
+- Huidige versie: **v4.32** (avatar feature: upload/verwijder profielfoto via POST/DELETE /api/auth/avatar; GET /api/users/:id/avatar; `AvatarUpload` widget in profile + supplier-dashboard; `UserAvatar` component in bid cards; `avatar_data text` DB kolom; sharp 400×400 JPEG resize)
 
 ## BELANGRIJK: Taalselectie vlaggen
 
