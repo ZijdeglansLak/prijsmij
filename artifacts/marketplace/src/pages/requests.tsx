@@ -23,7 +23,7 @@ export default function RequestsPage() {
   );
   const [offerType, setOfferType] = useState<ListRequestsOfferType | undefined>(undefined);
 
-  const canSeeRequests = isSeller || isAdmin;
+  const canSeeRequests = isLoggedIn;
 
   const { data: requests, isLoading } = useListRequests({
     search: search || undefined,
@@ -35,7 +35,7 @@ export default function RequestsPage() {
   const { data: categories } = useListCategories();
   const { groups: categoryGroups } = useCategoryGroups();
 
-  // Non-logged-in and non-seller users see category overview
+  // Non-logged-in users see category overview
   if (!canSeeRequests) {
     return (
       <Layout>
