@@ -208,7 +208,7 @@ export default function RequestDetail() {
                   </Link>
                 )}
               </div>
-            ) : (
+            ) : !user && (
               <div className="bg-muted rounded-2xl p-5 text-center">
                 <Link2 className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm font-medium mb-1">Ben je een winkelier?</p>
@@ -298,14 +298,8 @@ export default function RequestDetail() {
               </div>
             </div>
 
-            {/* Place bid CTA */}
-            {user && !isSeller ? (
-              <div className="bg-muted rounded-2xl p-5 text-center border border-border">
-                <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-3" />
-                <h3 className="font-bold text-sm mb-1 text-secondary">Je bent ingelogd als koper</h3>
-                <p className="text-xs text-muted-foreground">Bekijk de biedingen hiernaast en toon interesse bij het beste bod.</p>
-              </div>
-            ) : (
+            {/* Place bid CTA — alleen voor verkopers en niet-ingelogden */}
+            {!(user && !isSeller) && (
               <div className="bg-gradient-to-br from-primary to-accent rounded-2xl p-6 text-white text-center shadow-lg">
                 <Truck className="w-10 h-10 mx-auto mb-3 opacity-90" />
                 {isLoggedIn && supplier ? (
