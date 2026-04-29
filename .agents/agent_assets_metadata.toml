@@ -60,3 +60,9 @@ id = "0DP7HLf5VdBrDoaJ2F9hi"
 uri = "file://artifacts/marketplace/public/prijsmij-logo.png"
 type = "image"
 title = "PrijsMij logo — hoge resolutie PNG (1136×480 px)"
+
+[[outputs]]
+id = "sLSbiInbG5O7bNPJhgpJy"
+uri = "file://prijsmij-google-campagne.md"
+type = "text"
+title = "PrijsMij — SEO & Google Ads Campagnegids"
