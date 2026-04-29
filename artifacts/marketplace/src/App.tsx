@@ -6,11 +6,10 @@ import { UserAuthProvider, useUserAuth } from "@/contexts/user-auth";
 import { I18nProvider } from "@/contexts/i18n";
 import { useEffect, useState, lazy, Suspense } from "react";
 
-// Pages — static imports (faster on mobile: no dynamic import overhead)
+// Pages — static imports
 import Home from "@/pages/home";
 import Requests from "@/pages/requests";
 import RequestDetail from "@/pages/request-detail";
-import CreateRequest from "@/pages/create-request";
 import PlaceBid from "@/pages/place-bid";
 import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
@@ -20,13 +19,16 @@ import AuthForgotPassword from "@/pages/auth-forgot-password";
 import AuthResetPassword from "@/pages/auth-reset-password";
 import AuthVerifyEmail from "@/pages/auth-verify-email";
 import Profile from "@/pages/profile";
-import SupplierDashboard from "@/pages/supplier-dashboard";
-import SupplierCredits from "@/pages/supplier-credits";
 import BetalingGeslaagd from "@/pages/betaling-geslaagd";
 import SupplierLeads from "@/pages/supplier-leads";
 import BuyerRequests from "@/pages/buyer-requests";
 import OfflinePage from "@/pages/offline";
 import StaticPage from "@/pages/static-page";
+
+// Lazy-loaded pages (contain Framer Motion — kept out of initial bundle)
+const CreateRequest = lazy(() => import("@/pages/create-request"));
+const SupplierDashboard = lazy(() => import("@/pages/supplier-dashboard"));
+const SupplierCredits = lazy(() => import("@/pages/supplier-credits"));
 
 // Non-critical UI — lazy loaded (not needed for first paint)
 const QuootjeChatbot = lazy(() => import("@/components/quootje-chatbot").then(m => ({ default: m.QuootjeChatbot })));
@@ -107,7 +109,9 @@ function App() {
           <UserAuthProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <SiteGate>
-                <Router />
+                <Suspense fallback={<div className="min-h-screen" />}>
+                  <Router />
+                </Suspense>
               </SiteGate>
             </WouterRouter>
             <Toaster />
@@ -119,7 +123,7 @@ function App() {
         </I18nProvider>
       </TooltipProvider>
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-400/50 select-none pointer-events-none z-50">
-        v4.41
+        v4.42
       </div>
     </QueryClientProvider>
   );

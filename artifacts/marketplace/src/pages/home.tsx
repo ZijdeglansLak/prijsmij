@@ -3,7 +3,7 @@ import { AnimatedCounter } from "@/components/animated-counter";
 import { RequestCard } from "@/components/request-card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { FadeInView } from "@/components/fade-in-view";
 import { ArrowRight, ChevronRight, ShoppingBag, Store, Zap, ShieldCheck, Clock, TrendingDown, Bell, Star } from "lucide-react";
 import { useGetStats, useListCategories, useListRequests } from "@workspace/api-client-react";
 import { useI18n } from "@/contexts/i18n";
@@ -426,13 +426,7 @@ export default function Home() {
             const ungrouped = categories.filter(c => !c.groupId || !categoryGroups.find(g => g.id === c.groupId));
 
             const CategoryCard = ({ cat, i }: { cat: typeof categories[0]; i: number }) => (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: Math.min(i * 0.03, 0.25) }}
-                key={cat.id}
-              >
+              <FadeInView delay={Math.min(i * 0.03, 0.25)} y={4}>
                 <Link href={`/requests?categoryId=${cat.id}`} className="group block h-full">
                   <div className="flex items-center gap-2.5 bg-muted/40 rounded-xl px-3 py-2.5 h-full border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-all duration-200">
                     <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform overflow-hidden">
@@ -444,7 +438,7 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
-              </motion.div>
+              </FadeInView>
             );
 
             if (grouped.length === 0) {
@@ -502,15 +496,9 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recentRequests?.slice(0, 3).map((req, i) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  key={req.id}
-                >
+                <FadeInView key={req.id} delay={i * 0.1} y={20}>
                   <RequestCard request={req} featured={i === 0} />
-                </motion.div>
+                </FadeInView>
               ))}
             </div>
           </div>

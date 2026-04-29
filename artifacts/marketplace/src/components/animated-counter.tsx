@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { motion, useSpring, useTransform } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
 interface AnimatedCounterProps {
   value: number;
@@ -8,16 +7,22 @@ interface AnimatedCounterProps {
 }
 
 export function AnimatedCounter({ value, duration = 2, formatter = (v) => v.toString() }: AnimatedCounterProps) {
-  const [mounted, setMounted] = useState(false);
-  const spring = useSpring(0, { duration: duration * 1000, bounce: 0 });
-  const display = useTransform(spring, (current) => formatter(Math.floor(current)));
+  const [current, setCurrent] = useState(0);
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    setMounted(true);
-    spring.set(value);
-  }, [value, spring]);
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min((now - startTime) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCurrent(Math.floor(eased * value));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [value, duration]);
 
-  if (!mounted) return <span>{formatter(0)}</span>;
-
-  return <motion.span>{display}</motion.span>;
+  return <span>{formatter(current)}</span>;
 }
