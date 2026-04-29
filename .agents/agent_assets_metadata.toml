@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "oHd9sHZzlpLyJH-42TG8d"
+uri = "file://artifacts/marketplace/public/og-image.png"
+type = "image"
+title = "prijsmij og image banner"
 
 [[outputs]]
 id = "t-u1AvG6V8N2Cpss9d-fC"
