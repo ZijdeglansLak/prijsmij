@@ -7,12 +7,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
 import { TrendingUp } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function AuthLogin() {
   const [, setLocation] = useLocation();
   const { login } = useUserAuth();
   const { toast } = useToast();
   const { t } = useI18n();
+
+  useSeo({
+    title: "Inloggen",
+    description: "Log in op PrijsMij en beheer je uitvragen en biedingen.",
+    canonical: "/auth/login",
+  });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

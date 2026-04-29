@@ -6,3 +6,4 @@ Disallow: /supplier/dashboard
 Disallow: /supplier/leads
 
 Sitemap: https://prijsmij.nl/sitemap.xml
+Sitemap: https://prijsmij.nl/api/sitemap.xml

@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { marked } from "marked";
 import { Layout } from "@/components/layout";
 import { useI18n } from "@/contexts/i18n";
+import { useSeo } from "@/hooks/use-seo";
 
 interface StaticPageData {
   slug: string;
@@ -24,6 +25,11 @@ export default function StaticPage() {
   const slug = params.slug;
   const { lang } = useI18n();
   const [page, setPage] = useState<StaticPageData | null>(null);
+
+  useSeo({
+    title: page?.title,
+    canonical: slug ? `/pages/${slug}` : undefined,
+  });
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 

@@ -10,11 +10,18 @@ import { useCategoryGroups } from "@/hooks/use-category-groups";
 import type { ListRequestsOfferType } from "@workspace/api-client-react";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function RequestsPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const { isSeller, isLoggedIn, isAdmin } = useUserAuth();
   const { t, lang } = useI18n();
+
+  useSeo({
+    title: "Alle uitvragen",
+    description: "Bekijk alle actieve uitvragen op PrijsMij. Kopers zoeken producten en diensten — jij biedt de beste prijs.",
+    canonical: "/requests",
+  });
   const [, setLocation] = useLocation();
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");

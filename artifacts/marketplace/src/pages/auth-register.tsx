@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
 import { Store, ShoppingBag, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 type Role = "buyer" | "seller";
 
@@ -22,6 +23,12 @@ export default function AuthRegister() {
   const { login } = useUserAuth();
   const { toast } = useToast();
   const { t, lang } = useI18n();
+
+  useSeo({
+    title: "Registreren",
+    description: "Maak gratis een account aan op PrijsMij. Kopers plaatsen uitvragen, winkeliers bieden de beste prijs.",
+    canonical: "/auth/register",
+  });
 
   const [role, setRole] = useState<Role>("buyer");
   const [storeName, setStoreName] = useState("");

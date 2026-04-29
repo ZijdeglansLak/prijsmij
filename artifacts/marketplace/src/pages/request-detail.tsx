@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSupplierAuth } from "@/contexts/supplier-auth";
 import { useUserAuth } from "@/contexts/user-auth";
 import { useI18n } from "@/contexts/i18n";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +43,29 @@ export default function RequestDetail() {
   const { toast } = useToast();
   const { t } = useI18n();
   const { supplier, token, isLoggedIn, updateCredits } = useSupplierAuth();
+
+  useSeo({
+    title: request ? request.title : "Uitvraag bekijken",
+    description: request
+      ? `Bekijk de uitvraag voor "${request.title}"${(request as any).brand ? ` (${(request as any).brand})` : ""} op PrijsMij. Winkeliers bieden de beste prijs.`
+      : "Bekijk uitvragen en biedingen op PrijsMij.",
+    canonical: `/requests/${requestId}`,
+    jsonLd: request
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": request.title,
+          "description": `Koopwens voor ${request.title}${(request as any).brand ? ` van merk ${(request as any).brand}` : ""} op PrijsMij.`,
+          "url": `https://prijsmij.nl/requests/${requestId}`,
+          "offers": {
+            "@type": "AggregateOffer",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock",
+            "seller": { "@type": "Organization", "name": "PrijsMij" },
+          },
+        }
+      : undefined,
+  });
 
   // Load which bids this seller has already purchased
   useEffect(() => {
