@@ -5,8 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { UserAuthProvider, useUserAuth } from "@/contexts/user-auth";
 import { I18nProvider } from "@/contexts/i18n";
 import { useEffect, useState, lazy, Suspense } from "react";
-import { QuootjeChatbot } from "@/components/quootje-chatbot";
-import { CookieConsent } from "@/components/cookie-consent";
+const QuootjeChatbot = lazy(() => import("@/components/quootje-chatbot").then(m => ({ default: m.QuootjeChatbot })));
+const CookieConsent = lazy(() => import("@/components/cookie-consent").then(m => ({ default: m.CookieConsent })));
 
 // Critical pages — loaded immediately
 import Home from "@/pages/home";
@@ -119,13 +119,15 @@ function App() {
               </SiteGate>
             </WouterRouter>
             <Toaster />
-            <QuootjeChatbot />
-            <CookieConsent />
+            <Suspense fallback={null}>
+              <QuootjeChatbot />
+              <CookieConsent />
+            </Suspense>
           </UserAuthProvider>
         </I18nProvider>
       </TooltipProvider>
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-slate-400/50 select-none pointer-events-none z-50">
-        v4.39
+        v4.40
       </div>
     </QueryClientProvider>
   );

@@ -273,41 +273,21 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-md border border-primary/20 text-primary font-semibold text-sm mb-8"
-            >
+            <div className="hero-fade hero-fade-1 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-md border border-primary/20 text-primary font-semibold text-sm mb-8">
               <Zap className="w-4 h-4" />
               <span>{t.home.badge}</span>
-            </motion.div>
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-5xl md:text-7xl font-extrabold text-secondary leading-tight mb-6"
-            >
+            <h1 className="hero-fade hero-fade-2 text-5xl md:text-7xl font-extrabold text-secondary leading-tight mb-6">
               {t.home.heading1} <br/>
               <span className="text-gradient">{t.home.heading2}</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed"
-            >
+            <p className="hero-fade hero-fade-3 text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
               {t.home.subheading}
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4"
-            >
+            <div className="hero-fade hero-fade-4 flex flex-col sm:flex-row gap-4">
               {!isSeller && !token && (
                 <Link
                   href="/request/new"
@@ -324,15 +304,10 @@ export default function Home() {
                   {t.home.ctaView}
                 </Link>
               )}
-            </motion.div>
+            </div>
 
             {/* Mini how-it-works flow + trust */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.45 }}
-              className="mt-8"
-            >
+            <div className="hero-fade hero-fade-5 mt-8">
               <div className="flex flex-row items-center">
                 {([
                   { step: "1", text: t.home.miniStep1, time: t.home.miniStep1Time },
@@ -354,17 +329,12 @@ export default function Home() {
                 <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
                 {t.home.heroTrust}
               </p>
-            </motion.div>
+            </div>
           </div>
 
           {/* Stats Bar */}
           {stats && (
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4 }}
-              className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8"
-            >
+            <div className="hero-fade hero-fade-5 mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
               <Link href="/requests" className="glass-card rounded-2xl p-6 text-center block hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer group">
                 <div className="text-4xl font-display font-extrabold text-primary mb-2">
                   <AnimatedCounter value={stats.totalActiveRequests} />
@@ -389,7 +359,7 @@ export default function Home() {
                 </div>
                 <div className="text-sm font-semibold opacity-90 uppercase tracking-wider">{t.stats.avgBids}</div>
               </div>
-            </motion.div>
+            </div>
           )}
         </div>
       </section>
