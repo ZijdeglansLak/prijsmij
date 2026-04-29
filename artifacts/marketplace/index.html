@@ -74,76 +74,9 @@
     <!-- Preload LCP resource (responsive) -->
     <link rel="preload" as="image" href="/images/hero-bg-mobile.webp" type="image/webp" media="(max-width: 767px)" fetchpriority="high" />
     <link rel="preload" as="image" href="/images/hero-bg.webp" type="image/webp" media="(min-width: 768px)" fetchpriority="high" />
-
-    <!-- Critical CSS: above-fold shell (shown before React loads) -->
-    <style>
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{background:#fafafa;font-family:system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
-      #pm-shell{min-height:100vh}
-      #pm-shell nav{position:sticky;top:0;z-index:50;background:rgba(250,250,250,0.85);backdrop-filter:blur(12px);border-bottom:1px solid #e8ecf2;padding:0 1rem;height:64px;display:flex;align-items:center;justify-content:space-between}
-      #pm-shell .pm-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.25rem;color:#2d1f5e;text-decoration:none}
-      #pm-shell .pm-logo-mark{width:36px;height:36px;background:linear-gradient(135deg,#ff6b2b,#3d8aff);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:1rem}
-      #pm-shell .pm-nav-btn{background:#2d1f5e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:.875rem;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
-      #pm-shell .pm-hero{position:relative;padding:96px 1rem 128px;overflow:hidden;background:linear-gradient(180deg,rgba(255,107,43,.04) 0%,transparent 100%)}
-      #pm-shell .pm-hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.15;mix-blend-mode:multiply}
-      #pm-shell .pm-hero-inner{position:relative;max-width:768px;margin:0 auto}
-      #pm-shell .pm-badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(255,107,43,.2);border-radius:999px;padding:8px 16px;font-size:.875rem;font-weight:600;color:#ff6b2b;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:32px}
-      #pm-shell h1{font-size:clamp(2.25rem,8vw,4.5rem);font-weight:900;line-height:1.1;color:#2d1f5e;margin-bottom:24px;font-family:'Outfit',system-ui,sans-serif}
-      #pm-shell h1 span{background:linear-gradient(90deg,#ff6b2b,#3d8aff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-      #pm-shell .pm-sub{font-size:1.125rem;color:#6b7280;max-width:640px;line-height:1.6;margin-bottom:40px}
-      #pm-shell .pm-ctas{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:32px}
-      #pm-shell .pm-cta-primary{background:#ff6b2b;color:#fff;border:none;border-radius:12px;padding:16px 32px;font-size:1.125rem;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(255,107,43,.25);display:flex;align-items:center;gap:8px;text-decoration:none}
-      #pm-shell .pm-cta-secondary{background:#fff;color:#2d1f5e;border:2px solid #e8ecf2;border-radius:12px;padding:16px 32px;font-size:1.125rem;font-weight:700;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center}
-      #pm-shell .pm-steps{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:.75rem}
-      #pm-shell .pm-step{display:flex;align-items:center;gap:6px;font-weight:600;color:#2d1f5e}
-      #pm-shell .pm-step-num{width:20px;height:20px;border-radius:50%;background:#ff6b2b;color:#fff;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center}
-      #pm-shell .pm-chevron{color:rgba(255,107,43,.3);margin:0 4px}
-    </style>
   </head>
   <body>
-    <div id="root">
-      <!-- Static shell: visible instantly, replaced by React when JS loads -->
-      <div id="pm-shell">
-        <nav>
-          <a class="pm-logo" href="/">
-            <div class="pm-logo-mark">P</div>
-            PrijsMij
-          </a>
-          <a class="pm-nav-btn" href="/request/new">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            Uitvraag plaatsen
-          </a>
-        </nav>
-        <section class="pm-hero">
-          <picture>
-            <source media="(max-width:767px)" srcset="/images/hero-bg-mobile.webp" type="image/webp" />
-            <img class="pm-hero-img" src="/images/hero-bg.webp" alt="" fetchpriority="high" />
-          </picture>
-          <div class="pm-hero-inner">
-            <div class="pm-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              De slimste manier om te shoppen
-            </div>
-            <h1>Plaats je wens,<br/><span>krijg het beste bod.</span></h1>
-            <p class="pm-sub">Waarom zoeken als winkels naar jou kunnen komen? Plaats gratis een uitvraag voor je nieuwe TV, wasmachine of auto, en laat leveranciers strijden om de beste prijs.</p>
-            <div class="pm-ctas">
-              <a class="pm-cta-primary" href="/request/new">
-                Plaats nu een uitvraag
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </a>
-              <a class="pm-cta-secondary" href="/requests">Bekijk actieve uitvragen</a>
-            </div>
-            <div class="pm-steps">
-              <div class="pm-step"><span class="pm-step-num">1</span> Beschrijf wat je zoekt</div>
-              <span class="pm-chevron">›</span>
-              <div class="pm-step"><span class="pm-step-num">2</span> Ontvang biedingen</div>
-              <span class="pm-chevron">›</span>
-              <div class="pm-step"><span class="pm-step-num">3</span> Kies de beste deal</div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
