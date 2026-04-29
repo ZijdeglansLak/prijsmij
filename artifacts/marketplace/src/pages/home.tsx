@@ -254,11 +254,16 @@ export default function Home() {
       <section className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent"></div>
-          <img
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            alt="Marketplace background"
-            className="w-full h-full object-cover opacity-[0.15] mix-blend-multiply"
-          />
+          <picture>
+            <source srcSet={`${import.meta.env.BASE_URL}images/hero-bg.webp`} type="image/webp" />
+            <img
+              src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+              alt=""
+              aria-hidden="true"
+              fetchPriority="high"
+              className="w-full h-full object-cover opacity-[0.15] mix-blend-multiply"
+            />
+          </picture>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
