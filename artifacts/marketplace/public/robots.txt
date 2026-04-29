@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /supplier/dashboard
+Disallow: /supplier/leads
+
+Sitemap: https://prijsmij.nl/sitemap.xml
