@@ -255,6 +255,11 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent"></div>
           <picture>
+            <source
+              media="(max-width: 767px)"
+              srcSet={`${import.meta.env.BASE_URL}images/hero-bg-mobile.webp`}
+              type="image/webp"
+            />
             <source srcSet={`${import.meta.env.BASE_URL}images/hero-bg.webp`} type="image/webp" />
             <img
               src={`${import.meta.env.BASE_URL}images/hero-bg.png`}

@@ -71,8 +71,9 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
 
-    <!-- Preload LCP resource -->
-    <link rel="preload" as="image" href="/images/hero-bg.webp" type="image/webp" fetchpriority="high" />
+    <!-- Preload LCP resource (responsive) -->
+    <link rel="preload" as="image" href="/images/hero-bg-mobile.webp" type="image/webp" media="(max-width: 767px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="/images/hero-bg.webp" type="image/webp" media="(min-width: 768px)" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>
